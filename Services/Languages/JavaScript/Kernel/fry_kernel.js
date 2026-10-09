@@ -142,7 +142,8 @@ const contextObj = {
     dump: fry.dump,
     table: fry.table,
     fry: fry,
-    require: require,
+    // require('fry_display') is this kernel's own fry module (its channel is the kernel's); another copy would print to stdout.
+    require: (id, ...rest) => (id === "fry_display" || id === "fry" ? fry : require(id, ...rest)),
     input: requestInput,
     prompt: requestInput,
     process: process,

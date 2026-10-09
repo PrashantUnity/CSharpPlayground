@@ -109,12 +109,13 @@
             <!-- Scrubber Slider -->
             <Grid Grid.Column="1" Margin="10,0" VerticalAlignment="Center">
                 <Slider Name="StepSlider"
+                        Classes="scrubber-slider"
                         Minimum="0"
                         Maximum="10"
                         Value="0"
                         TickFrequency="1"
                         IsSnapToTickEnabled="True"
-                        Height="24"
+                        Height="22"
                         VerticalAlignment="Center" />
             </Grid>
 

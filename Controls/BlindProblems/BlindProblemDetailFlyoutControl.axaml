@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -14,17 +14,17 @@
 
     <Border Background="{DynamicResource DsSurfaceBrush}"
             BorderBrush="{DynamicResource DsBorderBrush}"
-            BorderThickness="1,0,0,0"
+            lt:Tokens.BorderThickness="DsBorderLeft"
             Width="{Binding DetailFlyoutWidth}">
         <Grid RowDefinitions="52,*,60">
             <!-- 1. Header with Close Button -->
             <Border Grid.Row="0"
                     BorderBrush="{DynamicResource DsBorderBrush}"
-                    BorderThickness="0,0,0,1"
+                    lt:Tokens.BorderThickness="DsBorderBottom"
                     Padding="16,0">
                 <Grid ColumnDefinitions="*,Auto,Auto">
                     <TextBlock Grid.Column="0" Text="{Binding SelectedProblem.FullTitle}"
-                               FontSize="13.5" FontWeight="Bold"
+                               lt:Tokens.FontSize="DsFontSize400" lt:Tokens.FontWeight="DsWeightStrong"
                                Foreground="{DynamicResource DsTextWhiteBrush}"
                                VerticalAlignment="Center"
                                TextTrimming="CharacterEllipsis"
@@ -32,13 +32,13 @@
 
                     <Button Grid.Column="1" Command="{Binding OpenOnLeetCodeCommand}"
                             CommandParameter="{Binding SelectedProblem}"
-                            Classes="nexus-btn-surface" Height="30" Padding="8,0" Margin="8,0,6,0"
+                            Classes="nexus-btn-surface" lt:Tokens.Height="DsControlHeight200" Padding="8,0" Margin="8,0,6,0"
                             ToolTip.Tip="{Binding SelectedProblem.LeetCodeTooltip}">
                         <materialIcons:MaterialIcon Kind="OpenInNew" Width="15" Height="15" Foreground="{DynamicResource NavBlind75FgBrush}" />
                     </Button>
 
                     <Button Grid.Column="2" Command="{Binding CloseDetailFlyoutCommand}"
-                            Classes="nexus-btn-surface" Height="30" Width="30" Padding="0"
+                            Classes="nexus-btn-surface" lt:Tokens.Height="DsControlHeight200" Width="30" Padding="0"
                             ToolTip.Tip="Close">
                         <materialIcons:MaterialIcon Kind="Close" Width="15" Height="15" Foreground="{DynamicResource DsMutedBrush}" />
                     </Button>
@@ -47,16 +47,16 @@
 
             <!-- 2. Body Details -->
             <ScrollViewer Grid.Row="1" Padding="16">
-                <StackPanel Spacing="16">
+                <StackPanel lt:Tokens.Spacing="DsSpace16">
                     <!-- Badges Row -->
                     <WrapPanel Orientation="Horizontal">
                         <!-- Difficulty -->
                         <Border Background="{Binding SelectedProblem.DifficultyBackground}"
                                 Height="22" MinHeight="22"
-                                CornerRadius="8" Padding="8,0" Margin="0,0,6,6"
+                                lt:Tokens.CornerRadius="DsRadiusLG" Padding="8,0" Margin="0,0,6,6"
                                 VerticalAlignment="Center">
                             <TextBlock Text="{Binding SelectedProblem.DifficultyBadgeText}"
-                                       FontSize="11" FontWeight="SemiBold"
+                                       lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightEmphasis"
                                        HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
                                        Margin="0,1,0,0"
                                        Foreground="{Binding SelectedProblem.DifficultyColor}" />
@@ -65,12 +65,12 @@
                         <!-- Category -->
                         <Border Background="{DynamicResource DsSurfaceHighBrush}"
                                 BorderBrush="{DynamicResource DsBorderBrush}"
-                                BorderThickness="1"
+                                lt:Tokens.BorderThickness="DsBorderThin"
                                 Height="22" MinHeight="22"
-                                CornerRadius="8" Padding="8,0" Margin="0,0,6,6"
+                                lt:Tokens.CornerRadius="DsRadiusLG" Padding="8,0" Margin="0,0,6,6"
                                 VerticalAlignment="Center">
                             <TextBlock Text="{Binding SelectedProblem.Category}"
-                                       FontSize="11" Foreground="{DynamicResource DsMutedBrush}"
+                                       lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsMutedBrush}"
                                        HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
                                        Margin="0,1,0,0" />
                         </Border>
@@ -78,26 +78,26 @@
                         <!-- Acceptance -->
                         <Border Background="{DynamicResource DsSurfaceHighBrush}"
                                 BorderBrush="{DynamicResource DsBorderBrush}"
-                                BorderThickness="1"
+                                lt:Tokens.BorderThickness="DsBorderThin"
                                 Height="22" MinHeight="22"
-                                CornerRadius="8" Padding="8,0" Margin="0,0,6,6"
+                                lt:Tokens.CornerRadius="DsRadiusLG" Padding="8,0" Margin="0,0,6,6"
                                 VerticalAlignment="Center">
                             <TextBlock Text="{Binding SelectedProblem.AcceptanceRateText, StringFormat='Acceptance: {0}'}"
-                                       FontSize="11" Foreground="{DynamicResource DsMutedBrush}"
+                                       lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsMutedBrush}"
                                        HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
                                        Margin="0,1,0,0" />
                         </Border>
 
                         <!-- Visualizer Ready Badge -->
-                        <Border Background="{DynamicResource BadgeAmberBgBrush}"
-                                BorderBrush="{DynamicResource BadgeAmberBorderBrush}"
-                                BorderThickness="1"
+                        <Border Background="{DynamicResource DsWarningSubtleBrush}"
+                                BorderBrush="{DynamicResource DsWarningBrush}"
+                                lt:Tokens.BorderThickness="DsBorderThin"
                                 Height="22" MinHeight="22"
-                                CornerRadius="8" Padding="8,0" Margin="0,0,6,6"
+                                lt:Tokens.CornerRadius="DsRadiusLG" Padding="8,0" Margin="0,0,6,6"
                                 VerticalAlignment="Center">
                             <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                <materialIcons:MaterialIcon Kind="ChartTimelineVariant" Width="12" Height="12" Foreground="{DynamicResource BadgeAmberFgBrush}" VerticalAlignment="Center" />
-                                <TextBlock Text="Interactive Visualizer Ready" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource BadgeAmberFgBrush}" VerticalAlignment="Center" Margin="0,1,0,0" />
+                                <materialIcons:MaterialIcon Kind="ChartTimelineVariant" Width="12" Height="12" Foreground="{DynamicResource DsWarningBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="Interactive Visualizer Ready" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsWarningBrush}" VerticalAlignment="Center" Margin="0,1,0,0" />
                             </StackPanel>
                         </Border>
                     </WrapPanel>
@@ -105,46 +105,46 @@
                     <!-- Complexity Card -->
                     <Border Background="{DynamicResource DsSurfaceHighBrush}"
                             BorderBrush="{DynamicResource DsBorderBrush}"
-                            BorderThickness="1" CornerRadius="8" Padding="12">
+                            lt:Tokens.BorderThickness="DsCardBorder" lt:Tokens.CornerRadius="DsRadiusLG" Padding="12" lt:Tokens.BoxShadow="DsCardShadow">
                         <Grid ColumnDefinitions="*,*">
                             <StackPanel Grid.Column="0" Spacing="2">
-                                <TextBlock Text="Time Complexity" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" />
-                                <TextBlock Text="{Binding SelectedProblem.TimeComplexity}" FontSize="12.5" FontWeight="Bold" Foreground="{DynamicResource ComplexityTimeBrush}" />
+                                <TextBlock Text="Time Complexity" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" />
+                                <TextBlock Text="{Binding SelectedProblem.TimeComplexity}" lt:Tokens.FontSize="DsFontSize350" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsInfoBrush}" />
                             </StackPanel>
                             <StackPanel Grid.Column="1" Spacing="2">
-                                <TextBlock Text="Space Complexity" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" />
-                                <TextBlock Text="{Binding SelectedProblem.SpaceComplexity}" FontSize="12.5" FontWeight="Bold" Foreground="{DynamicResource ComplexitySpaceBrush}" />
+                                <TextBlock Text="Space Complexity" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" />
+                                <TextBlock Text="{Binding SelectedProblem.SpaceComplexity}" lt:Tokens.FontSize="DsFontSize350" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsSuccessBrush}" />
                             </StackPanel>
                         </Grid>
                     </Border>
 
                     <!-- Problem Description: read the problem first -->
                     <StackPanel Spacing="6">
-                        <TextBlock Text="PROBLEM" FontSize="11" FontWeight="Bold"
+                        <TextBlock Text="PROBLEM" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong"
                                    Foreground="{DynamicResource DsMutedBrush}" />
                         <docs:MarkdownView Markdown="{Binding SelectedProblem.DescriptionMarkdown}"
-                                               FontSize="12" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                               lt:Tokens.FontSize="DsFontSize300" Foreground="{DynamicResource DsTextWhiteBrush}" />
                     </StackPanel>
 
                     <!-- How to Think: then the idea that cracks it -->
                     <Border Background="{DynamicResource DsSurfaceHighBrush}"
                             BorderBrush="{DynamicResource DsBorderBrush}"
-                            BorderThickness="1" CornerRadius="8" Padding="12"
-                            IsVisible="{Binding SelectedProblem.ThinkingProcessMarkdown, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                            lt:Tokens.BorderThickness="DsCardBorder" lt:Tokens.CornerRadius="DsRadiusLG" Padding="12"
+                            IsVisible="{Binding SelectedProblem.ThinkingProcessMarkdown, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" lt:Tokens.BoxShadow="DsCardShadow">
                         <StackPanel Spacing="6">
                             <StackPanel Orientation="Horizontal" Spacing="6">
                                 <materialIcons:MaterialIcon Kind="Brain" Width="15" Height="15" Foreground="{DynamicResource BrainPurpleBrush}" VerticalAlignment="Center" />
-                                <TextBlock Text="HOW TO THINK" FontSize="11" FontWeight="Bold"
+                                <TextBlock Text="HOW TO THINK" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong"
                                            Foreground="{DynamicResource BrainPurpleBrush}" VerticalAlignment="Center" />
                             </StackPanel>
                             <docs:MarkdownView Markdown="{Binding SelectedProblem.ThinkingProcessMarkdown}"
-                                                   FontSize="11.5" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                                   lt:Tokens.FontSize="DsFontSize250" Foreground="{DynamicResource DsTextWhiteBrush}" />
                         </StackPanel>
                     </Border>
 
                     <!-- Approaches Section (Naive, Greedy, DP, Optimal) -->
                     <StackPanel Spacing="8" IsVisible="{Binding SelectedProblem.Approaches.Count}">
-                        <TextBlock Text="SOLUTION PARADIGMS" FontSize="11" FontWeight="Bold"
+                        <TextBlock Text="SOLUTION PARADIGMS" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong"
                                    Foreground="{DynamicResource DsMutedBrush}" />
 
                         <ItemsControl ItemsSource="{Binding SelectedProblem.Approaches}">
@@ -152,36 +152,36 @@
                                 <DataTemplate x:DataType="models:ProblemApproachItem">
                                     <Border Background="{DynamicResource DsSurfaceHighBrush}"
                                             BorderBrush="{DynamicResource DsBorderBrush}"
-                                            BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,0,8">
+                                            lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="10" Margin="0,0,0,8">
                                         <StackPanel Spacing="4">
                                             <Grid ColumnDefinitions="*,Auto">
-                                                <TextBlock Grid.Column="0" Text="{Binding Name}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" />
-                                                <TextBlock Grid.Column="1" Text="{Binding TimeComplexity}" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource ComplexityTimeBrush}" />
+                                                <TextBlock Grid.Column="0" Text="{Binding Name}" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                                <TextBlock Grid.Column="1" Text="{Binding TimeComplexity}" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsInfoBrush}" />
                                             </Grid>
-                                            <docs:MarkdownView Markdown="{Binding Intuition}" FontSize="11" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                            <docs:MarkdownView Markdown="{Binding Intuition}" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsTextWhiteBrush}" />
                                             
                                             <!-- Recurrence Relation if DP -->
                                             <Border Background="{DynamicResource DsSurfaceBrush}"
-                                                    BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
-                                                    CornerRadius="4" Padding="6,3" Margin="0,4,0,0"
+                                                    BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin"
+                                                    lt:Tokens.CornerRadius="DsRadiusSM" Padding="6,3" Margin="0,4,0,0"
                                                     IsVisible="{Binding RecurrenceRelation, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                                <TextBlock Text="{Binding RecurrenceRelation, StringFormat='Recurrence: {0}'}" FontSize="10" FontFamily="Consolas,Menlo,monospace" Foreground="{DynamicResource BrainPurpleBrush}" TextWrapping="Wrap" />
+                                                <TextBlock Text="{Binding RecurrenceRelation, StringFormat='Recurrence: {0}'}" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource BrainPurpleBrush}" TextWrapping="Wrap" />
                                             </Border>
 
                                             <!-- Greedy Choice Property if Greedy -->
                                             <Border Background="{DynamicResource DsSurfaceBrush}"
-                                                    BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
-                                                    CornerRadius="4" Padding="6,3" Margin="0,4,0,0"
+                                                    BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin"
+                                                    lt:Tokens.CornerRadius="DsRadiusSM" Padding="6,3" Margin="0,4,0,0"
                                                     IsVisible="{Binding GreedyChoiceProperty, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                                <docs:MarkdownView Markdown="{Binding GreedyChoiceProperty, StringFormat='**Greedy choice:** {0}'}" FontSize="10.5" Foreground="{DynamicResource BadgeAmberFgBrush}" />
+                                                <docs:MarkdownView Markdown="{Binding GreedyChoiceProperty, StringFormat='**Greedy choice:** {0}'}" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsWarningBrush}" />
                                             </Border>
 
                                             <!-- Bottleneck if Naive -->
                                             <Border Background="{DynamicResource DsSurfaceBrush}"
-                                                    BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
-                                                    CornerRadius="4" Padding="6,3" Margin="0,4,0,0"
+                                                    BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin"
+                                                    lt:Tokens.CornerRadius="DsRadiusSM" Padding="6,3" Margin="0,4,0,0"
                                                     IsVisible="{Binding BottleneckExplanation, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                                <docs:MarkdownView Markdown="{Binding BottleneckExplanation, StringFormat='**Why it is not enough:** {0}'}" FontSize="10.5" Foreground="{DynamicResource DsErrorBrush}" />
+                                                <docs:MarkdownView Markdown="{Binding BottleneckExplanation, StringFormat='**Why it is not enough:** {0}'}" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsErrorBrush}" />
                                             </Border>
                                         </StackPanel>
                                     </Border>
@@ -191,37 +191,37 @@
                     </StackPanel>
 
                     <!-- What the step-by-step visualizer shows -->
-                    <Border Background="{DynamicResource BadgeAmberBgBrush}"
-                            BorderBrush="{DynamicResource BadgeAmberBorderBrush}"
-                            BorderThickness="1" CornerRadius="8" Padding="12"
+                    <Border Background="{DynamicResource DsWarningSubtleBrush}"
+                            BorderBrush="{DynamicResource DsWarningBrush}"
+                            lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusLG" Padding="12"
                             IsVisible="{Binding SelectedProblem.VisualizationDescription, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                         <StackPanel Spacing="6">
                             <StackPanel Orientation="Horizontal" Spacing="6">
-                                <materialIcons:MaterialIcon Kind="ChartTimelineVariant" Width="15" Height="15" Foreground="{DynamicResource BadgeAmberFgBrush}" VerticalAlignment="Center" />
-                                <TextBlock Text="WATCH IT RUN" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource BadgeAmberFgBrush}" VerticalAlignment="Center" />
+                                <materialIcons:MaterialIcon Kind="ChartTimelineVariant" Width="15" Height="15" Foreground="{DynamicResource DsWarningBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="WATCH IT RUN" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsWarningBrush}" VerticalAlignment="Center" />
                             </StackPanel>
                             <docs:MarkdownView Markdown="{Binding SelectedProblem.VisualizationDescription}"
-                                                   FontSize="11.5" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                                   lt:Tokens.FontSize="DsFontSize250" Foreground="{DynamicResource DsTextWhiteBrush}" />
                             <TextBlock Text="Open the Script or Notebook and run it to step through."
-                                       FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                                       lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
 
                     <!-- Test Cases Summary & Dynamic Generator -->
                     <StackPanel Spacing="8">
                         <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Grid.Column="0" Text="TEST CASES" FontSize="11" FontWeight="Bold"
+                            <TextBlock Grid.Column="0" Text="TEST CASES" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong"
                                        Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
 
                             <!-- Generate Test Data Button -->
                             <Button Grid.Column="1"
                                     Command="{Binding GenerateTestDataCommand}"
                                     CommandParameter="{Binding SelectedProblem}"
-                                    Classes="nexus-btn-surface" Height="26" Padding="8,0"
+                                    Classes="nexus-btn-surface" lt:Tokens.Height="DsControlHeight100" Padding="8,0"
                                     ToolTip.Tip="Generate fresh randomized &amp; boundary test data">
                                 <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <materialIcons:MaterialIcon Kind="AutoAwesome" Width="13" Height="13" Foreground="{DynamicResource BadgeAmberFgBrush}" VerticalAlignment="Center" />
-                                    <TextBlock Text="Generate Test Data" FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                    <materialIcons:MaterialIcon Kind="AutoAwesome" Width="13" Height="13" Foreground="{DynamicResource DsWarningBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="Generate Test Data" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" Foreground="{DynamicResource DsTextWhiteBrush}" />
                                 </StackPanel>
                             </Button>
                         </Grid>
@@ -231,11 +231,11 @@
                                 <DataTemplate>
                                     <Border Background="{DynamicResource DsSurfaceHighBrush}"
                                             BorderBrush="{DynamicResource DsBorderBrush}"
-                                            BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,0,6">
+                                            lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="8" Margin="0,0,0,6">
                                         <StackPanel Spacing="2">
-                                            <TextBlock Text="{Binding Name}" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" />
-                                            <TextBlock Text="{Binding Input, StringFormat='Input: {0}'}" FontSize="11" FontFamily="{DynamicResource DsCodeFontFamily}" Foreground="{DynamicResource DsTextWhiteBrush}" />
-                                            <TextBlock Text="{Binding ExpectedOutput, StringFormat='Expected: {0}'}" FontSize="11" FontFamily="{DynamicResource DsCodeFontFamily}" Foreground="{DynamicResource ComplexitySpaceBrush}" />
+                                            <TextBlock Text="{Binding Name}" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                            <TextBlock Text="{Binding Input, StringFormat='Input: {0}'}" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                            <TextBlock Text="{Binding ExpectedOutput, StringFormat='Expected: {0}'}" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource DsSuccessBrush}" />
                                         </StackPanel>
                                     </Border>
                                 </DataTemplate>
@@ -248,41 +248,41 @@
             <!-- 3. Bottom Launch Actions -->
             <Border Grid.Row="2"
                     BorderBrush="{DynamicResource DsBorderBrush}"
-                    BorderThickness="0,1,0,0"
+                    lt:Tokens.BorderThickness="DsBorderTop"
                     Background="{DynamicResource DsSurfaceBrush}"
                     Padding="16,10">
                 <Grid ColumnDefinitions="*,*,*">
                     <Button Grid.Column="0"
                             Command="{Binding OpenScriptStudioCommand}"
                             CommandParameter="{Binding SelectedProblem}"
-                            Classes="nexus-btn-primary" Height="34" Padding="0"
+                            Classes="nexus-btn-primary" lt:Tokens.Height="DsControlHeight400" Padding="0"
                             HorizontalAlignment="Stretch" Margin="0,0,4,0">
                         <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="CodeBraces" Width="16" Height="16" Foreground="{DynamicResource DsTextWhiteBrush}" />
-                            <TextBlock Text="Script" FontWeight="SemiBold" VerticalAlignment="Center" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                            <TextBlock Text="Script" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" Foreground="{DynamicResource DsTextWhiteBrush}" />
                         </StackPanel>
                     </Button>
 
                     <Button Grid.Column="1"
                             Command="{Binding OpenNotebookStudioCommand}"
                             CommandParameter="{Binding SelectedProblem}"
-                            Classes="nexus-btn-surface" Height="34" Padding="0"
+                            Classes="nexus-btn-surface" lt:Tokens.Height="DsControlHeight400" Padding="0"
                             HorizontalAlignment="Stretch" Margin="4,0">
                         <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="BookOpenVariantOutline" Width="16" Height="16" Foreground="{DynamicResource DsGreenBrush}" />
-                            <TextBlock Text="Notebook" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <TextBlock Text="Notebook" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
 
                     <Button Grid.Column="2"
                             Command="{Binding OpenOnLeetCodeCommand}"
                             CommandParameter="{Binding SelectedProblem}"
-                            Classes="nexus-btn-surface" Height="34" Padding="0"
+                            Classes="nexus-btn-surface" lt:Tokens.Height="DsControlHeight400" Padding="0"
                             HorizontalAlignment="Stretch" Margin="4,0,0,0"
                             ToolTip.Tip="{Binding SelectedProblem.LeetCodeTooltip}">
                         <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="OpenInNew" Width="15" Height="15" Foreground="{DynamicResource NavBlind75FgBrush}" />
-                            <TextBlock Text="LeetCode" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <TextBlock Text="LeetCode" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
                 </Grid>

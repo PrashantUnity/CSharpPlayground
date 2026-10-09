@@ -9,6 +9,8 @@ using Avalonia.Controls.Documents;
 using Avalonia.Layout;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
+using Avalonia.Styling;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 using Material.Icons;
 using Material.Icons.Avalonia;
 
@@ -62,6 +64,7 @@ public partial class RichHtmlView : UserControl
 
     private NativeWebView? _currentWebView;
     private string? _currentHtml;
+    private string? _currentPage;
     private bool _isExpanded;
 
     public RichHtmlView()
@@ -209,7 +212,8 @@ public partial class RichHtmlView : UserControl
             };
 
             webViewHost.Child = _currentWebView;
-            _currentWebView.NavigateToString(html);
+            _currentPage = PreparePage(html);
+            _currentWebView.NavigateToString(_currentPage);
         }
 
         if (reloadBtn != null)
@@ -233,10 +237,21 @@ public partial class RichHtmlView : UserControl
 
     private void OnReloadClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        if (_currentWebView != null && !string.IsNullOrEmpty(_currentHtml))
+        if (_currentWebView != null && !string.IsNullOrEmpty(_currentPage))
         {
-            _currentWebView.NavigateToString(_currentHtml);
+            _currentWebView.NavigateToString(_currentPage);
         }
+    }
+
+    // The page as shown: the studio's scripts it names written in (an output keeps only their names), and the studio's
+    // theme and background in window.fryHost, so a chart can draw in the studio's colours.
+    private string PreparePage(string html)
+    {
+        var dark = ActualThemeVariant != ThemeVariant.Light;
+        var background = ResolveBrush("M3SurfaceContainerLowestBrush", dark ? "#1E1E1E" : "#FFFFFF") is ISolidColorBrush solid
+            ? $"#{solid.Color.R:X2}{solid.Color.G:X2}{solid.Color.B:X2}"
+            : null;
+        return HtmlAssets.ForDisplay(html, dark, background);
     }
 
     private void OnOpenBrowserClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -246,7 +261,8 @@ public partial class RichHtmlView : UserControl
         try
         {
             var tempFile = Path.Combine(Path.GetTempPath(), $"frypdf_preview_{Guid.NewGuid():N}.html");
-            File.WriteAllText(tempFile, _currentHtml, System.Text.Encoding.UTF8);
+            // On its own in a browser: the scripts written in, and the system's theme rather than the studio's.
+            File.WriteAllText(tempFile, HtmlAssets.Inline(_currentHtml), System.Text.Encoding.UTF8);
 
             Process.Start(new ProcessStartInfo
             {
@@ -318,7 +334,7 @@ public partial class RichHtmlView : UserControl
             {
                 Text = TagStripRegex.Replace(sanitized, string.Empty),
                 TextWrapping = TextWrapping.Wrap,
-                FontSize = 13,
+                FontSize = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.FontSize("400"),
                 Foreground = _onSurfaceBrush
             });
         }
@@ -380,7 +396,7 @@ public partial class RichHtmlView : UserControl
         var tb = new SelectableTextBlock
         {
             FontSize = level switch { 1 => 22, 2 => 19, 3 => 17, 4 => 15.5, 5 => 14.5, _ => 14 },
-            FontWeight = FontWeight.Bold,
+            FontWeight = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.Weight("Strong"),
             Foreground = _onSurfaceBrush,
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(0, level <= 2 ? 8 : 4, 0, 6)
@@ -396,7 +412,7 @@ public partial class RichHtmlView : UserControl
     {
         var tb = new SelectableTextBlock
         {
-            FontSize = 13,
+            FontSize = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.FontSize("400"),
             Foreground = _onSurfaceBrush,
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(0, 0, 0, 8)
@@ -423,11 +439,11 @@ public partial class RichHtmlView : UserControl
         {
             var line = new SelectableTextBlock
             {
-                FontSize = 13,
+                FontSize = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.FontSize("400"),
                 Foreground = _onSurfaceBrush,
                 TextWrapping = TextWrapping.Wrap
             };
-            line.Inlines!.Add(new Run(ordered ? $"{i}. " : "•  ") { FontWeight = FontWeight.SemiBold });
+            line.Inlines!.Add(new Run(ordered ? $"{i}. " : "•  ") { FontWeight = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.Weight("Emphasis") });
             AppendInlines(line.Inlines, li.Groups["content"].Value);
             listPanel.Children.Add(line);
             i++;
@@ -494,7 +510,7 @@ public partial class RichHtmlView : UserControl
         var run = new Run(text)
         {
             Foreground = isLink ? _linkBrush : (code ? _codeBrush : _onSurfaceBrush),
-            FontWeight = bold ? FontWeight.Bold : FontWeight.Normal,
+            FontWeight = bold ? PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.Weight("Strong") : FontWeight.Normal,
             FontStyle = italic ? FontStyle.Italic : FontStyle.Normal
         };
         if (code)

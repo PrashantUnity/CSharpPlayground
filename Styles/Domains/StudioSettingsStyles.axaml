@@ -1,4 +1,4 @@
-<Styles xmlns="https://github.com/avaloniaui"
+<Styles xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia">
 
@@ -11,16 +11,16 @@
     <!-- ── 1. Settings Sidebar Navigation Item (Button.doc-nav-item) ────────── -->
     <Style Selector="Button.doc-nav-item, Button.doc-category-btn">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
         <Setter Property="BorderBrush" Value="Transparent" />
-        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusMD" />
         <Setter Property="Padding" Value="10,7" />
         <Setter Property="Margin" Value="0,1" />
         <Setter Property="HorizontalAlignment" Value="Stretch" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         <Setter Property="Foreground" Value="{DynamicResource DsTextBrush}" />
-        <Setter Property="FontSize" Value="12.5" />
-        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="lt:Tokens.FontSize" Value="DsFontSize350" />
+        <Setter Property="lt:Tokens.FontWeight" Value="DsWeightLabel" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Transitions">
             <Transitions>
@@ -47,7 +47,7 @@
         <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBorderSubtleBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
-        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="lt:Tokens.FontWeight" Value="DsWeightEmphasis" />
     </Style>
     <Style Selector="Button.doc-nav-item.active /template/ ContentPresenter#PART_ContentPresenter,
                      Button.doc-nav-item.selected /template/ ContentPresenter#PART_ContentPresenter,
@@ -58,7 +58,7 @@
 
     <Style Selector="Button.doc-nav-item.active TextBlock, Button.doc-nav-item.selected TextBlock">
         <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
-        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="lt:Tokens.FontWeight" Value="DsWeightEmphasis" />
     </Style>
 
     <!-- Nav Item Icon tinting (defaults to muted, active/hover becomes primary/white) -->
@@ -78,13 +78,13 @@
         <Setter Property="Background" Value="{DynamicResource DsSurfaceBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource DsTextBrush}" />
-        <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
+        <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusMD" />
         <Setter Property="Height" Value="28" />
         <Setter Property="MinHeight" Value="0" />
         <Setter Property="Padding" Value="10,0" />
-        <Setter Property="FontSize" Value="11.5" />
-        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="lt:Tokens.FontSize" Value="DsFontSize250" />
+        <Setter Property="lt:Tokens.FontWeight" Value="DsWeightLabel" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="HorizontalContentAlignment" Value="Center" />
         <Setter Property="Cursor" Value="Hand" />
@@ -120,7 +120,7 @@
         <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBorderSubtleBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
-        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="lt:Tokens.FontWeight" Value="DsWeightEmphasis" />
     </Style>
     <Style Selector="Button.snippet-action-btn.active /template/ ContentPresenter#PART_ContentPresenter,
                      Button.snippet-action-btn.selected /template/ ContentPresenter#PART_ContentPresenter">
@@ -130,7 +130,7 @@
 
     <Style Selector="Button.snippet-action-btn.active TextBlock, Button.snippet-action-btn.selected TextBlock">
         <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
-        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="lt:Tokens.FontWeight" Value="DsWeightEmphasis" />
     </Style>
 
     <!-- ── 3. Search & Editor Inputs (TextBox.nexus-search-input, cs-editor-textbox) -->
@@ -138,10 +138,10 @@
         <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
-        <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
+        <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusMD" />
         <Setter Property="Padding" Value="8,5" />
-        <Setter Property="FontSize" Value="12" />
+        <Setter Property="lt:Tokens.FontSize" Value="DsFontSize300" />
         <Setter Property="SelectionBrush" Value="{DynamicResource DsPrimaryBrush}" />
         <Setter Property="Transitions">
             <Transitions>
@@ -171,10 +171,10 @@
         <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource DsTextBrush}" />
-        <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
+        <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusSM" />
         <Setter Property="Padding" Value="8,4" />
-        <Setter Property="FontSize" Value="11" />
+        <Setter Property="lt:Tokens.FontSize" Value="DsFontSize200" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="HorizontalContentAlignment" Value="Center" />

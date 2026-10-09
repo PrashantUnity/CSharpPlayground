@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -16,7 +16,7 @@
     <Border common:CompactWhenCrowded.IsEnabled="True"
             Background="{DynamicResource DsSurfaceBrush}"
             BorderBrush="{DynamicResource DsBorderBrush}"
-            BorderThickness="0,0,0,1"
+            lt:Tokens.BorderThickness="DsBorderBottom"
             Height="38"
             Padding="12,0"
             ClipToBounds="True">
@@ -26,29 +26,29 @@
                 <!-- Segmented Cell Creation Pill (Notebook Style) -->
                 <Border Background="{DynamicResource DsSurfaceHighBrush}"
                         BorderBrush="{DynamicResource DsBorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="6"
+                        lt:Tokens.BorderThickness="DsBorderThin"
+                        lt:Tokens.CornerRadius="DsRadiusMD"
                         Padding="2"
                         VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal" Spacing="2">
                         <!-- + Endpoint -->
-                        <Button Command="{Binding AddEndpointCellCommand}" Classes="nb-action-btn" Height="26" Padding="8,0" ToolTip.Tip="Add Endpoint Cell">
+                        <Button Command="{Binding AddEndpointCellCommand}" Classes="nb-action-btn" lt:Tokens.Height="DsControlHeight100" Padding="8,0" ToolTip.Tip="Add Endpoint Cell">
                             <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                                 <materialIcons:MaterialIcon Kind="Plus" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" />
-                                <TextBlock Text="Endpoint" Classes="toolbar-label" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <TextBlock Text="Endpoint" Classes="toolbar-label" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
 
                         <!-- + Middleware -->
-                        <Button Command="{Binding AddMiddlewareCellCommand}" Classes="nb-action-btn" Height="26" Padding="8,0" ToolTip.Tip="Add Pipeline Middleware Cell">
+                        <Button Command="{Binding AddMiddlewareCellCommand}" Classes="nb-action-btn" lt:Tokens.Height="DsControlHeight100" Padding="8,0" ToolTip.Tip="Add Pipeline Middleware Cell">
                             <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                                 <materialIcons:MaterialIcon Kind="FilterVariant" Width="13" Height="13" Foreground="{DynamicResource NavHomeFgBrush}" />
-                                <TextBlock Text="Middleware" Classes="toolbar-label" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <TextBlock Text="Middleware" Classes="toolbar-label" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
 
                         <!-- More Menu (+ Startup, + Scenario, + Markdown) -->
-                        <Button Classes="nb-action-btn" Height="26" Padding="4,0" ToolTip.Tip="More Cell Types">
+                        <Button Classes="nb-action-btn" lt:Tokens.Height="DsControlHeight100" Padding="4,0" ToolTip.Tip="More Cell Types">
                             <Button.Flyout>
                                 <MenuFlyout Placement="BottomEdgeAlignedLeft">
                                     <MenuItem Header="Add Startup Cell (Database/Seed)" Command="{Binding AddStartupCellCommand}">
@@ -79,12 +79,12 @@
                 <Button Command="{Binding StartServerCommand}"
                         IsVisible="{Binding !IsServerRunning}"
                         Classes="nb-action-btn"
-                        Height="26"
+                        lt:Tokens.Height="DsControlHeight100"
                         Padding="8,0"
                         ToolTip.Tip="Start Live HTTP Server (F5)">
                     <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                         <materialIcons:MaterialIcon Kind="Play" Width="13" Height="13" Foreground="{DynamicResource DsGreenBrush}" />
-                        <TextBlock Text="Start" Classes="toolbar-label" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="Start" Classes="toolbar-label" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
 
@@ -92,12 +92,12 @@
                 <Button Command="{Binding StopServerCommand}"
                         IsVisible="{Binding IsServerRunning}"
                         Classes="nb-action-btn"
-                        Height="26"
+                        lt:Tokens.Height="DsControlHeight100"
                         Padding="8,0"
                         ToolTip.Tip="Stop Running Server (Shift+F5)">
                     <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                         <materialIcons:MaterialIcon Kind="Stop" Width="13" Height="13" Foreground="{DynamicResource NavPinnedFgBrush}" />
-                        <TextBlock Text="Stop" Classes="toolbar-label" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource NavPinnedFgBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="Stop" Classes="toolbar-label" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource NavPinnedFgBrush}" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
 
@@ -105,12 +105,12 @@
                 <Button Command="{Binding RestartServerCommand}"
                         IsVisible="{Binding IsServerRunning}"
                         Classes="nb-action-btn"
-                        Height="26"
+                        lt:Tokens.Height="DsControlHeight100"
                         Padding="6,0"
                         ToolTip.Tip="Restart Server">
                     <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                         <materialIcons:MaterialIcon Kind="Restart" Width="12" Height="12" Foreground="{DynamicResource DsMutedBrush}" />
-                        <TextBlock Text="Restart" Classes="toolbar-label" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="Restart" Classes="toolbar-label" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
 
@@ -119,24 +119,24 @@
                 <!-- Save -->
                 <Button Command="{Binding SaveDocumentCommand}"
                         Classes="nb-action-btn"
-                        Height="26"
+                        lt:Tokens.Height="DsControlHeight100"
                         Padding="6,0"
                         ToolTip.Tip="Save Document (Ctrl+S)">
                     <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                         <materialIcons:MaterialIcon Kind="ContentSaveOutline" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" />
-                        <TextBlock Text="Save" Classes="toolbar-label" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="Save" Classes="toolbar-label" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
 
                 <!-- Outline Toggle -->
                 <Button Command="{Binding ToggleSideBarCommand}"
                         Classes="nb-action-btn"
-                        Height="26"
+                        lt:Tokens.Height="DsControlHeight100"
                         Padding="6,0"
                         ToolTip.Tip="Toggle Endpoints Outline (Ctrl+B)">
                     <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                         <materialIcons:MaterialIcon Kind="FormatListBulleted" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" />
-                        <TextBlock Text="Outline" Classes="toolbar-label" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="Outline" Classes="toolbar-label" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
             </StackPanel>
@@ -153,7 +153,7 @@
                         ToolTip.Tip="Port is in use. Click to switch to next available port">
                     <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                         <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="12" Height="12" Foreground="{DynamicResource NavPinnedFgBrush}" />
-                        <TextBlock Text="{Binding SuggestedPort, StringFormat='Port Conflict • Use :{0}'}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource NavPinnedFgBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding SuggestedPort, StringFormat='Port Conflict • Use :{0}'}" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource NavPinnedFgBrush}" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
 
@@ -161,18 +161,18 @@
                 <Border IsVisible="{Binding !ShowPortConflict}"
                         Background="{DynamicResource DsSurfaceHighBrush}"
                         BorderBrush="{DynamicResource DsBorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="6"
+                        lt:Tokens.BorderThickness="DsBorderThin"
+                        lt:Tokens.CornerRadius="DsRadiusMD"
                         Height="26"
                         Padding="8,0"
                         VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                         <!-- Status Indicator Dot -->
-                        <Border Width="6" Height="6" CornerRadius="3"
+                        <Border Width="6" Height="6" lt:Tokens.CornerRadius="DsRadiusXS"
                                 Background="{DynamicResource DsGreenBrush}"
                                 IsVisible="{Binding IsServerRunning}"
                                 VerticalAlignment="Center" />
-                        <Border Width="6" Height="6" CornerRadius="3"
+                        <Border Width="6" Height="6" lt:Tokens.CornerRadius="DsRadiusXS"
                                 Background="{DynamicResource DsMutedBrush}"
                                 Opacity="0.5"
                                 IsVisible="{Binding !IsServerRunning}"
@@ -181,9 +181,9 @@
                         <!-- When Running: Base URL + Copy -->
                         <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding IsServerRunning}" VerticalAlignment="Center">
                             <TextBlock Text="{Binding BaseUrl}"
-                                       FontFamily="Consolas, Monaco, monospace"
-                                       FontSize="11"
-                                       FontWeight="Medium"
+                                       lt:Tokens.FontFamily="DsCodeFontFamily"
+                                       lt:Tokens.FontSize="DsFontSize200"
+                                       lt:Tokens.FontWeight="DsWeightLabel"
                                        Foreground="{DynamicResource DsTextWhiteBrush}"
                                        MaxWidth="180"
                                        TextTrimming="CharacterEllipsis"
@@ -199,11 +199,11 @@
 
                         <!-- When Stopped: Port Configuration -->
                         <StackPanel Orientation="Horizontal" Spacing="3" IsVisible="{Binding !IsServerRunning}" VerticalAlignment="Center">
-                            <TextBlock Text="Port:" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="Port:" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                             <TextBox Text="{Binding PortInput, Mode=TwoWay}"
-                                     FontFamily="Consolas, Monaco, monospace"
-                                     FontSize="11"
-                                     FontWeight="SemiBold"
+                                     lt:Tokens.FontFamily="DsCodeFontFamily"
+                                     lt:Tokens.FontSize="DsFontSize200"
+                                     lt:Tokens.FontWeight="DsWeightEmphasis"
                                      Foreground="{DynamicResource DsTextWhiteBrush}"
                                      Background="Transparent"
                                      BorderThickness="0"
@@ -220,7 +220,7 @@
 
                 <!-- Export Menu -->
                 <Button Classes="nb-action-btn"
-                        Height="26"
+                        lt:Tokens.Height="DsControlHeight100"
                         Padding="6,0"
                         ToolTip.Tip="Export Server Specification">
                     <Button.Flyout>
@@ -244,7 +244,7 @@
                     </Button.Flyout>
                     <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                         <materialIcons:MaterialIcon Kind="ExportVariant" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" />
-                        <TextBlock Text="Export" Classes="toolbar-label" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <TextBlock Text="Export" Classes="toolbar-label" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                         <materialIcons:MaterialIcon Kind="ChevronDown" Width="9" Height="9" Foreground="{DynamicResource DsMutedBrush}" />
                     </StackPanel>
                 </Button>
@@ -252,14 +252,14 @@
                 <!-- Logs Panel Toggle Button with Badge -->
                 <Button Command="{Binding ToggleBottomPanelCommand}"
                         Classes="nb-action-btn"
-                        Height="26"
+                        lt:Tokens.Height="DsControlHeight100"
                         Padding="6,0"
                         ToolTip.Tip="Toggle Server Logs Panel (Ctrl+J)">
                     <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                         <materialIcons:MaterialIcon Kind="SwapVertical" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" />
-                        <TextBlock Text="Logs" Classes="toolbar-label" FontSize="11" FontWeight="Medium" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
-                        <Border Background="{DynamicResource DsPrimaryBrush}" CornerRadius="6" Padding="4,0" Height="14" IsVisible="{Binding TrafficLog.Count}">
-                            <TextBlock Text="{Binding TrafficLog.Count}" FontSize="8.5" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="Logs" Classes="toolbar-label" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightLabel" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                        <Border Background="{DynamicResource DsPrimaryBrush}" lt:Tokens.CornerRadius="DsRadiusMD" Padding="4,0" Height="14" IsVisible="{Binding TrafficLog.Count}">
+                            <TextBlock Text="{Binding TrafficLog.Count}" lt:Tokens.FontSize="DsFontSize050" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                         </Border>
                     </StackPanel>
                 </Button>

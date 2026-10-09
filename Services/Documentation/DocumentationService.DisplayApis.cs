@@ -23,6 +23,7 @@ public partial class DocumentationService
                 CreateHtmlAndMarkdownArticle(),
                 CreateImageDisplayArticle(),
                 CreateAnimateAndCancellationArticle(),
+                CreateChartsQuickStartArticle(),
                 CreateInteractive3DVisualizationArticle()
             }
         };
@@ -226,18 +227,47 @@ public partial class DocumentationService
         {
             Id = "animate_and_cancellation",
             Title = "Live Animations & Cancellation",
-            Subtitle = "60 FPS non-blocking canvas drawing and cooperative cancellation.",
-            ReadingTime = "4 min read",
-            Summary = "Display.Animate provides smooth immediate-mode rendering without holding execution locks. Display.ThrowIfCancellationRequested ensures loops stop cleanly.",
-            Keywords = new List<string> { "animate", "fps", "drawingcontext", "cancellation", "token", "loop" },
+            Subtitle = "60 FPS canvas drawing, live controls, animated charts, and cooperative cancellation.",
+            ReadingTime = "6 min read",
+            Summary = "Display.Animate draws a canvas on every frame without holding the kernel: the cell finishes and the animation carries on. Display.Control shows any Avalonia control, built on the UI thread. A chart handle's Update animates a chart. Display.ThrowIfCancellationRequested ensures loops stop cleanly.",
+            Keywords = new List<string> { "animate", "animation", "fps", "drawingcontext", "cancellation", "token", "loop", "spinner", "particles", "oscilloscope", "progress", "control", "live" },
             Sections = new List<DocSection>
             {
                 new()
                 {
                     Heading = "Live 60 FPS Drawing (Display.Animate)",
-                    Content = "Display.Animate((drawingContext, elapsed) => { ... }) invokes your callback on every compositor frame. The script finishes immediately while the canvas continues animating independently.",
+                    Content = "Display.Animate((drawingContext, elapsed) => { ... }) invokes your callback on every frame. The script finishes immediately while the canvas keeps animating on its own. elapsed counts only the time the animation is on screen, so it carries on where it left off when its page comes back.",
                     CalloutType = DocCalloutType.Tip,
                     CalloutText = "Prefer Display.Animate over a while(true) loop — it doesn't hold any thread locks or freeze the host."
+                },
+                new()
+                {
+                    Heading = "Keep state outside the callback",
+                    Content = "The callback runs every frame, so make brushes, pens and lists once above it and only change them inside it (the particle example below does). Use the difference between two elapsed values as the time step when something moves at a speed.",
+                },
+                new()
+                {
+                    Heading = "Brushes, pens and geometry made in the script",
+                    Content = "A brush, pen or geometry made in your script belongs to the script's thread, and the frame callback draws on the UI thread. Use Brushes.X, new ImmutableSolidColorBrush(color) and new ImmutablePen(brush, width) (they can be made anywhere), make the others inside the callback, or make them in the setup step of Display.Animate(setup, frame), which runs once on the UI thread and hands what it made to every frame.",
+                    CalloutType = DocCalloutType.Warning,
+                    CalloutText = "If a frame draws with something from the wrong thread, the animation stops and its canvas says so (\"a different thread owns it\")."
+                },
+                new()
+                {
+                    Heading = "Live controls: build them with Display.Control",
+                    Content = "An Avalonia control belongs to the thread that makes it, and only the UI thread can show one, while your script runs on another. Display.Control(() => new ProgressBar { ... }) builds the control on the UI thread for you; Display.Animate does the same. A control made in the script itself is refused with a message that says so.",
+                    CalloutType = DocCalloutType.Warning,
+                    CalloutText = "Put everything that sets a control up inside the Display.Control(() => ...) lambda, and return the control from it."
+                },
+                new()
+                {
+                    Heading = "Stopping, and when a frame goes wrong",
+                    Content = "Stop() on the value Display.Animate returns freezes the animation on its last frame; Dispose() ends it and clears the canvas. Re-running a cell, clearing its output or closing its tab stops it too. If your frame callback throws, the animation stops and its canvas shows the exception, instead of staying blank."
+                },
+                new()
+                {
+                    Heading = "Animated charts and visualizers",
+                    Content = "A chart is animated by changing it: keep the handle Display.LineChart(...) returns and call handle.Update(...) in a loop with a short await between steps (see the race example, and the Charts quick start). Algorithm visualizers animate by themselves: their play bar steps through what a VisualizerRecorder recorded."
                 },
                 new()
                 {
@@ -270,6 +300,239 @@ public partial class DocumentationService
                             var target = center + new Avalonia.Vector(Math.Cos(angle) * radius, Math.Sin(angle) * radius);
                             ctx.DrawLine(new Avalonia.Media.Pen(Avalonia.Media.Brushes.Aquamarine, 2), center, target);
                         }, width: 400, height: 300);
+                        """
+                },
+                new()
+                {
+                    Id = "snip_anim_bouncing_ball",
+                    Title = "Bouncing ball",
+                    Description = "Position as a function of elapsed time: sine for the sideways drift, |sine| for the bounce.",
+                    Language = "csharp",
+                    TargetKind = WorkspaceItemKind.Script,
+                    Code = """
+                        using Avalonia;
+                        using Avalonia.Media;
+
+                        const double width = 400, height = 220, radius = 16;
+                        // Immutable brushes can be drawn with from the UI thread, wherever the script made them.
+                        var ball = new ImmutableSolidColorBrush(Color.Parse("#F472B6"));
+                        var room = new ImmutableSolidColorBrush(Color.Parse("#151B2B"));
+
+                        Display.Animate((ctx, elapsed) =>
+                        {
+                            ctx.FillRectangle(room, new Rect(0, 0, width, height));
+
+                            var t = elapsed.TotalSeconds;
+                            var x = radius + (width - 2 * radius) * (0.5 + 0.5 * Math.Sin(t * 1.7));
+                            var y = height - radius - (height - 2 * radius) * Math.Abs(Math.Sin(t * 2.3));
+                            ctx.DrawEllipse(ball, null, new Point(x, y), radius, radius);
+                        }, width: width, height: height);
+                        """
+                },
+                new()
+                {
+                    Id = "snip_anim_spinner",
+                    Title = "Loading spinner",
+                    Description = "Dots chasing each other round a circle, fading as they trail.",
+                    Language = "csharp",
+                    TargetKind = WorkspaceItemKind.Script,
+                    Code = """
+                        using Avalonia;
+                        using Avalonia.Media;
+
+                        const int dots = 12;
+                        var colour = Brushes.DeepSkyBlue;
+
+                        Display.Animate((ctx, elapsed) =>
+                        {
+                            var centre = new Point(100, 100);
+                            var turn = elapsed.TotalSeconds * 2 * Math.PI; // one turn a second
+                            for (var i = 0; i < dots; i++)
+                            {
+                                var angle = turn - i * 2 * Math.PI / dots;
+                                var fade = 1 - i / (double)dots;
+                                var at = centre + new Vector(Math.Cos(angle), Math.Sin(angle)) * 60;
+                                using (ctx.PushOpacity(fade))
+                                {
+                                    ctx.DrawEllipse(colour, null, at, 3 + 7 * fade, 3 + 7 * fade);
+                                }
+                            }
+                        }, width: 200, height: 200);
+                        """
+                },
+                new()
+                {
+                    Id = "snip_anim_scope",
+                    Title = "Oscilloscope",
+                    Description = "A trace redrawn every frame from two moving sine waves.",
+                    Language = "csharp",
+                    TargetKind = WorkspaceItemKind.Script,
+                    Code = """
+                        using Avalonia;
+                        using Avalonia.Media;
+
+                        const double width = 420, height = 200;
+                        var grid = new ImmutablePen(new ImmutableSolidColorBrush(Color.FromArgb(50, 255, 255, 255)), 1);
+                        var trace = new ImmutablePen(new ImmutableSolidColorBrush(Colors.LimeGreen), 2);
+
+                        Display.Animate((ctx, elapsed) =>
+                        {
+                            for (var y = 0.0; y <= height; y += 40) ctx.DrawLine(grid, new Point(0, y), new Point(width, y));
+
+                            var t = elapsed.TotalSeconds;
+                            var wave = new StreamGeometry();
+                            using (var g = wave.Open())
+                            {
+                                for (var x = 0.0; x <= width; x += 3)
+                                {
+                                    var y = height / 2
+                                        + Math.Sin(x / 30 + t * 4) * 50 * Math.Sin(t)
+                                        + Math.Sin(x / 11 - t * 7) * 15;
+                                    if (x == 0) g.BeginFigure(new Point(x, y), false);
+                                    else g.LineTo(new Point(x, y));
+                                }
+
+                                g.EndFigure(false);
+                            }
+
+                            ctx.DrawGeometry(null, trace, wave);
+                        }, width: width, height: height);
+                        """
+                },
+                new()
+                {
+                    Id = "snip_anim_particles",
+                    Title = "Falling particles (state and time step)",
+                    Description = "Particles made once, moved each frame by speed × the time since the last frame.",
+                    Language = "csharp",
+                    TargetKind = WorkspaceItemKind.Script,
+                    Code = """
+                        using Avalonia;
+                        using Avalonia.Media;
+
+                        const double width = 420, height = 240;
+                        const int count = 70;
+                        var random = new Random(3);
+                        var x = new double[count];
+                        var y = new double[count];
+                        var speed = new double[count];
+                        var size = new double[count];
+                        for (var i = 0; i < count; i++)
+                        {
+                            x[i] = random.NextDouble() * width;
+                            y[i] = random.NextDouble() * height;
+                            speed[i] = 20 + random.NextDouble() * 70;
+                            size[i] = 1 + random.NextDouble() * 3;
+                        }
+
+                        var snow = Brushes.WhiteSmoke;
+                        var last = TimeSpan.Zero;
+
+                        Display.Animate((ctx, elapsed) =>
+                        {
+                            var dt = (elapsed - last).TotalSeconds;
+                            last = elapsed;
+                            for (var i = 0; i < count; i++)
+                            {
+                                y[i] = (y[i] + speed[i] * dt) % height;
+                                x[i] += Math.Sin(elapsed.TotalSeconds + i) * 8 * dt;
+                                ctx.DrawEllipse(snow, null, new Point(x[i], y[i]), size[i], size[i]);
+                            }
+                        }, width: width, height: height);
+                        """
+                },
+                new()
+                {
+                    Id = "snip_anim_clock",
+                    Title = "A clock (setup step for pens and brushes)",
+                    Description = "Display.Animate(setup, frame): the setup step runs once on the UI thread, so it can make any brush, pen or geometry.",
+                    Language = "csharp",
+                    TargetKind = WorkspaceItemKind.Script,
+                    Code = """
+                        using Avalonia;
+                        using Avalonia.Media;
+
+                        Display.Animate(
+                            setup: () => (
+                                Face: new Pen(Brushes.SlateGray, 4),
+                                Hour: new Pen(Brushes.White, 5, lineCap: PenLineCap.Round),
+                                Minute: new Pen(Brushes.LightSkyBlue, 3, lineCap: PenLineCap.Round),
+                                Second: new Pen(Brushes.Tomato, 1.5)),
+                            onFrame: (ctx, elapsed, pens) =>
+                            {
+                                var centre = new Point(100, 100);
+                                var now = DateTime.Now;
+                                ctx.DrawEllipse(null, pens.Face, centre, 90, 90);
+
+                                Point Tip(double turns, double length) =>
+                                    centre + new Vector(Math.Sin(turns * 2 * Math.PI), -Math.Cos(turns * 2 * Math.PI)) * length;
+
+                                ctx.DrawLine(pens.Hour, centre, Tip((now.Hour % 12 + now.Minute / 60.0) / 12, 45));
+                                ctx.DrawLine(pens.Minute, centre, Tip((now.Minute + now.Second / 60.0) / 60, 65));
+                                ctx.DrawLine(pens.Second, centre, Tip((now.Second + now.Millisecond / 1000.0) / 60, 78));
+                            },
+                            width: 200, height: 200);
+                        """
+                },
+                new()
+                {
+                    Id = "snip_anim_stop",
+                    Title = "Stop an animation from the script",
+                    Description = "The value Display.Animate returns can be stopped: here after three seconds. Stop() keeps the last frame; Dispose() clears the canvas.",
+                    Language = "csharp",
+                    TargetKind = WorkspaceItemKind.Script,
+                    Code = """
+                        using Avalonia;
+                        using Avalonia.Media;
+
+                        var pulse = Display.Animate((ctx, elapsed) =>
+                        {
+                            var r = 25 + 15 * Math.Sin(elapsed.TotalSeconds * 4);
+                            ctx.DrawEllipse(Brushes.Orange, null, new Point(60, 60), r, r);
+                        }, width: 120, height: 120);
+
+                        await Task.Delay(3000, Display.CancellationToken);
+                        pulse.Stop();
+                        Console.WriteLine("Stopped: the timer is off, and the last frame stays on screen.");
+                        """
+                },
+                new()
+                {
+                    Id = "snip_anim_controls",
+                    Title = "Live controls (built on the UI thread)",
+                    Description = "Display.Control builds the control for you; an indeterminate progress bar animates by itself.",
+                    Language = "csharp",
+                    TargetKind = WorkspaceItemKind.Script,
+                    Code = """
+                        Display.Control(() => new Avalonia.Controls.ProgressBar { IsIndeterminate = true, Width = 320 });
+
+                        Display.Control(() => new Avalonia.Controls.ProgressBar { Minimum = 0, Maximum = 100, Value = 65, Width = 320 });
+                        """
+                },
+                new()
+                {
+                    Id = "snip_anim_bar_race",
+                    Title = "Animated bar race (a chart changing over time)",
+                    Description = "Update the chart's handle in a loop; Display.ThrowIfCancellationRequested lets Stop end it.",
+                    Language = "csharp",
+                    TargetKind = WorkspaceItemKind.Script,
+                    Code = """
+                        var names = new[] { "Ada", "Bo", "Cy", "Di", "Eli" };
+                        var scores = new double[] { 5, 3, 8, 2, 6 };
+                        var random = new Random(1);
+
+                        var race = Display.BarChart(
+                            names.Zip(scores, (name, score) => (name, score)).ToDictionary(p => p.name, p => p.score),
+                            "Race", yLabel: "points");
+
+                        for (var step = 0; step < 25; step++)
+                        {
+                            Display.ThrowIfCancellationRequested();
+                            await Task.Delay(120, Display.CancellationToken);
+
+                            for (var i = 0; i < scores.Length; i++) scores[i] += random.NextDouble() * 3;
+                            race.Update(s => s.Series[0].Y = scores.Select(v => (double?)v).ToList());
+                        }
                         """
                 }
             }

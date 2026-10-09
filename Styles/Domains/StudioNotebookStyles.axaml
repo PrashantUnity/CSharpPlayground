@@ -1,10 +1,9 @@
-<Styles xmlns="https://github.com/avaloniaui"
+<Styles xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
         xmlns:controls1="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Notebooks">
 
     <Styles.Resources>
-        <CornerRadius x:Key="NotebookTabTopRadius">4,4,0,0</CornerRadius>
     </Styles.Resources>
 
     <!-- ============================================================ -->
@@ -22,8 +21,8 @@
         <Style Selector="Border.studio-tab-item">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="1,1,1,0" />
-            <Setter Property="CornerRadius" Value="{DynamicResource NotebookTabTopRadius}" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderNoBottom" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusSMTop" />
             <Setter Property="Transitions">
                 <Transitions>
                     <BrushTransition Property="Background" Duration="0:0:0.1" />
@@ -39,11 +38,11 @@
         </Style>
         <Style Selector="Border.studio-tab-item TextBlock.tab-title">
             <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
-            <Setter Property="FontWeight" Value="Normal" />
+            <Setter Property="lt:Tokens.FontWeight" Value="DsWeightBody" />
         </Style>
         <Style Selector="Border.studio-tab-item.active TextBlock.tab-title">
             <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
-            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="lt:Tokens.FontWeight" Value="DsWeightLabel" />
         </Style>
 
         <!-- Notebook Toolbar Action Buttons -->
@@ -53,8 +52,8 @@
 
         <Style Selector="Button.nb-action-btn">
             <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="=0" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusSM" />
             <Setter Property="Height" Value="28" />
             <Setter Property="MinHeight" Value="0" />
             <Setter Property="Padding" Value="7,0" />
@@ -85,8 +84,8 @@
         <Style Selector="Button.cell-tool-btn">
             <Setter Property="ScrollViewer.BringIntoViewOnFocusChange" Value="False" />
             <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="=0" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusSM" />
             <Setter Property="Width" Value="22" />
             <Setter Property="Height" Value="22" />
             <Setter Property="MinWidth" Value="0" />
@@ -113,8 +112,8 @@
         <Style Selector="Button.gutter-run-btn">
             <Setter Property="ScrollViewer.BringIntoViewOnFocusChange" Value="False" />
             <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="=0" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusSM" />
             <Setter Property="Width" Value="20" />
             <Setter Property="Height" Value="20" />
             <Setter Property="MinWidth" Value="0" />
@@ -132,8 +131,8 @@
         <Style Selector="Button.gutter-menu-btn">
             <Setter Property="ScrollViewer.BringIntoViewOnFocusChange" Value="False" />
             <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="=0" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusSM" />
             <Setter Property="Width" Value="20" />
             <Setter Property="Height" Value="18" />
             <Setter Property="MinWidth" Value="0" />
@@ -151,8 +150,8 @@
         <Style Selector="Border.notebook-cell-card">
             <Setter Property="Background" Value="{DynamicResource DsSurfaceBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusLG" />
             <Setter Property="ClipToBounds" Value="False" />
             <Setter Property="Transitions">
                 <Transitions>
@@ -172,8 +171,8 @@
         <Style Selector="Border.notebook-output-card">
             <Setter Property="Background" Value="{DynamicResource DsBgBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusMD" />
             <Setter Property="Padding" Value="8,6" />
             <Setter Property="ClipToBounds" Value="True" />
             <Setter Property="Transitions">
@@ -189,9 +188,10 @@
 
         <!-- Between-Cell Interactive Insertion Divider -->
         <Style Selector="Border.cell-insert-divider">
-            <Setter Property="Height" Value="20" />
-            <Setter Property="Margin" Value="56,0,0,0" />
+            <Setter Property="Height" Value="12" />
+            <Setter Property="Margin" Value="36,0,0,0" />
             <Setter Property="Background" Value="Transparent" />
+            <Setter Property="ClipToBounds" Value="False" />
         </Style>
         <Style Selector="Border.cell-insert-divider StackPanel.insert-pill-group">
             <Setter Property="Opacity" Value="0" />
@@ -220,8 +220,8 @@
             <Setter Property="ScrollViewer.BringIntoViewOnFocusChange" Value="False" />
             <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="{StaticResource M3ShapeCornerFull}" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="M3ShapeCornerFull" />
             <Setter Property="Height" Value="20" />
             <Setter Property="MinHeight" Value="0" />
             <Setter Property="Padding" Value="8,0" />
@@ -244,8 +244,8 @@
         <Style Selector="Border.cell-floating-toolbar">
             <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusMD" />
             <Setter Property="ZIndex" Value="10" />
             <Setter Property="Opacity" Value="0" />
             <Setter Property="Transitions">
@@ -269,8 +269,8 @@
         <Style Selector="Border.notebook-collapsed-banner">
             <Setter Property="Background" Value="{DynamicResource DsSurfaceBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusSM" />
             <Setter Property="Transitions">
                 <Transitions>
                     <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
@@ -286,8 +286,8 @@
         <Style Selector="Border.notebook-collapsed-output-banner">
             <Setter Property="Background" Value="{DynamicResource DsSurfaceBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusSM" />
             <Setter Property="Transitions">
                 <Transitions>
                     <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
@@ -303,8 +303,8 @@
         <!-- Collapsed Banner Button -->
         <Style Selector="Button.collapsed-banner-btn">
             <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="=0" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusSM" />
             <Setter Property="Padding" Value="10,6" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -314,9 +314,9 @@
         <!-- Gutter Fold Button -->
         <Style Selector="Button.gutter-fold-btn">
             <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Width" Value="16" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="=0" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusSM" />
+            <Setter Property="Width" Value="14" />
             <Setter Property="Height" Value="16" />
             <Setter Property="MinWidth" Value="0" />
             <Setter Property="MinHeight" Value="0" />

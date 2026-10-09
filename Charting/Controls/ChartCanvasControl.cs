@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -32,6 +34,9 @@ public class ChartCanvasControl : Control
     private bool _isPanning;
     private Point _panStart;
     private double _startPanX, _startPanY;
+
+    /// <summary>The view went back to how it began (a double-click): zoom, pan, and what the legend hid.</summary>
+    public event EventHandler? ViewReset;
 
     /// <summary>A value was clicked (a point, bar or slice).</summary>
     public event EventHandler<ElementClickedEventArgs<ChartHitTestResult>>? ValueClicked;
@@ -86,13 +91,14 @@ public class ChartCanvasControl : Control
         base.OnDoubleTapped(e);
         ViewState.Reset();
         InvalidateVisual();
+        ViewReset?.Invoke(this, EventArgs.Empty);
         e.Handled = true;
     }
 
     protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
     {
         base.OnPointerWheelChanged(e);
-        if (Options == null) return;
+        if (Options == null || !WheelZoomGate.ShouldZoom(this, e.KeyModifiers)) return;
         double factor = e.Delta.Y > 0 ? 1.15 : 0.85;
         ViewState.Zoom = Math.Clamp(ViewState.Zoom * factor, 0.2, 20.0);
         InvalidateVisual();
@@ -174,27 +180,7 @@ public class ChartCanvasControl : Control
     public ChartOptions GetEffectiveOptions()
     {
         if (Options == null) return new ChartOptions();
-        return new ChartOptions
-        {
-            Title = Options.Title,
-            Subtitle = Options.Subtitle,
-            Type = ViewState.EffectiveType(Options),
-            PrimaryColor = Options.PrimaryColor,
-            ShowGrid = ViewState.EffectiveShowGrid(Options),
-            ShowPoints = Options.ShowPoints,
-            ShowStats = Options.ShowStats,
-            ShowLegend = Options.ShowLegend,
-            Width = Options.Width,
-            Height = Options.Height,
-            Series = Options.Series,
-            XAxisTitle = Options.XAxisTitle,
-            YAxisTitle = Options.YAxisTitle,
-            XMin = Options.XMin,
-            XMax = Options.XMax,
-            YMin = Options.YMin,
-            YMax = Options.YMax,
-            Notice = Options.Notice
-        };
+        return Options.WithView(ViewState.EffectiveType(Options), ViewState.EffectiveShowGrid(Options), ViewState.HiddenSeries, ViewState.EffectiveStack(Options));
     }
 
     private Point TransformToModel(Point pos)
@@ -206,6 +192,12 @@ public class ChartCanvasControl : Control
 
     private void RenderHoverTooltip(DrawingContext context, ChartHitTestResult hit)
     {
+        if (hit.Rows is { Count: > 1 })
+        {
+            RenderSeriesTooltip(context, hit, hit.Rows);
+            return;
+        }
+
         var pos = hit.CanvasPosition;
         var color = ChartPaletteService.ParseColor(
             !string.IsNullOrEmpty(hit.Point.CustomColor)
@@ -239,5 +231,47 @@ public class ChartCanvasControl : Control
 
         context.DrawRectangle(tipBg, tipBorderPen, new RoundedRect(tipRect, 4, 4, 4, 4));
         context.DrawText(ft, new Point(tipX + 7, tipY + 5));
+    }
+
+    // A tooltip for several series at one place: a title (the place) and a coloured line for each series' value.
+    private void RenderSeriesTooltip(DrawingContext context, ChartHitTestResult hit, IReadOnlyList<ChartTooltipRow> rows)
+    {
+        var dotPen = new Pen(new SolidColorBrush(Colors.White), 1.5);
+        foreach (var row in rows)
+        {
+            var colour = ChartPaletteService.ParseColor(row.Color);
+            context.DrawEllipse(new SolidColorBrush(Color.FromArgb(50, colour.R, colour.G, colour.B)), null, row.Position, 8, 8);
+            context.DrawEllipse(new SolidColorBrush(colour), dotPen, row.Position, 4, 4);
+        }
+
+        FormattedText Text(string text, FontWeight weight) => new(text, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+            new Typeface(FontFamily.Default, FontStyle.Normal, weight), 11, TooltipTextBrush);
+
+        var header = string.IsNullOrEmpty(hit.Header) ? null : Text(hit.Header!, FontWeight.Bold);
+        var lines = rows.Select(r => Text(r.Text, FontWeight.SemiBold)).ToList();
+        const double swatch = 10, gap = 6, pad = 7, lineGap = 3;
+        var width = Math.Max(header?.Width ?? 0, lines.Max(l => l.Width + swatch + gap)) + pad * 2;
+        var height = pad * 2 + (header == null ? 0 : header.Height + lineGap) + lines.Sum(l => l.Height + lineGap) - lineGap;
+
+        var anchor = hit.CanvasPosition;
+        var x = anchor.X + 14 + width <= Bounds.Width - 5 ? anchor.X + 14 : anchor.X - 14 - width;
+        x = Math.Clamp(x, 5, Math.Max(5, Bounds.Width - width - 5));
+        var y = Math.Clamp(anchor.Y - height / 2, 5, Math.Max(5, Bounds.Height - height - 5));
+
+        context.DrawRectangle(new SolidColorBrush(Color.FromArgb(235, 18, 24, 34)), new Pen(new SolidColorBrush(Color.FromArgb(120, 255, 255, 255)), 1), new RoundedRect(new Rect(x, y, width, height), 4, 4, 4, 4));
+        var top = y + pad;
+        if (header != null)
+        {
+            context.DrawText(header, new Point(x + pad, top));
+            top += header.Height + lineGap;
+        }
+
+        for (var i = 0; i < lines.Count; i++)
+        {
+            var colour = ChartPaletteService.ParseColor(rows[i].Color);
+            context.DrawRectangle(new SolidColorBrush(colour), null, new RoundedRect(new Rect(x + pad, top + (lines[i].Height - swatch) / 2, swatch, swatch), 2, 2, 2, 2));
+            context.DrawText(lines[i], new Point(x + pad + swatch + gap, top));
+            top += lines[i].Height + lineGap;
+        }
     }
 }

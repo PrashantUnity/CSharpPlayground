@@ -1,0 +1,89 @@
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:docs="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Docs"
+             xmlns:display="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Display"
+             xmlns:views="using:PdfEditorApp.Plugins.CSharpEditor.Views"
+             xmlns:visuals="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Visuals"
+             xmlns:common="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Common"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="300"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Docs.SnippetOutputControl"
+             x:DataType="docs:SnippetRunViewModel"
+             common:WheelZoomGate.RequireCtrl="True">
+    <!-- What a documentation sample printed and drew, under the sample. Hidden until it has been run. -->
+    <Border IsVisible="{Binding IsOutputOpen}"
+            Background="{DynamicResource DsSurfaceBrush}"
+            BorderBrush="{DynamicResource DsBorderBrush}"
+            lt:Tokens.BorderThickness="DsBorderTop"
+            Padding="14,10">
+        <StackPanel Spacing="8">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <TextBlock Grid.Column="0" Text="OUTPUT" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightStrong"
+                           Foreground="{DynamicResource DsMutedBrush}" lt:Tokens.LetterSpacing="DsTracking100" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{Binding StatusText}" Margin="10,0,0,0" lt:Tokens.FontSize="DsFontSize250"
+                           Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
+                    <TextBlock Text="Ctrl + scroll to zoom" IsVisible="{Binding HasVisuals}" lt:Tokens.FontSize="DsFontSize200"
+                               Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <Button Command="{Binding StopCommand}" IsVisible="{Binding IsRunning}" Classes="nexus-btn-surface"
+                            lt:Tokens.Height="DsControlHeight200" Padding="10,0" ToolTip.Tip="Stop the sample">
+                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="Stop" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" />
+                            <TextBlock Text="Stop" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{Binding ClearCommand}" IsVisible="{Binding !IsRunning}" Classes="nexus-btn-surface"
+                            lt:Tokens.Height="DsControlHeight200" Padding="10,0" ToolTip.Tip="Hide the output">
+                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="Close" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" />
+                            <TextBlock Text="Clear" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <TextBox Text="{Binding ConsoleText, Mode=OneWay}"
+                     IsVisible="{Binding ConsoleText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                     lt:Tokens.FontFamily="DsCodeFontFamily"
+                     lt:Tokens.FontSize="DsFontSize300"
+                     Background="Transparent"
+                     Foreground="{DynamicResource DsTextWhiteBrush}"
+                     BorderThickness="0"
+                     IsReadOnly="True"
+                     TextWrapping="Wrap"
+                     Padding="0" Margin="0" />
+
+            <ItemsControl ItemsSource="{Binding Outputs}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="display:RichCellOutput">
+                        <StackPanel Spacing="0">
+                            <Border IsVisible="{Binding IsVisualKind}" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}"
+                                    lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="12,8" Margin="0,0,0,10">
+                                <visuals:VisualOutputView Output="{Binding Visual}" />
+                            </Border>
+                            <Border IsVisible="{Binding IsTableKind}" MaxHeight="360" ClipToBounds="True" Margin="0,0,0,10">
+                                <views:DumpTableView DataContext="{Binding TableResult}" />
+                            </Border>
+                            <Border IsVisible="{Binding IsImageKind}" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}"
+                                    lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="8" Margin="0,0,0,10" HorizontalAlignment="Left">
+                                <Image Source="{Binding DecodedImage}" MaxHeight="450" Stretch="Uniform" HorizontalAlignment="Center" />
+                            </Border>
+                            <Border IsVisible="{Binding IsControlKind}" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}"
+                                    lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="12,8" Margin="0,0,0,10">
+                                <ContentControl Content="{Binding InteractiveControl}" HorizontalAlignment="Stretch" />
+                            </Border>
+                            <Border IsVisible="{Binding IsInspectorKind}" MaxHeight="360" ClipToBounds="True" Margin="0,0,0,10">
+                                <views:ObjectInspectorView DataContext="{Binding InspectorNode}" />
+                            </Border>
+                            <Border IsVisible="{Binding IsHtmlKind}" Margin="0,0,0,10">
+                                <views:RichHtmlView DataContext="{Binding HtmlContent}" />
+                            </Border>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </Border>
+</UserControl>

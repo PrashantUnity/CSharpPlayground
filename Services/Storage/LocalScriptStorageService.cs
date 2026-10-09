@@ -345,6 +345,7 @@ public partial class LocalScriptStorageService : IScriptStorageService, IDisposa
                         ExecutionCount = script.ExecutionCount,
                         ExecutionMode = script.ExecutionMode,
                         FolderPath = GetFolderPath(file),
+                        FileName = Path.GetFileName(file),
                         IsExternalRoot = IsExternalWorkspaceActive,
                         WorkspaceRootName = IsExternalWorkspaceActive ? Path.GetFileName(root.TrimEnd('/', '\\')) : null
                     });
@@ -376,6 +377,7 @@ public partial class LocalScriptStorageService : IScriptStorageService, IDisposa
                         ExecutionCount = nb.ExecutionCount,
                         CellCount = nb.Cells.Count,
                         FolderPath = GetFolderPath(file),
+                        FileName = Path.GetFileName(file),
                         IsExternalRoot = IsExternalWorkspaceActive,
                         WorkspaceRootName = IsExternalWorkspaceActive ? Path.GetFileName(root.TrimEnd('/', '\\')) : null
                     });
@@ -406,6 +408,7 @@ public partial class LocalScriptStorageService : IScriptStorageService, IDisposa
                         LastModified = srv.LastModified,
                         CellCount = srv.Cells.Count,
                         FolderPath = GetFolderPath(file),
+                        FileName = Path.GetFileName(file),
                         IsExternalRoot = IsExternalWorkspaceActive,
                         WorkspaceRootName = IsExternalWorkspaceActive ? Path.GetFileName(root.TrimEnd('/', '\\')) : null,
                         FileExtension = ".fryserver"
@@ -460,6 +463,7 @@ public partial class LocalScriptStorageService : IScriptStorageService, IDisposa
             IsSourceFile = false,
             LastModified = LastWriteTimeUtc(file),
             FolderPath = GetFolderPath(file),
+            FileName = Path.GetFileName(file),
             IsExternalRoot = IsExternalWorkspaceActive,
             WorkspaceRootName = IsExternalWorkspaceActive ? Path.GetFileName(root.TrimEnd('/', '\\')) : null
         };
@@ -479,18 +483,21 @@ public partial class LocalScriptStorageService : IScriptStorageService, IDisposa
         // Names only: cheap enough to ask before deciding how to list (the walk stops as soon as the limit is passed).
         var (files, truncated) = await Task.Run(() =>
         {
-            var found = WorkspaceWalker.Files(root, IsWorkspaceFile, out var cutOff, _workspaceFileLimit);
+            // Every file VS Code's Explorer would show (all but .DS_Store and Thumbs.db).
+            var found = WorkspaceWalker.Files(root, WorkspaceWalker.IsExplorerFile, out var cutOff, _workspaceFileLimit);
             return (found, cutOff);
         }).ConfigureAwait(false);
         if (truncated) return await ListFolderCoreAsync(root, string.Empty).ConfigureAwait(false);
 
-        var folders = await Task.Run(() =>
-            WorkspaceWalker.Folders(root, out _, _workspaceFileLimit)
-                .Select(dir => Path.GetRelativePath(root, dir).Replace(Path.DirectorySeparatorChar, '/'))
-                .ToList()).ConfigureAwait(false);
+        string Relative(string dir) => Path.GetRelativePath(root, dir).Replace(Path.DirectorySeparatorChar, '/');
+        var (folders, closed) = await Task.Run(() =>
+        {
+            var walked = WorkspaceWalker.Folders(root, out _, out var notWalked, _workspaceFileLimit);
+            return (walked.Select(Relative).ToList(), notWalked.Select(Relative).ToList());
+        }).ConfigureAwait(false);
         _filesTruncated = false;
         _foldersTruncated = false;
-        return new WorkspaceListing(folders, await SummarizeFilesAsync(files, root).ConfigureAwait(false), IsPartial: false);
+        return new WorkspaceListing(folders, await SummarizeFilesAsync(files, root).ConfigureAwait(false), IsPartial: false, ClosedFolderPaths: closed);
     }
 
     /// <summary>One folder of the workspace, as a path from the root (empty for the root itself): its subfolders and the documents directly in it.</summary>
@@ -514,11 +521,13 @@ public partial class LocalScriptStorageService : IScriptStorageService, IDisposa
             return new WorkspaceListing([], [], IsPartial: true);
         }
 
+        // Everything in the folder but what VS Code's Explorer hides (.git, .DS_Store, ...): node_modules or bin are
+        // listed too, each listed in turn when it is opened.
         var subfolders = directories
-            .Where(d => !WorkspaceWalker.IsSkipped(d))
+            .Where(d => !WorkspaceWalker.IsHiddenInExplorer(d))
             .Select(d => Path.GetRelativePath(root, d).Replace(Path.DirectorySeparatorChar, '/'))
             .ToList();
-        var wanted = files.Where(IsWorkspaceFile).ToList();
+        var wanted = files.Where(WorkspaceWalker.IsExplorerFile).ToList();
         var truncated = wanted.Count > _workspaceFileLimit;
         if (truncated) wanted.RemoveRange(_workspaceFileLimit, wanted.Count - _workspaceFileLimit);
         return new WorkspaceListing(subfolders, await SummarizeFilesAsync(wanted, root).ConfigureAwait(false), IsPartial: true, IsTruncated: truncated);
@@ -887,8 +896,98 @@ public partial class LocalScriptStorageService : IScriptStorageService, IDisposa
             File.Delete(nbFile);
         }
 
+        // Server documents too (deleting one from an Explorer used to do nothing).
+        var serverFile = await FindExistingFilePathAsync(id, ".fryserver");
+        if (serverFile != null)
+        {
+            File.Delete(serverFile);
+        }
+
         _knownFileLocations.TryRemove(id, out _);
         MarkChanged();
+    }
+
+    public async Task<string> RenameDocumentFileAsync(string id, string newFileName)
+    {
+        await EnsureInitializedAsync();
+        string? existing = null;
+        foreach (var extension in new[] { ".frycs", ".frynb", ".fryserver" })
+        {
+            existing = await FindExistingFilePathAsync(id, extension);
+            if (existing != null) break;
+        }
+
+        if (existing == null) throw new FileNotFoundException($"No file for document '{id}'.");
+
+        var ext = Path.GetExtension(existing);
+        var stem = Path.GetFileName(newFileName.Trim());
+        if (stem.EndsWith(ext, StringComparison.OrdinalIgnoreCase)) stem = stem[..^ext.Length];
+        var name = SanitizeName(stem, Path.GetFileNameWithoutExtension(existing)) + ext;
+        var target = Path.Combine(Path.GetDirectoryName(existing)!, name);
+        if (string.Equals(target, existing, StringComparison.Ordinal)) return name;
+
+        // Only a change of case is the same file on a case-insensitive disk; anything else must not replace a file.
+        if (File.Exists(target) && !string.Equals(target, existing, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new IOException($"A file named '{name}' already exists here.");
+        }
+
+        File.Move(existing, target);
+        _knownFileLocations[id] = target;
+
+        // The title inside follows the name, so every list that shows titles agrees with the Explorer.
+        var title = Path.GetFileNameWithoutExtension(name);
+        switch (ext.ToLowerInvariant())
+        {
+            case ".frycs" when JsonSerializer.Deserialize<ScriptDocumentItem>(await File.ReadAllTextAsync(target)) is { } script:
+                script.Title = title;
+                await File.WriteAllTextAsync(target, JsonSerializer.Serialize(script, _jsonOptions));
+                break;
+            case ".frynb" when JsonSerializer.Deserialize<NotebookDocumentItem>(await File.ReadAllTextAsync(target)) is { } notebook:
+                notebook.Title = title;
+                await File.WriteAllTextAsync(target, JsonSerializer.Serialize(notebook, _jsonOptions));
+                break;
+            case ".fryserver" when JsonSerializer.Deserialize<FryServerDocumentItem>(await File.ReadAllTextAsync(target)) is { } server:
+                server.Title = title;
+                await File.WriteAllTextAsync(target, JsonSerializer.Serialize(server, _jsonOptions));
+                break;
+        }
+
+        MarkChanged();
+        return name;
+    }
+
+    public async Task<string> DuplicateFileAsync(string relativePath)
+    {
+        await EnsureInitializedAsync();
+        var root = EffectiveWorkspaceRoot;
+        var source = Path.GetFullPath(Path.Combine(root, relativePath.Replace('/', Path.DirectorySeparatorChar)));
+        if (!File.Exists(source)) throw new FileNotFoundException($"'{relativePath}' is not a file of the workspace.");
+
+        var folder = Path.GetDirectoryName(source)!;
+        var ext = Path.GetExtension(source);
+        var stem = Path.GetFileNameWithoutExtension(source) + " copy";
+        var target = Path.Combine(folder, stem + ext);
+        for (var n = 2; File.Exists(target); n++) target = Path.Combine(folder, $"{stem} {n}{ext}");
+
+        var isDocument = ext.Equals(".frycs", StringComparison.OrdinalIgnoreCase) || ext.Equals(".frynb", StringComparison.OrdinalIgnoreCase)
+                         || ext.Equals(".fryserver", StringComparison.OrdinalIgnoreCase);
+        if (isDocument && System.Text.Json.Nodes.JsonNode.Parse(await File.ReadAllTextAsync(source)) is System.Text.Json.Nodes.JsonObject document)
+        {
+            // Two files with one id would open each other: the copy is a document of its own.
+            var id = Guid.NewGuid().ToString("N");
+            document["Id"] = id;
+            document["Title"] = Path.GetFileNameWithoutExtension(target);
+            await File.WriteAllTextAsync(target, document.ToJsonString(_jsonOptions));
+            _knownFileLocations[id] = target;
+        }
+        else
+        {
+            File.Copy(source, target);
+        }
+
+        MarkChanged();
+        return Path.GetRelativePath(root, target).Replace(Path.DirectorySeparatorChar, '/');
     }
 
     public Task<List<string>> LoadFolderPathsAsync()

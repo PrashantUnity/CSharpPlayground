@@ -49,6 +49,43 @@ public class VisualSpecEquivalenceTests
                 new ChartSeries { Name = "B", Points = { new ChartDataPoint(0, 5), new ChartDataPoint(2, 7) } }
             }
         },
+        ["combo with every new setting"] = () => new ChartOptions
+        {
+            Title = "Everything",
+            Type = ChartType.Bar,
+            ShowLegend = true,
+            LegendPosition = LegendPosition.Top,
+            Orientation = ChartOrientation.Vertical,
+            Stack = ChartStack.Stacked,
+            XAxis = { Title = "Month", Scale = AxisScale.Category, Reverse = true },
+            YAxis = { Title = "USD", SuggestedMin = 0, SuggestedMax = 50, Scale = AxisScale.Linear },
+            Y2Axis = new ChartAxisOptions { Title = "%", Min = 0, Max = 100, Scale = AxisScale.Log },
+            Series =
+            {
+                new ChartSeries { Name = "Bars", StackGroup = "a", CornerRadius = 4, Points = { new ChartDataPoint(0, 3, "Jan") { From = 1 }, new ChartDataPoint(1, 5, "Feb") { From = 2 } } },
+                new ChartSeries
+                {
+                    Name = "Line", Kind = ChartType.Line, Axis = AxisSide.Right, Dash = LineDash.Dotted, Interpolation = LineInterpolation.Smooth, Tension = 0.7,
+                    Fill = true, PointStyle = PointShape.Diamond, PointRadius = 5,
+                    Points = { new ChartDataPoint(0, 10) { CustomColor = "#ff0000" }, new ChartDataPoint(1, 20) }
+                },
+                new ChartSeries { Name = "Steps", Kind = ChartType.Area, Step = LineStep.Middle, FillTo = 1, Points = { new ChartDataPoint(0, 1), new ChartDataPoint(1, 2) } },
+                new ChartSeries { Name = "Segments", Kind = ChartType.Line, ColorSegments = true, Points = { new ChartDataPoint(0, 1) { CustomColor = "#ff0000" }, new ChartDataPoint(1, 2) } }
+            }
+        },
+        ["bubble"] = () => new ChartOptions
+        {
+            Type = ChartType.Bubble,
+            Series = { new ChartSeries { Name = "b", Points = { new ChartDataPoint(1, 2) { Size = 6 }, new ChartDataPoint(2, 3) { Size = 9 } } } }
+        },
+        ["half donut"] = () => new ChartOptions
+        {
+            Type = ChartType.Donut,
+            StartAngle = -90,
+            Sweep = 180,
+            Cutout = 0.7,
+            Series = { new ChartSeries { Name = "d", Points = { new ChartDataPoint(0, 3, "a"), new ChartDataPoint(1, 5, "b") } } }
+        },
         ["settings"] = () =>
         {
             var chart = ChartDataParser.Parse(new[] { 3, 1, 2 }, "Emitted", "#0ea5e9", "Line");

@@ -1,4 +1,4 @@
-<Styles xmlns="https://github.com/avaloniaui"
+<Styles xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- ============================================================ -->
@@ -18,11 +18,11 @@
         <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
-        <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
+        <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusMD" />
         <Setter Property="Padding" Value="8,4" />
-        <Setter Property="FontSize" Value="11.5" />
-        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="lt:Tokens.FontSize" Value="DsFontSize250" />
+        <Setter Property="lt:Tokens.FontWeight" Value="DsWeightBody" />
         <Setter Property="MaxWidth" Value="380" />
         <Setter Property="Transitions">
             <Transitions>
@@ -36,7 +36,7 @@
                         BorderThickness="{TemplateBinding BorderThickness}"
                         CornerRadius="{TemplateBinding CornerRadius}"
                         Padding="{TemplateBinding Padding}"
-                        BoxShadow="{DynamicResource DsFloatingShadow}">
+                        lt:Tokens.BoxShadow="DsFloatingShadow">
                     <ContentPresenter Name="PART_ContentPresenter"
                                       Content="{TemplateBinding Content}"
                                       ContentTemplate="{TemplateBinding ContentTemplate}" />
@@ -46,7 +46,7 @@
     </Style>
 
     <Style Selector="ToolTip TextBlock">
-        <Setter Property="FontSize" Value="11.5" />
+        <Setter Property="lt:Tokens.FontSize" Value="DsFontSize250" />
         <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
         <Setter Property="LineHeight" Value="16" />
         <Setter Property="TextWrapping" Value="Wrap" />

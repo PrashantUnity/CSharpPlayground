@@ -3,9 +3,10 @@ using System.Diagnostics;
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Workspace;
 
 /// <summary>
-/// Walks a workspace folder the way the Explorer should see it: without the folders tools fill with thousands of files
-/// nobody opens by hand (a Python virtual environment, <c>__pycache__</c>, <c>node_modules</c>, <c>.git</c>) and without
-/// following links, which could lead outside the workspace or round in a circle.
+/// Walks a workspace folder without going into the folders tools fill with thousands of files nobody opens by hand (a
+/// Python virtual environment, <c>__pycache__</c>, <c>node_modules</c>, <c>.git</c>) and without following links, which
+/// could lead outside the workspace or round in a circle. The Explorer still shows those folders (all but VS Code's hidden
+/// ones), closed: see <see cref="Folders(string, out bool, out List{string}, int)"/> and <see cref="IsHiddenInExplorer"/>.
 /// </summary>
 internal static class WorkspaceWalker
 {
@@ -21,6 +22,18 @@ internal static class WorkspaceWalker
     };
 
     private static readonly HashSet<string> EnvironmentFolderNames = new(StringComparer.OrdinalIgnoreCase) { ".venv", "venv", "env" };
+
+    // What VS Code's Explorer hides by default (files.exclude): everything else in the folder is shown. The folders the
+    // walk skips for speed (node_modules, bin, .venv, ...) are still shown, closed, and listed when opened.
+    private static readonly HashSet<string> ExplorerHiddenFolders = new(StringComparer.OrdinalIgnoreCase) { ".git", ".svn", ".hg", "CVS" };
+    private static readonly HashSet<string> ExplorerHiddenFiles = new(StringComparer.OrdinalIgnoreCase) { ".DS_Store", "Thumbs.db" };
+
+    /// <summary>True for a folder VS Code's Explorer hides (.git, .svn, .hg, CVS).</summary>
+    public static bool IsHiddenInExplorer(string folder) =>
+        ExplorerHiddenFolders.Contains(Path.GetFileName(folder.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)));
+
+    /// <summary>True for a file VS Code's Explorer hides (.DS_Store, Thumbs.db): every other file is shown.</summary>
+    public static bool IsExplorerFile(string path) => !ExplorerHiddenFiles.Contains(Path.GetFileName(path));
 
     /// <summary>The files under <paramref name="root"/> that <paramref name="wanted"/> accepts, at most <paramref name="maxFiles"/>.</summary>
     public static List<string> Files(string root, Func<string, bool> wanted, int maxFiles = MaxFiles) =>
@@ -110,11 +123,19 @@ internal static class WorkspaceWalker
     public static List<string> Folders(string root) => Folders(root, out _);
 
     /// <param name="truncated">True when the walk stopped early because the folder holds more than <paramref name="maxFolders"/> folders, so the list is not everything.</param>
-    public static List<string> Folders(string root, out bool truncated, int maxFolders = MaxFiles)
+    public static List<string> Folders(string root, out bool truncated, int maxFolders = MaxFiles) =>
+        Folders(root, out truncated, out _, maxFolders);
+
+    /// <param name="closed">
+    /// The folders the walk did not go into but the Explorer shows (node_modules, bin, a linked folder, ...): listed when
+    /// they are opened. Found in the same pass, at no extra cost.
+    /// </param>
+    public static List<string> Folders(string root, out bool truncated, out List<string> closed, int maxFolders = MaxFiles)
     {
-        var walk = new WalkState(maxFolders);
+        var walk = new WalkState(maxFolders) { Closed = new List<string>() };
         var folders = Walk(root, walk).Skip(1).ToList();
         truncated = walk.Truncated;
+        closed = walk.Closed;
         return folders;
     }
 
@@ -122,20 +143,25 @@ internal static class WorkspaceWalker
     {
         public int MaxFolders { get; } = maxFolders;
         public bool Truncated { get; set; }
+
+        // When set: the skipped folders the Explorer still shows.
+        public List<string>? Closed { get; init; }
     }
 
     /// <summary>
-    /// True when <paramref name="path"/> is, or lies inside, a folder the walk leaves out (.git, node_modules, ...), judged by
-    /// name alone with no file access, so it is cheap enough to run for every file-system event.
+    /// True when <paramref name="path"/> lies inside a folder the walk leaves out (.git, node_modules, ...), judged by name
+    /// alone with no file access, so it is cheap enough to run for every file-system event. The folder itself is not inside
+    /// it: the Explorer shows node_modules (closed), so its appearing or going matters.
     /// </summary>
     public static bool IsInsideSkippedFolder(string path, string root)
     {
         var relative = Path.GetRelativePath(root, path);
         if (relative.StartsWith("..", StringComparison.Ordinal)) return false;
 
-        foreach (var segment in relative.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
+        var segments = relative.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        for (var i = 0; i < segments.Length - 1; i++)
         {
-            if (SkippedFolders.Contains(segment) || EnvironmentFolderNames.Contains(segment)) return true;
+            if (SkippedFolders.Contains(segments[i]) || EnvironmentFolderNames.Contains(segments[i])) return true;
         }
 
         return false;
@@ -198,6 +224,7 @@ internal static class WorkspaceWalker
             foreach (var child in children)
             {
                 if (!IsSkipped(child)) pending.Enqueue(child);
+                else if (state.Closed != null && !IsHiddenInExplorer(child)) state.Closed.Add(child);
             }
         }
     }

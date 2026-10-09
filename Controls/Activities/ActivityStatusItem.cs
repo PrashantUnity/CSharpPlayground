@@ -36,8 +36,8 @@ public sealed class ActivityStatusItem : StackPanel
         {
             Width = 10,
             Height = 10,
-            CornerRadius = new CornerRadius(5),
-            BorderThickness = new Thickness(1.5, 1.5, 0, 0),
+            CornerRadius = new CornerRadius(PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.Radius("SM") + 1),
+            BorderThickness = new Thickness(PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.BorderWidth * 1.5, PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.BorderWidth * 1.5, 0, 0),
             VerticalAlignment = VerticalAlignment.Center,
             RenderTransformOrigin = RelativePoint.Center,
             RenderTransform = _turn,
@@ -46,7 +46,7 @@ public sealed class ActivityStatusItem : StackPanel
 
         _text = new TextBlock
         {
-            FontSize = 10,
+            FontSize = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.FontSize("100"),
             VerticalAlignment = VerticalAlignment.Center,
             TextTrimming = TextTrimming.CharacterEllipsis,
             MaxWidth = 280,

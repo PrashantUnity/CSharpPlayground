@@ -25,6 +25,7 @@ TABLE_MIME = "application/vnd.fry.table+json"
 __all__ = [
     "Display", "DisplayHandle", "Recorder", "CanvasBuilder", "Event", "show", "dump", "display", "table", "html", "markdown", "image", "json",
     "chart", "line_chart", "area_chart", "bar_chart", "scatter_chart", "pie_chart", "donut_chart", "histogram",
+    "bubble_chart", "radar_chart", "polar_area_chart", "stacked_bar_chart", "horizontal_bar_chart",
     "plot3d", "scatter3d", "trajectory3d", "surface3d", "graph3d", "voxel_bar3d", "plot3d_surface", "voxel_bars",
     "visualize", "matrix", "islands", "tree", "graph", "linked_list", "array", "bars", "board", "canvas", "recorder",
     "process_events", "wait",
@@ -46,19 +47,29 @@ class DisplayHandle:
         self._throttle = fry_channel.Throttle(lambda message: fry_channel.channel().send_in(message[0], message[1]))
 
     def update(self, spec=None, **options):
-        """Redraws the visual: with a new spec (a dict, or a function that changes a copy of the current one), and/or
+        """Redraws the visual: with new data (a chart), a new spec (a dict, or a function that changes a copy of the current one), and/or
         the same settings the call that showed it takes (title=..., color=...). Sent at most 30 times a second."""
         if self._closed:
             raise RuntimeError("This visual was closed: it can't be updated.")
         if callable(spec):
             changed = copy.deepcopy(self.spec)
             spec = spec(changed) or changed
+        if spec is not None and not isinstance(spec, dict):
+            spec = self._with_data(spec)
         new = copy.deepcopy(spec if spec is not None else self.spec)
         _apply(new, options)
         self.spec = new
         context = fry_channel.channel().context()
         self._throttle.submit(lambda: (context, _message("update_display", self.mime, self.spec, self.display_id)))
         return self
+
+    def _with_data(self, data):
+        """The current chart with new data in place of its series (the kind, axes and other settings stay)."""
+        if self.mime != fry_specs.CHART_MIME:
+            raise TypeError("Only a chart can be updated with new data: pass a spec (a dict) for this visual.")
+        changed = copy.deepcopy(self.spec)
+        changed["series"] = fry_specs.chart_spec(data, changed.get("kind", "line"))[1]["series"]
+        return changed
 
     def on(self, event, callback):
         """Calls callback(event) when the user clicks ("click"), selects ("select") or steps ("step") in the visual."""
@@ -116,18 +127,45 @@ _SETTINGS = {
     "show_legend": ("legend", "show"), "bins": ("bins",), "color_map": ("colorMap",), "auto_rotate": ("autoRotate",),
     "show_axes": ("showAxes",), "summary": ("summary",), "show_coordinates": ("showCoordinates",),
     "show_values": ("showValues",), "cell_size": ("cellSize",),
+    # Charts: a second value axis, scales, suggested ranges, stacking, round charts, the legend.
+    "stack": ("stack",), "orientation": ("orientation",), "legend_position": ("legend", "position"),
+    "y2_title": ("y2Axis", "title"), "y2_min": ("y2Axis", "min"), "y2_max": ("y2Axis", "max"),
+    "x_scale": ("xAxis", "scale"), "y_scale": ("yAxis", "scale"), "y2_scale": ("y2Axis", "scale"),
+    "x_suggested_min": ("xAxis", "suggestedMin"), "x_suggested_max": ("xAxis", "suggestedMax"),
+    "y_suggested_min": ("yAxis", "suggestedMin"), "y_suggested_max": ("yAxis", "suggestedMax"),
+    "y2_suggested_min": ("y2Axis", "suggestedMin"), "y2_suggested_max": ("y2Axis", "suggestedMax"),
+    "reverse_x": ("xAxis", "reverse"), "reverse_y": ("yAxis", "reverse"), "reverse_y2": ("y2Axis", "reverse"),
+    "start_angle": ("startAngle",), "sweep": ("sweep",), "cutout": ("cutout",),
 }
+
+# Settings that are not one field of the spec: handled by _apply.
+_SPECIAL = ("horizontal", "percent", "labels", "gauge", "configure")
 
 _COLOR_MAPS = {"viridis": "viridis", "plasma": "plasma", "coolwarm": "coolWarm", "turbo": "turbo", "rainbow": "rainbow", "ocean": "ocean", "fire": "fire"}
 
 
 def _apply(spec, options):
     configure = options.pop("configure", None)
+    labels = options.pop("labels", None)
+    horizontal = options.pop("horizontal", None)
+    percent = options.pop("percent", None)
+    gauge = options.pop("gauge", None)
+    if labels is not None:
+        names = [None if label is None else str(label) for label in fry_specs._as_list(labels)]
+        for series in spec.get("series", []):
+            if len(series.get("y", [])) == len(names):
+                series["labels"] = names
+    if horizontal:
+        spec["orientation"] = "horizontal"
+    if percent:
+        spec["stack"] = "percent"
+    if gauge:
+        spec["startAngle"], spec["sweep"] = -90, 180
     for name, value in options.items():
         if value is None:
             continue
         if name not in _SETTINGS:
-            raise TypeError(f"There is no setting {name!r}: use one of {', '.join(sorted(_SETTINGS))} or configure=.")
+            raise TypeError(f"There is no setting {name!r}: use one of {', '.join(sorted(list(_SETTINGS) + list(_SPECIAL)))}.")
         if name == "color_map":
             value = _COLOR_MAPS.get(str(value).lower().replace("_", ""), value)
         path = _SETTINGS[name]
@@ -267,7 +305,10 @@ def _table(obj, title):
 # ----------------------------------------------------------------------------------------------------------- charts
 
 def chart(data=None, title=None, kind="line", x=None, y=None, chart_type=None, chartType=None, **options):
-    """A chart of data (kind: line, area, bar, scatter, pie, donut, histogram); x and y pick the fields of records."""
+    """A chart of data (kind: line, area, bar, scatter, bubble, pie, donut, radar, polarArea, histogram); x and y pick the fields of records.
+
+    A series can be told how to draw: chart({"Sales": [...], "Costs": {"values": [...], "dash": "dashed", "axis": "right"}}).
+    """
     x_field = x if isinstance(x, str) else None
     y_field = y if isinstance(y, str) else None
     if data is None:
@@ -305,7 +346,32 @@ def pie_chart(data, title=None, **options):
 
 
 def donut_chart(data, title=None, **options):
+    """A donut; several series are rings (the first outermost), gauge=True a half circle."""
     return chart(data, title, "donut", **options)
+
+
+def bubble_chart(data, title=None, **options):
+    """A bubble chart of (x, y, size) items (tuples, or records with x, y and size/r/radius); size is a radius in pixels."""
+    return chart(data, title, "bubble", **options)
+
+
+def radar_chart(data, title=None, **options):
+    """A radar chart: a polygon for each series over a spoke for each value (name the spokes with labels=[...])."""
+    return chart(data, title, "radar", **options)
+
+
+def polar_area_chart(data, title=None, **options):
+    return chart(data, title, "polarArea", **options)
+
+
+def stacked_bar_chart(data, title=None, **options):
+    """Bars piled up (percent=True scales every place to 100%; a series' stack=... names its pile)."""
+    options.setdefault("stack", "percent" if options.pop("percent", False) else "stacked")
+    return chart(data, title, "bar", **options)
+
+
+def horizontal_bar_chart(data, title=None, **options):
+    return chart(data, title, "bar", horizontal=True, **options)
 
 
 def histogram(samples, title=None, bins=None, **options):

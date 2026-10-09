@@ -58,6 +58,7 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
     // The language of the document in the editor: its colors, indentation, folding and comment prefix, and whether the
     // C# completion and hover apply. A language with editor help of its own attaches it here.
     private ILanguageDefinition? _editorLanguage;
+    private string? _editorFileExtension; // the open file's: picks the grammar for a .json or .md file opened as text
     private IDisposable? _languageAssistant;
 
     public AvaloniaEdit.TextEditor? GetEditor() => _editor;
@@ -95,6 +96,17 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
             _breakpointMargin.BreakpointToggled += line => _currentVm?.ToggleBreakpoint(line);
 
             _searchPanel = SearchPanel.Install(_editor);
+            EditorContextMenu.Attach(
+                _editor,
+                new EditorContextMenuOptions
+                {
+                    LanguageProvider = () => _editorLanguage,
+                    FormatAction = () => _currentVm?.FormatCode(),
+                    RunAction = () => _ = _currentVm?.RunCodeCommand.ExecuteAsync(null),
+                    DebugAction = () => _ = _currentVm?.DebugCodeCommand.ExecuteAsync(null),
+                    ToggleBreakpointAction = line => _currentVm?.ToggleBreakpoint(line),
+                    ToggleCommentAction = () => ToggleLineComment()
+                });
             _debugHoverTip = this.FindControl<DebugHoverDataTipControl>("DebugHoverTip");
             _collectionViewOverlay = this.FindControl<CollectionViewControl>("CollectionViewOverlay");
             if (_collectionViewOverlay != null)
@@ -463,10 +475,10 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
         if (_editor == null) return;
 
         bool isDark = IsDarkTheme();
+        SyntaxColoring.Apply(_editor, _editorLanguage, isDark, _currentVm?.IsSyntaxHighlightingEnabled ?? true, _editorFileExtension);
 
         if (isDark)
         {
-            _editor.SyntaxHighlighting = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.SyntaxPaletteApplier.Themed(_editorLanguage != null ? _editorLanguage.GetHighlighting(true) : CSharpSyntaxHighlightingTheme.GetDarkTheme());
             _editor.Background = ResolveBrush("EditorBgBrush", s_darkEditorBg);
             _editor.Foreground = ResolveBrush("EditorFgBrush", s_darkForeground);
             _editor.LineNumbersForeground = ResolveBrush("EditorLineNumbersBrush", s_darkLineNumbers);
@@ -477,7 +489,6 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
         }
         else
         {
-            _editor.SyntaxHighlighting = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.SyntaxPaletteApplier.Themed(_editorLanguage != null ? _editorLanguage.GetHighlighting(false) : CSharpSyntaxHighlightingTheme.GetLightTheme());
             _editor.Background = ResolveBrush("EditorBgBrush", s_lightEditorBg);
             _editor.Foreground = ResolveBrush("EditorFgBrush", s_lightForeground);
             _editor.LineNumbersForeground = ResolveBrush("EditorLineNumbersBrush", s_lightLineNumbers);
@@ -498,16 +509,7 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
     private void ApplySyntaxHighlighting(bool enable)
     {
         if (_editor == null) return;
-        if (!enable)
-        {
-            _editor.SyntaxHighlighting = null;
-        }
-        else
-        {
-            _editor.SyntaxHighlighting = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.SyntaxPaletteApplier.Themed(_editorLanguage != null
-                ? _editorLanguage.GetHighlighting(IsDarkTheme())
-                : CSharpSyntaxHighlightingTheme.GetDarkTheme());
-        }
+        SyntaxColoring.Apply(_editor, _editorLanguage, IsDarkTheme(), enable, _editorFileExtension);
     }
 
     // Another theme (even of the same light or dark scheme): its editor and syntax colours.
@@ -582,7 +584,7 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
                             Content = new TextBlock
                             {
                                 Text = item.Title,
-                                FontSize = 11,
+                                FontSize = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.FontSize("200"),
                                 VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
                             }
                         };
@@ -828,7 +830,7 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
                 IsSuppressed = () => _currentVm?.IsPaused == true || !_editorLanguage.UsesRoslynHelper(LanguageCapabilities.QuickInfo)
             };
 
-            ApplyEditorLanguage(_currentVm.ActiveLanguage);
+            ApplyEditorLanguage(_currentVm.ActiveLanguage, _currentVm.Script.SourceFilePath);
 
             _editor.WordWrap = _currentVm.IsWordWrap;
             if (_editor.Options != null)
@@ -882,7 +884,7 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
             return;
         }
 
-        if (_currentVm != null) ApplyEditorLanguage(_currentVm.Languages.LanguageOf(tab.Document));
+        if (_currentVm != null) ApplyEditorLanguage(_currentVm.Languages.LanguageOf(tab.Document), tab.Document.SourceFilePath);
         SetStepLine(-1);
 
         _isUpdatingText = true;
@@ -1004,7 +1006,7 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
         }
         else if (e.PropertyName == nameof(CSharpCodeStudioViewModel.ActiveLanguage))
         {
-            ApplyEditorLanguage(_currentVm.ActiveLanguage);
+            ApplyEditorLanguage(_currentVm.ActiveLanguage, _currentVm.Script.SourceFilePath);
         }
         else if (e.PropertyName == nameof(CSharpCodeStudioViewModel.IsDeckDockedToRight))
         {
@@ -1049,12 +1051,13 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
     }
 
     /// <summary>Makes the editor fit <paramref name="language"/>. Runs before a document of it is shown.</summary>
-    private void ApplyEditorLanguage(ILanguageDefinition language)
+    private void ApplyEditorLanguage(ILanguageDefinition language, string? filePath)
     {
         if (_editor == null) return;
 
         var changed = !ReferenceEquals(_editorLanguage, language);
         _editorLanguage = language;
+        _editorFileExtension = string.IsNullOrEmpty(filePath) ? null : Path.GetExtension(filePath);
         ApplySyntaxHighlighting(_currentVm?.IsSyntaxHighlightingEnabled ?? true);
         _breakpointMargin.IsVisible = language.Has(LanguageCapabilities.Breakpoints);
         if (!changed) return;
@@ -1321,10 +1324,13 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
     {
         if (sender is not MenuFlyout menu || _currentVm == null) return;
 
-        while (menu.Items.Count > 2)
+        while (menu.Items.Count > 4)
         {
-            menu.Items.RemoveAt(2);
+            menu.Items.RemoveAt(4);
         }
+
+        var selected = _currentVm.SelectedExplorerItem;
+        var targetFolder = (selected != null && selected.IsDirectory) ? selected : selected?.Parent;
 
         foreach (var option in _currentVm.NewFileOptions)
         {
@@ -1336,7 +1342,8 @@ public partial class CSharpCodeStudioView : UserControl, IDisposable
             {
                 Header = option.Label,
                 Icon = icon,
-                Command = option.Command
+                Command = option.Command,
+                CommandParameter = targetFolder
             });
         }
     }

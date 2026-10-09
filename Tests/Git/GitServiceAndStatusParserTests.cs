@@ -111,8 +111,13 @@ public class GitServiceAndStatusParserTests
     [Fact]
     public async Task GitService_DetectsInstalledGit_ViaHost()
     {
-        var service = new GitService();
+        var host = new TestSupport.FakeHostEnvironment { GitInstalled = true };
+        var service = new GitService(host);
         bool installed = await service.IsGitInstalledAsync();
         Assert.True(installed);
+
+        host.GitInstalled = false;
+        bool missing = await service.IsGitInstalledAsync();
+        Assert.False(missing);
     }
 }

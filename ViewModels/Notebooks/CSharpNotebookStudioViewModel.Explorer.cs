@@ -114,15 +114,11 @@ public partial class CSharpNotebookStudioViewModel
         if (!listing.IsPartial)
         {
             LazyExplorer.Deactivate();
-            RebuildExplorerTree(listing.FolderPaths, listing.Items);
+            RebuildExplorerTree(listing.FolderPaths, listing.Items, listing.ClosedFolders);
             return;
         }
 
         LazyExplorer.Build(listing, ExplorerItemViewModel.ExpandedFolderPaths(ExplorerRootItems));
-        foreach (var tab in Tabs.ToList())
-        {
-            EnsureDocumentInExplorer(tab.Notebook);
-        }
 
         // Only the top folder itself can be cut off here (a nested one says so in its own rows).
         IsExplorerTruncated = listing.IsTruncated;
@@ -147,7 +143,7 @@ public partial class CSharpNotebookStudioViewModel
         }
     }
 
-    private void RebuildExplorerTree(IReadOnlyList<string> folderPaths, IReadOnlyList<WorkspaceItemSummary> summaries)
+    private void RebuildExplorerTree(IReadOnlyList<string> folderPaths, IReadOnlyList<WorkspaceItemSummary> summaries, IReadOnlyList<string> closedFolders)
     {
         // Thousands of single changes below; the flat row list is rebuilt once, when the scope ends.
         using var rowsScope = ExplorerRows.Suspend();
@@ -182,10 +178,15 @@ public partial class CSharpNotebookStudioViewModel
             GetOrCreateFolder(path);
         }
 
-        foreach (var s in summaries.OrderBy(x => x.Title, StringComparer.OrdinalIgnoreCase))
+        // The folders the walk doesn't go into (node_modules, bin, .venv): shown closed and listed when opened, as in VS Code.
+        foreach (var path in closedFolders)
         {
-            var ext = s.DisplayExtension;
-            var name = s.Title.EndsWith(ext, StringComparison.OrdinalIgnoreCase) ? s.Title : $"{s.Title}{ext}";
+            if (GetOrCreateFolder(path) is { } closed) LazyExplorer.MakeUnlisted(closed);
+        }
+
+        foreach (var s in summaries.OrderBy(x => x.ExplorerName, StringComparer.OrdinalIgnoreCase))
+        {
+            var name = s.ExplorerName; // the file's own name: copies with one title are all listed
 
             var parent = GetOrCreateFolder(s.FolderPath);
             var fullPath = string.IsNullOrEmpty(s.FolderPath) ? name : $"{s.FolderPath}/{name}";
@@ -209,11 +210,6 @@ public partial class CSharpNotebookStudioViewModel
                 docItem.LanguageIconColor = language.AccentHex;
             }
             AddToTree(parent, docItem);
-        }
-
-        foreach (var tab in Tabs.ToList())
-        {
-            EnsureDocumentInExplorer(tab.Notebook);
         }
 
         SortExplorerTree(ExplorerRootItems);
@@ -259,7 +255,9 @@ public partial class CSharpNotebookStudioViewModel
             FullPath = fullPath,
             OnItemClicked = OnExplorerItemClicked,
             OnDeleteRequested = DeleteExplorerItem,
-            OnNewFileRequested = NewFileUnderItem,
+            OnNewFileRequested = NewScriptUnderItem,
+            OnNewNotebookRequested = NewNotebookUnderItem,
+            OnNewServerRequested = NewServerUnderItem,
             OnNewFolderRequested = NewFolderUnderItem,
             OnRenameCommitted = OnItemRenamed,
             OnDuplicateRequested = DuplicateExplorerItem,
@@ -281,7 +279,9 @@ public partial class CSharpNotebookStudioViewModel
             FullPath = fullPath,
             OnItemClicked = OnExplorerItemClicked,
             OnDeleteRequested = DeleteExplorerItem,
-            OnNewFileRequested = NewFileUnderItem,
+            OnNewFileRequested = NewScriptUnderItem,
+            OnNewNotebookRequested = NewNotebookUnderItem,
+            OnNewServerRequested = NewServerUnderItem,
             OnNewFolderRequested = NewFolderUnderItem,
             OnRenameCommitted = OnItemRenamed,
             OnDuplicateRequested = DuplicateExplorerItem,
@@ -302,34 +302,22 @@ public partial class CSharpNotebookStudioViewModel
         }
     }
 
-    public ExplorerItemViewModel EnsureDocumentInExplorer(NotebookDocumentItem notebook, bool evenIfInWorkspace = false)
+    /// <summary>
+    /// The notebook's row, when it is one of the workspace folder's files. The Explorer lists that folder only: a notebook
+    /// opened from elsewhere (the library, a problem, another folder) gets no row of its own.
+    /// </summary>
+    public ExplorerItemViewModel? FindDocumentInExplorer(NotebookDocumentItem notebook) =>
+        string.IsNullOrEmpty(notebook.Id) ? null : FindItemByDocumentId(ExplorerRootItems, notebook.Id);
+
+    private static ExplorerItemViewModel? FindItemByDocumentId(IEnumerable<ExplorerItemViewModel> items, string documentId)
     {
-        var fileName = notebook.Title.EndsWith(".frynb", StringComparison.OrdinalIgnoreCase)
-            ? notebook.Title
-            : $"{notebook.Title}.frynb";
-
-        var existing = FindItemByIdOrName(ExplorerRootItems, notebook.Id, fileName);
-        if (existing != null)
+        foreach (var it in items)
         {
-            existing.Name = fileName;
-            if (!string.IsNullOrEmpty(notebook.Id))
-            {
-                existing.DocumentId = notebook.Id;
-            }
-            return existing;
+            if (string.Equals(it.DocumentId, documentId, StringComparison.OrdinalIgnoreCase)) return it;
+            if (FindItemByDocumentId(it.Children, documentId) is { } found) return found;
         }
 
-        // In a big workspace the notebook may sit in a folder that has not been listed yet: it is not an outsider, so it gets no row
-        // at the top; its folders are opened down to it instead.
-        if (!evenIfInWorkspace && LazyExplorer.IsActive && _storageService.GetWorkspaceRelativePath(notebook.Id) is { } relativePath)
-        {
-            _ = RevealInLazyExplorerAsync(notebook.Id);
-            return CreateFileItem(fileName, notebook.Id, parent: null, fullPath: relativePath);
-        }
-
-        var expItem = CreateFileItem(fileName, notebook.Id, parent: null, fullPath: fileName);
-        ExplorerRootItems.Add(expItem);
-        return expItem;
+        return null;
     }
 
     // ── Tree selection helpers ─────────────────────────────────────────────────
@@ -350,7 +338,8 @@ public partial class CSharpNotebookStudioViewModel
     {
         DeselectAll(ExplorerRootItems);
         var docId = ActiveTab?.Notebook?.Id;
-        var match = FindItemByIdOrName(ExplorerRootItems, docId, fileName);
+        // By id: several files can share a title ("Interactive C# Notebook (2).frynb" and the rest).
+        var match = string.IsNullOrEmpty(docId) ? FindItemByIdOrName(ExplorerRootItems, null, fileName) : FindItemByDocumentId(ExplorerRootItems, docId);
         if (match != null)
         {
             match.IsSelected = true;
@@ -373,12 +362,7 @@ public partial class CSharpNotebookStudioViewModel
         var item = await LazyExplorer.RevealAsync(documentId);
         if (!string.Equals(ActiveTab?.Notebook?.Id, documentId, StringComparison.OrdinalIgnoreCase)) return;
 
-        // Not to be found in the folders (it sits in one the workspace walk leaves out, say): list it at the top, as an outsider.
-        // ActiveTab?.Notebook is confirmed non-null by line 1845 (we returned early if their Id didn't match), but
-        // capture it in a local so the nullable flow analysis doesn't have to track the chained dereference.
-        var activeNotebook = ActiveTab?.Notebook;
-        if (item == null && activeNotebook != null)
-            item = EnsureDocumentInExplorer(activeNotebook, evenIfInWorkspace: true);
+        // Not in the workspace's folders: the Explorer shows the folder only, so there is nothing to highlight.
         if (item != null)
         {
             DeselectAll(ExplorerRootItems);

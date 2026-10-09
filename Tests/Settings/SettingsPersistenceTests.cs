@@ -226,7 +226,8 @@ public class SettingsPersistenceTests : IDisposable
         Assert.Equal(generatedId, fresh.ActiveThemeId);
         Assert.Equal(generatedPrimary, fresh.GetColor("DsPrimaryBrush"));
         Assert.Equal("#12AB34", fresh.GetColor("DsAccentLineBrush"));
-        Assert.Equal(28.0, Convert.ToDouble(fresh.GetResource("DensityTabHeight")));
+        Assert.Equal(LayoutDensity.Compact, fresh.Layout.Density);
+        Assert.True(Convert.ToDouble(fresh.GetResource("DsTabHeight")) < 35, "compact tabs are shorter");
 
         var vm2 = new CSharpSettingsViewModel(second, second.StudioSettings);
         Assert.Single(vm2.UserThemes);

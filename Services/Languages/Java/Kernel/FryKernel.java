@@ -159,6 +159,16 @@ public class FryKernel {
             System.err.println("[FryKernel] Warning: Display.java not found at " + displayFile.getAbsolutePath());
         }
 
+        // Its companion: Visualizer.grid(...), Visualizer.tree(...) and the other builders
+        File visualizerFile = kernelDir != null ? new File(kernelDir, "Visualizer.java") : new File("Visualizer.java");
+        if (visualizerFile.exists()) {
+            try {
+                evalSnippet(Files.readString(visualizerFile.toPath()));
+            } catch (Exception e) {
+                System.err.println("[FryKernel] Failed loading Visualizer.java: " + e);
+            }
+        }
+
         evalSnippet("void display(Object obj) { Display.show(obj); }");
         evalSnippet("void dump(Object obj) { Display.show(obj); }");
 
@@ -307,9 +317,28 @@ public class FryKernel {
                 .replace("\t", "\\t");
     }
 
+    // The class a cell declares with public static void main(String[]), or null.
+    private static String mainClassOf(String code) {
+        java.util.regex.Matcher main = java.util.regex.Pattern.compile("public\\s+static\\s+void\\s+main\\s*\\(\\s*String").matcher(code);
+        if (!main.find()) return null;
+        // The public class holds main (a class nested before it, like a Node, does not).
+        String before = code.substring(0, main.start());
+        java.util.regex.Matcher top = java.util.regex.Pattern.compile("\\bpublic\\s+(?:final\\s+|abstract\\s+)*class\\s+(\\w+)").matcher(before);
+        if (top.find()) return top.group(1);
+        java.util.regex.Matcher declared = java.util.regex.Pattern.compile("\\b(?:class|record|enum)\\s+(\\w+)").matcher(before);
+        String name = null;
+        while (declared.find()) name = declared.group(1);
+        return name;
+    }
+
     private static void handleExecute(String id, String code, String cell) {
         currentRequestId = id;
         executionCount++;
+
+        // A program written for a script (imports of the Display package, a class with main) runs here too: Display and
+        // Visualizer are already loaded, and a class that declares main has it called once it is declared.
+        String mainClass = mainClassOf(code);
+        code = code.replaceAll("(?m)^\\s*import\\s+(com\\.frypdf\\.display|fry)\\.[\\w*]+\\s*;[ \\t]*$", "");
 
         SourceCodeAnalysis sca = jshell.sourceCodeAnalysis();
         String remaining = code;
@@ -343,6 +372,23 @@ public class FryKernel {
 
             if (hasError) break;
             remaining = info.remaining();
+        }
+
+        if (!hasError && mainClass != null) {
+            for (SnippetEvent e : jshell.eval(mainClass + ".main(new String[0]);")) {
+                if (e.status() == Snippet.Status.REJECTED) {
+                    hasError = true;
+                    StringBuilder diag = new StringBuilder();
+                    jshell.diagnostics(e.snippet()).forEach(d -> diag.append(d.getMessage(null)).append("\n"));
+                    sendError(id, "CompileError", diag.toString(), cell);
+                    break;
+                }
+                if (e.exception() != null) {
+                    hasError = true;
+                    sendError(id, e.exception().getClass().getSimpleName(), e.exception().getMessage(), cell);
+                    break;
+                }
+            }
         }
 
         snippetPs.flush();

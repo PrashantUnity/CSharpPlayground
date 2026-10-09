@@ -1,0 +1,25 @@
+{
+  "mime": "application/vnd.fry.chart.v1\u002Bjson",
+  "spec": {
+    "kind": "line",
+    "xAxis": {
+      "reverse": true
+    },
+    "yAxis": {
+      "scale": "log",
+      "suggestedMin": 1,
+      "suggestedMax": 1000
+    },
+    "series": [
+      {
+        "name": "Growth",
+        "y": [
+          1,
+          10,
+          100
+        ]
+      }
+    ],
+    "title": "Scales"
+  }
+}

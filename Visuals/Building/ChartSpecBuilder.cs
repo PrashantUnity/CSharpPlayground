@@ -41,10 +41,16 @@ public static class ChartSpecBuilder
                 return new ChartSpec { Kind = kind ?? ChartType.Line, Series = many.Select(ChartOptionsConverter.ToSpec).ToList() };
         }
 
+        if (kind == ChartType.Bubble) return Bubbles(data);
+
         var spec = new ChartSpec { Kind = kind ?? ChartType.Line };
         switch (data)
         {
             case null:
+                break;
+            case System.Runtime.CompilerServices.ITuple { Length: 2 } named when named[0] is string name && DataReader.IsSequence(named[1]):
+                // ("Sales", values): one series with a name.
+                spec.Series.Add(Series(((IEnumerable)named[1]!).Cast<object?>().Select(Read), name));
                 break;
             case IDictionary map:
                 spec.Series.AddRange(FromMap(map));
@@ -71,6 +77,20 @@ public static class ChartSpecBuilder
             return (place, label, value);
         });
         return new ChartSpec { Kind = kind ?? ChartType.Line, Series = { Series(values) } };
+    }
+
+    /// <summary>A chart with a series for each name: <c>("Sales", sales), ("Costs", costs)</c>.</summary>
+    public static ChartSpec FromSeries(ChartType kind, IEnumerable<(string Name, IEnumerable Values)> series)
+    {
+        ArgumentNullException.ThrowIfNull(series);
+        var spec = new ChartSpec { Kind = kind };
+        foreach (var (name, values) in series)
+        {
+            ArgumentNullException.ThrowIfNull(values);
+            spec.Series.Add(Series(values.Cast<object?>().Select(Read), name));
+        }
+
+        return spec;
     }
 
     /// <summary>A histogram of the samples: the studio counts them into <paramref name="bins"/> bars (10 when left out).</summary>
@@ -115,6 +135,14 @@ public static class ChartSpecBuilder
     {
         if (DataReader.TryNumber(item, out var number)) return (null, null, number);
         if (item == null) return (null, null, null);
+
+        // The usual pairs, read without boxing their members (a big series is mostly these).
+        switch (item)
+        {
+            case ValueTuple<double, double> dd: return (DataReader.Finite(dd.Item1), null, DataReader.Finite(dd.Item2));
+            case ValueTuple<int, double> id: return (id.Item1, null, DataReader.Finite(id.Item2));
+            case ValueTuple<string, double> sd: return (null, sd.Item1, DataReader.Finite(sd.Item2));
+        }
 
         if (DataReader.TryItems(item, out var items) && items.Length >= 2) return Pair(items[0], items[1]);
         if (item is IEnumerable sequence and not string)
@@ -187,4 +215,68 @@ public static class ChartSpecBuilder
         return new ChartSeriesSpec { Name = name, Values = values };
     }
 
+    /// <summary>The members a bubble's radius is read from, in order.</summary>
+    public static IReadOnlyList<string> SizeNames { get; } = ["size", "r", "radius", "z", "weight"];
+
+    // A bubble chart of (x, y, size) items: tuples, three-number arrays, or records with x, y and a size.
+    private static ChartSpec Bubbles(object? data)
+    {
+        var spec = new ChartSpec { Kind = ChartType.Bubble };
+        switch (data)
+        {
+            case null:
+                break;
+            case ChartSpec given:
+                return given;
+            case IDictionary map when DataReader.Entries(map).All(e => DataReader.IsSequence(e.Value)):
+                foreach (var (key, value) in DataReader.Entries(map)) spec.Series.Add(BubbleSeries((IEnumerable)value!, key.ToString()));
+                break;
+            case IEnumerable sequence when data is not string:
+                spec.Series.Add(BubbleSeries(sequence, null));
+                break;
+            default:
+                throw new ArgumentException($"A bubble chart shows (x, y, size) items, not a single {data.GetType().Name}.", nameof(data));
+        }
+
+        return spec;
+    }
+
+    private static ChartSeriesSpec BubbleSeries(IEnumerable items, string? name)
+    {
+        var series = new ChartSeriesSpec { Name = name, X = [], Sizes = [] };
+        foreach (var item in items)
+        {
+            var (x, y, size) = ReadBubble(item);
+            series.X.Add(x);
+            series.Y.Add(y);
+            series.Sizes.Add(size);
+        }
+
+        return series;
+    }
+
+    private static (double? X, double? Y, double? Size) ReadBubble(object? item)
+    {
+        if (item == null) return default;
+        if (item is ValueTuple<double, double, double> ddd) return (DataReader.Finite(ddd.Item1), DataReader.Finite(ddd.Item2), DataReader.Finite(ddd.Item3));
+        object?[]? parts = null;
+        if (DataReader.TryItems(item, out var items)) parts = items;
+        else if (item is IEnumerable sequence and not string) parts = sequence.Cast<object?>().Take(4).ToArray();
+        if (parts is { Length: >= 3 })
+        {
+            DataReader.TryNumber(parts[0], out var px);
+            DataReader.TryNumber(parts[1], out var py);
+            DataReader.TryNumber(parts[2], out var ps);
+            return (px, py, ps);
+        }
+
+        // A record: x, the value (y, value, amount…) and a size (size, r, radius…) by name.
+        DataReader.TryMember(item, ["x"], out _, out var xm);
+        DataReader.TryMember(item, ValueNames, out var valueName, out var ym);
+        DataReader.TryMember(item, SizeNames, out _, out var sm);
+        DataReader.TryNumber(xm, out var rx);
+        DataReader.TryNumber(ym, out var ry);
+        DataReader.TryNumber(sm, out var rs);
+        return (rx, ry, rs);
+    }
 }

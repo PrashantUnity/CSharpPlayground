@@ -32,7 +32,11 @@ public sealed class GoBuildAndRunScriptRunner(IHostEnvironment host) : IScriptRu
 
         var binName = host.IsWindows ? $"{fileBaseName}.exe" : fileBaseName;
         var binPath = Path.Combine(outDir, binName);
-        var sourceDir = Path.GetDirectoryName(context.SourceFilePath) ?? context.WorkingDirectory;
+        var sourceDir = (ExecutableSearch.GetDirectoryName(context.SourceFilePath) ?? context.WorkingDirectory) ?? string.Empty;
+        if (!host.IsWindows && !string.IsNullOrEmpty(sourceDir))
+        {
+            sourceDir = sourceDir.Replace('\\', '/');
+        }
 
         await GoDisplayRuntime.EnsureDisplayPackageAsync(outDir, ct).ConfigureAwait(false);
 

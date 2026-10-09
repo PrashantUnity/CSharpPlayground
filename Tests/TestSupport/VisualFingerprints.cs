@@ -23,15 +23,21 @@ internal static class VisualFingerprints
     {
         var sb = new StringBuilder();
         sb.AppendLine($"{o.Title}|{o.Subtitle}|{o.Type}|{o.PrimaryColor}|{o.ShowGrid}|{o.ShowPoints}|{o.ShowStats}|{o.ShowLegend}|{N(o.Width)}|{N(o.Height)}");
-        sb.AppendLine($"axes {o.XAxisTitle}|{o.YAxisTitle}|{N(o.XMin)}|{N(o.XMax)}|{N(o.YMin)}|{N(o.YMax)}");
+        sb.AppendLine($"layout {o.LegendPosition}|{o.Orientation}|{o.Stack}|{N(o.StartAngle)}|{N(o.Sweep)}|{N(o.Cutout)}");
+        sb.AppendLine($"x {Axis(o.XAxis)}");
+        sb.AppendLine($"y {Axis(o.YAxis)}");
+        sb.AppendLine($"y2 {(o.Y2Axis == null ? "none" : Axis(o.Y2Axis))}");
         foreach (var s in o.Series)
         {
             sb.AppendLine($"series {s.Name}|{s.Color}|{N(s.StrokeThickness)}");
-            foreach (var p in s.Points) sb.AppendLine($"  {N(p.X)}|{N(p.Y)}|{p.Label}|{p.CustomColor}");
+            sb.AppendLine($"  style {s.Kind}|{s.Axis}|{s.StackGroup}|{s.Dash}|{s.Interpolation}|{(s.Interpolation == LineInterpolation.Smooth ? N(s.Tension) : "-")}|{s.Step}|{s.Fill}|{s.FillTo}|{s.PointStyle}|{N(s.PointRadius)}|{s.ColorSegments}|{N(s.CornerRadius)}");
+            foreach (var p in s.Points) sb.AppendLine($"  {N(p.X)}|{N(p.Y)}|{p.Label}|{p.CustomColor}|{N(p.Size)}|{N(p.From)}");
         }
 
         return sb.ToString();
     }
+
+    private static string Axis(ChartAxisOptions a) => $"{a.Title}|{N(a.Min)}|{N(a.Max)}|{N(a.SuggestedMin)}|{N(a.SuggestedMax)}|{a.Scale}|{a.Reverse}";
 
     public static string Of(Plot3DOptions o)
     {

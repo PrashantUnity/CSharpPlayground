@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Models.Server;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
@@ -56,20 +57,59 @@ public class CSharpCodeStudioExplorerTests : IDisposable
     }
 
     [Fact]
-    public async Task PopulateExplorerTree_ForScriptOutsideActiveRoot_ShowsItAsOrphanTopLevelFile()
+    public async Task TheExplorer_ShowsEverythingInTheFolder_ExceptWhatVsCodeHides_AndNothingFromOutside()
     {
-        // A document saved outside the active workspace root (here: the still-empty internal library)
-        // isn't part of the tree walk, but the currently open document always surfaces via the
-        // orphan-node fallback so the active tab is never invisible in its own Explorer.
+        // As VS Code: every file and folder of the workspace folder; .git, .svn, .hg, CVS, .DS_Store and Thumbs.db hidden;
+        // folders the walk doesn't go into (node_modules, bin) shown closed and listed when opened.
+        var root = Path.Combine(_testBaseDir, "workspace");
+        foreach (var dir in new[] { "src", "node_modules/left-pad", "bin/Debug", ".git/objects", ".frysharp" }) Directory.CreateDirectory(Path.Combine(root, dir));
+        foreach (var file in new[] { "src/App.cs", "node_modules/left-pad/index.js", "bin/Debug/app.dll", ".git/config", ".DS_Store", "Thumbs.db",
+                     "desktop.ini", "Old.frycsproj", "fry_display.py", "LICENSE", ".gitignore", "notes.txt" })
+        {
+            File.WriteAllText(Path.Combine(root, file), "x");
+        }
+
+        await _testStorage.OpenExternalProjectAsync(root);
+        var outsider = await _testStorage.CreateNewScriptAsync("Outsider", folderPath: Path.Combine(_testBaseDir, "elsewhere"));
+        var studio = CreateStudio(outsider);
+        await studio.RefreshExplorerAsync();
+
+        var top = studio.ExplorerRootItems.Select(i => i.Name).ToList();
+        foreach (var shown in new[] { "src", "node_modules", "bin", ".frysharp", "desktop.ini", "Old.frycsproj", "fry_display.py", "LICENSE", ".gitignore", "notes.txt" })
+        {
+            Assert.Contains(shown, top);
+        }
+
+        foreach (var hidden in new[] { ".git", ".DS_Store", "Thumbs.db", "Outsider.frycs" })
+        {
+            Assert.DoesNotContain(hidden, top);
+        }
+
+        var modules = studio.ExplorerRootItems.Single(i => i.Name == "node_modules");
+        Assert.False(modules.ChildrenLoaded);
+        modules.IsExpanded = true;
+        for (var i = 0; i < 100 && !modules.ChildrenLoaded; i++) await Task.Delay(20);
+        var leftPad = Assert.Single(modules.Children);
+        Assert.Equal("left-pad", leftPad.Name);
+        Assert.True(leftPad.IsDirectory);
+        leftPad.IsExpanded = true;
+        for (var i = 0; i < 100 && !leftPad.ChildrenLoaded; i++) await Task.Delay(20);
+        Assert.Equal("index.js", Assert.Single(leftPad.Children).Name);
+    }
+
+    [Fact]
+    public async Task PopulateExplorerTree_ForScriptOutsideActiveRoot_DoesNotListIt()
+    {
+        // The Explorer shows the workspace folder's files only. A document saved outside the active workspace root (here:
+        // the still-empty internal library) gets no row, even while it is the open one (it used to be listed at the top).
         var externalDir = Path.Combine(Path.GetTempPath(), "FryPDF_CodeStudioExternalTests_" + Guid.NewGuid().ToString("N"), "MyExternalFolder");
         try
         {
             var script = await _testStorage.CreateNewScriptAsync("External Script", folderPath: externalDir);
             var studio = CreateStudio(script);
 
-            var item = Assert.Single(studio.ExplorerRootItems);
-            Assert.False((bool)item.IsDirectory);
-            Assert.Equal((string?)"External Script.frycs", (string?)item.Name);
+            Assert.DoesNotContain(studio.ExplorerRootItems, x => x.Name == "External Script.frycs");
+            Assert.Equal(script.Id, studio.Script.Id); // still open, just not in this folder's list
         }
         finally
         {
@@ -90,11 +130,8 @@ public class CSharpCodeStudioExplorerTests : IDisposable
 
             var studio = CreateStudio(openScript);
 
-            // Neither external folder is the active workspace root, so only the currently open
-            // document shows (via the orphan-node fallback) — the unrelated one must not leak in.
-            var item = Assert.Single(studio.ExplorerRootItems);
-            Assert.False((bool)item.IsDirectory);
-            Assert.Equal((string?)"Open One.frycs", (string?)item.Name);
+            // Neither external folder is the active workspace root, so neither document is listed.
+            Assert.DoesNotContain(studio.ExplorerRootItems, x => x.Name is "Open One.frycs" or "Untouched.frycs");
         }
         finally
         {
@@ -330,6 +367,101 @@ public class CSharpCodeStudioExplorerTests : IDisposable
         {
             if (Directory.Exists(externalDir)) Directory.Delete(externalDir, recursive: true);
         }
+    }
+
+    [Fact]
+    public async Task NewNotebookCommand_CreatesNotebookOnDisk_AndInvokesOpenAction()
+    {
+        NotebookDocumentItem? openedNotebook = null;
+        var script = await _testStorage.CreateNewScriptAsync("TestScript");
+        var studio = new CSharpCodeStudioViewModel(
+            script,
+            _testStorage,
+            new RoslynCompilerService(),
+            new ScriptExecutionEngine(),
+            backToHubAction: () => { },
+            openNotebookAction: nb => openedNotebook = nb);
+
+        await studio.NewNotebookCommand.ExecuteAsync(null);
+
+        Assert.NotNull(openedNotebook);
+        Assert.StartsWith("Notebook_", openedNotebook!.Title);
+        var files = Directory.GetFiles(_testStorage.ActiveWorkspaceRootPath, "*.frynb");
+        Assert.Single(files);
+    }
+
+    [Fact]
+    public async Task NewServerCommand_CreatesServerOnDisk_AndInvokesOpenAction()
+    {
+        FryServerDocumentItem? openedServer = null;
+        var script = await _testStorage.CreateNewScriptAsync("TestScript");
+        var studio = new CSharpCodeStudioViewModel(
+            script,
+            _testStorage,
+            new RoslynCompilerService(),
+            new ScriptExecutionEngine(),
+            backToHubAction: () => { },
+            openServerAction: s => openedServer = s);
+
+        await studio.NewServerCommand.ExecuteAsync(null);
+
+        Assert.NotNull(openedServer);
+        Assert.StartsWith("Server_", openedServer!.Title);
+        var files = Directory.GetFiles(_testStorage.ActiveWorkspaceRootPath, "*.fryserver");
+        Assert.Single(files);
+    }
+
+    [Fact]
+    public async Task NewNotebookUnderItemAsync_CreatesNotebookInTargetFolder()
+    {
+        var script = await _testStorage.CreateNewScriptAsync("TestScript");
+        var studio = CreateStudio(script);
+        var subFolder = Path.Combine(_testStorage.ActiveWorkspaceRootPath, "analytics");
+        Directory.CreateDirectory(subFolder);
+        await studio.RefreshExplorerAsync();
+
+        var folderItem = studio.ExplorerRootItems.FirstOrDefault(x => x.Name == "analytics");
+        Assert.NotNull(folderItem);
+
+        await studio.NewNotebookUnderItemAsync(folderItem!);
+
+        var files = Directory.GetFiles(subFolder, "*.frynb");
+        Assert.Single(files);
+    }
+
+    [Fact]
+    public async Task NewServerUnderItemAsync_CreatesServerInTargetFolder()
+    {
+        var script = await _testStorage.CreateNewScriptAsync("TestScript");
+        var studio = CreateStudio(script);
+        var subFolder = Path.Combine(_testStorage.ActiveWorkspaceRootPath, "services");
+        Directory.CreateDirectory(subFolder);
+        await studio.RefreshExplorerAsync();
+
+        var folderItem = studio.ExplorerRootItems.FirstOrDefault(x => x.Name == "services");
+        Assert.NotNull(folderItem);
+
+        await studio.NewServerUnderItemAsync(folderItem!);
+
+        var files = Directory.GetFiles(subFolder, "*.fryserver");
+        Assert.Single(files);
+    }
+
+    [Fact]
+    public void ExplorerItemViewModel_RequestNewNotebookAndServer_FiresCallbacks()
+    {
+        var item = new ExplorerItemViewModel { Name = "testFolder", IsDirectory = true };
+        var notebookFired = false;
+        var serverFired = false;
+
+        item.OnNewNotebookRequested = _ => notebookFired = true;
+        item.OnNewServerRequested = _ => serverFired = true;
+
+        item.RequestNewNotebookCommand.Execute(null);
+        item.RequestNewServerCommand.Execute(null);
+
+        Assert.True(notebookFired);
+        Assert.True(serverFired);
     }
 
     private sealed class SingleThreadSynchronizationContext : SynchronizationContext

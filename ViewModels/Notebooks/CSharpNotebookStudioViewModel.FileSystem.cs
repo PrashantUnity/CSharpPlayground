@@ -213,6 +213,49 @@ public partial class CSharpNotebookStudioViewModel
     }
 
     public void NewFileUnderItem(ExplorerItemViewModel target) => _ = NewFileUnderItemAsync(target);
+    public void NewNotebookUnderItem(ExplorerItemViewModel target) => _ = NewFileUnderItemAsync(target);
+
+    public void NewServerUnderItem(ExplorerItemViewModel target) => _ = NewServerUnderItemAsync(target);
+
+    [RelayCommand]
+    public async Task NewServerUnderItemAsync(ExplorerItemViewModel target)
+    {
+        var folder = target.IsDirectory ? target : target.Parent;
+        var timestamp = DateTime.Now.ToString("HHmmss");
+        var title = $"Server_{timestamp}";
+        var folderPath = folder?.FullPath;
+
+        try
+        {
+            var newServer = await _storageService.CreateNewServerDocumentAsync(title, folderPath: folderPath);
+            _openServerAction?.Invoke(newServer);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to create server: {ex.Message}");
+        }
+    }
+
+    public void NewScriptUnderItem(ExplorerItemViewModel target) => _ = NewScriptUnderItemAsync(target);
+
+    [RelayCommand]
+    public async Task NewScriptUnderItemAsync(ExplorerItemViewModel target)
+    {
+        var folder = target.IsDirectory ? target : target.Parent;
+        var timestamp = DateTime.Now.ToString("HHmmss");
+        var title = $"Script_{timestamp}";
+        var folderPath = folder?.FullPath;
+
+        try
+        {
+            var newScript = await _storageService.CreateNewScriptAsync(title, folderPath: folderPath);
+            _openScriptAction?.Invoke(newScript);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[CSharpEditorPlugin] Failed to create script: {ex.Message}");
+        }
+    }
 
     [RelayCommand]
     public async Task NewFileUnderItemAsync(ExplorerItemViewModel target)
@@ -381,6 +424,38 @@ public partial class CSharpNotebookStudioViewModel
                 doc.IsEphemeral = false;
                 await _storageService.SaveNotebookAsync(doc);
             }
+        }
+
+        await RenameFileAsync(item, openTab);
+    }
+
+    // The file on disk takes the new name, as renaming in VS Code's Explorer does (only the title inside used to change,
+    // so the folder kept the old name). A name another file already has leaves everything as it was.
+    private async Task RenameFileAsync(ExplorerItemViewModel item, NotebookTabViewModel? openTab)
+    {
+        var oldName = Path.GetFileName(item.FullPath);
+        try
+        {
+            var fileName = await _storageService.RenameDocumentFileAsync(item.DocumentId!, item.Name);
+            item.Name = fileName;
+            item.FullPath = item.Parent == null ? fileName : $"{item.Parent.FullPath}/{fileName}";
+            if (openTab != null)
+            {
+                openTab.Title = fileName;
+                openTab.Notebook.Title = Path.GetFileNameWithoutExtension(fileName);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            item.Name = oldName;
+            if (openTab != null)
+            {
+                openTab.Title = oldName;
+                openTab.Notebook.Title = Path.GetFileNameWithoutExtension(oldName);
+                await _storageService.SaveNotebookAsync(openTab.Notebook);
+            }
+
+            CompilerStatusText = $"⚠️ Couldn't rename {oldName}: {ex.Message}";
         }
     }
 }

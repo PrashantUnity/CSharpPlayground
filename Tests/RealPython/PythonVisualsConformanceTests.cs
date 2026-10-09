@@ -80,6 +80,25 @@ public class PythonVisualsConformanceTests : IDisposable
         D.islands([[1,0],[1,1]], "Islands")
         """;
 
+    // The newer chart features (VisualConformanceFixturesTests.ChartFeatureCases), made the way Python writes them.
+    private const string TheFeatureCalls = """
+        from fry import Display as D
+        months = ["Jan", "Feb", "Mar"]
+        rev, costs, margin = [40, 55, 48], [30, 35, 38], [25, 36, 21]
+        D.bar_chart({"Revenue": rev, "Costs": costs, "Margin": {"values": margin, "kind": "line", "axis": "right", "dash": "dashed"}},
+                    "Combo", labels=months, y2_title="Margin %", y2_min=0, y2_max=100)
+        D.stacked_bar_chart({"Revenue": rev, "Costs": costs}, "Stacked", labels=months)
+        D.horizontal_bar_chart({"Revenue": rev}, "Horizontal", labels=months)
+        D.line_chart({"Smooth": {"values": rev, "interpolation": "smooth", "tension": 0.5},
+                      "Steps": {"values": costs, "step": "after", "dash": "dotted", "point_style": "star", "point_radius": 6},
+                      "Filled": {"values": margin, "fill": True, "color": "#ff8800"}}, "Line styles")
+        D.bubble_chart([(1, 2, 8), (2, 4, 12)], "Bubbles")
+        D.radar_chart({"Ada": [8, 6, 9], "Bo": [5, 9, 6]}, "Radar", labels=["Speed", "Power", "Skill"])
+        D.polar_area_chart({"A": 3, "B": 5}, "Polar")
+        D.donut_chart({"Done": 70, "Left": 30}, "Gauge", gauge=True)
+        D.line_chart({"Growth": [1, 10, 100]}, "Scales", y_scale="log", y_suggested_min=1, y_suggested_max=1000, reverse_x=True)
+        """;
+
     private async Task<(ScriptRunSession Session, List<string> Console, List<RichCellOutput> Outputs, ExternalOutputProcessor Processor)> StartRun(
         string path,
         ExternalVisualSession? session = null)
@@ -145,6 +164,44 @@ public class PythonVisualsConformanceTests : IDisposable
             Assert.Equal(mime, v.MimeType);
             Assert.Equal(drawn, VisualConformanceFixturesTests.DrawnAs(mime, VisualJson.SerializeToElement(v.Spec)));
         }
+    }
+
+    [PythonFact]
+    public async Task Run_TheChartFeatureCases_DrawAsTheFixturesDo()
+    {
+        var script = Write("features.py", TheFeatureCalls);
+        var (session, console, outputs, processor) = await StartRun(script);
+        var result = await session.Completion.WaitAsync(Patience);
+        processor.Flush();
+
+        Assert.True(result.Succeeded, string.Concat(console));
+        Assert.Equal(VisualConformanceFixturesTests.ChartFeatureCases.Length, outputs.Count);
+
+        for (var i = 0; i < VisualConformanceFixturesTests.ChartFeatureCases.Length; i++)
+        {
+            var name = VisualConformanceFixturesTests.ChartFeatureCases[i].Name;
+            var (mime, drawn) = VisualConformanceFixturesTests.Expected(name);
+            var v = outputs[i].Visual!;
+            Assert.Equal(mime, v.MimeType);
+            Assert.Equal(drawn, VisualConformanceFixturesTests.DrawnAs(mime, VisualJson.SerializeToElement(v.Spec)));
+        }
+    }
+
+    [PythonFact]
+    public async Task ASeriesOptionItDoesNotKnow_IsATypeErrorThatListsTheOnesItDoes()
+    {
+        var script = Write("badoption.py", """
+            from fry import Display as D
+            D.line_chart({"a": {"values": [1, 2], "dashed": True}})
+            """);
+        var (session, console, _, processor) = await StartRun(script);
+        var result = await session.Completion.WaitAsync(Patience);
+        processor.Flush();
+
+        Assert.False(result.Succeeded);
+        var text = string.Concat(console);
+        Assert.Contains("There is no series option 'dashed'", text);
+        Assert.Contains("dash", text);
     }
 
     [PythonFact]

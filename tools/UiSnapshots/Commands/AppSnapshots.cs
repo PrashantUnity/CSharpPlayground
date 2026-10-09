@@ -5,6 +5,17 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots.Commands;
 /// <summary>Snapshots for application-level windows: About, Update Dialog, and MainWindow.</summary>
 internal static class AppSnapshots
 {
+    // layout-tokens: rewrites Styles/Tokens/StudioLayoutTokens.axaml from the layout mapper's defaults.
+    public static void WriteLayoutTokens()
+    {
+        var folder = new DirectoryInfo(Directory.GetCurrentDirectory());
+        while (folder != null && !File.Exists(Path.Combine(folder.FullName, "CSharpEditorPlugin.csproj"))) folder = folder.Parent;
+        if (folder == null) throw new InvalidOperationException("Run it from inside the repository (CSharpEditorPlugin.csproj not found above the current folder).");
+        var path = Path.Combine(folder.FullName, PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokenXaml.RelativePath);
+        File.WriteAllText(path, PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokenXaml.Generate());
+        Console.WriteLine(path);
+    }
+
     public static void About(Options options)
     {
         var window = new AboutWindow

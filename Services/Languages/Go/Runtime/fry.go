@@ -10,6 +10,7 @@ import (
 	"net"
 	"os"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -94,6 +95,118 @@ func Title(t string) Option {
 
 func Bins(b int) Option {
 	return func(o *options) { o.bins = b }
+}
+
+// nest sets extra[key][field] = value, making the nested object when it isn't there yet.
+func nest(extra map[string]any, key, field string, value any) {
+	inner, ok := extra[key].(map[string]any)
+	if !ok {
+		inner = make(map[string]any)
+		extra[key] = inner
+	}
+	inner[field] = value
+}
+
+// Kind chooses what Chart draws: line, area, bar, scatter, bubble, pie, donut, radar, polarArea.
+func Kind(k string) Option { return func(o *options) { o.kind = k } }
+
+// Labels names the places of the values: the x positions, a radar's spokes, a pie's slices.
+func Labels(names ...string) Option { return func(o *options) { o.labels = names } }
+
+// Stacked piles series up (bars, lines, areas); Percent scales every place to 100%.
+func Stacked() Option { return func(o *options) { o.extra["stack"] = "stacked" } }
+func Percent() Option { return func(o *options) { o.extra["stack"] = "percent" } }
+
+// Horizontal lays bars along the y axis; Gauge draws a donut as a half circle.
+func Horizontal() Option { return func(o *options) { o.extra["orientation"] = "horizontal" } }
+func Gauge() Option {
+	return func(o *options) { o.extra["startAngle"], o.extra["sweep"] = -90, 180 }
+}
+
+// LegendAt puts the legend at "top", "bottom", "left" or "right".
+func LegendAt(position string) Option {
+	return func(o *options) { nest(o.extra, "legend", "position", position) }
+}
+
+// RightAxis adds a second value axis up the right side (for series with "axis", "right"): its title and, optionally, min and max.
+func RightAxis(title string, bounds ...float64) Option {
+	return func(o *options) {
+		nest(o.extra, "y2Axis", "title", title)
+		if len(bounds) > 0 {
+			nest(o.extra, "y2Axis", "min", bounds[0])
+		}
+		if len(bounds) > 1 {
+			nest(o.extra, "y2Axis", "max", bounds[1])
+		}
+	}
+}
+
+// XScale, YScale and Y2Scale choose "linear", "log", "time" (x only) or "category" (x only).
+func XScale(scale string) Option  { return func(o *options) { nest(o.extra, "xAxis", "scale", scale) } }
+func YScale(scale string) Option  { return func(o *options) { nest(o.extra, "yAxis", "scale", scale) } }
+func Y2Scale(scale string) Option { return func(o *options) { nest(o.extra, "y2Axis", "scale", scale) } }
+
+// SuggestedY widens the value axis to at least min..max when the data doesn't reach it.
+func SuggestedY(min, max float64) Option {
+	return func(o *options) {
+		nest(o.extra, "yAxis", "suggestedMin", min)
+		nest(o.extra, "yAxis", "suggestedMax", max)
+	}
+}
+
+// ReverseX and ReverseY run an axis from its largest end.
+func ReverseX() Option { return func(o *options) { nest(o.extra, "xAxis", "reverse", true) } }
+func ReverseY() Option { return func(o *options) { nest(o.extra, "yAxis", "reverse", true) } }
+
+// Angles sets where a pie, donut or polar area starts (degrees clockwise from the top) and how far round it goes.
+func Angles(start, sweep float64) Option {
+	return func(o *options) { o.extra["startAngle"], o.extra["sweep"] = start, sweep }
+}
+
+// Cutout is a donut's hole, from 0 to 0.95 of its radius.
+func Cutout(share float64) Option { return func(o *options) { o.extra["cutout"] = share } }
+
+// SeriesData is a series' values and how it is drawn: fry.S(margin, "kind", "line", "axis", "right", "dash", "dashed").
+type SeriesData struct {
+	Values  any
+	Options map[string]any
+}
+
+// S makes a series with options, to give a chart's Map: fry.Map("Sales", sales, "Margin", fry.S(margin, "axis", "right")).
+func S(values any, options ...any) SeriesData {
+	opts := make(map[string]any)
+	for i := 0; i+1 < len(options); i += 2 {
+		opts[fmt.Sprint(options[i])] = options[i+1]
+	}
+	return SeriesData{Values: values, Options: opts}
+}
+
+var seriesOptionNames = map[string]bool{
+	"name": true, "color": true, "colors": true, "lineWidth": true, "kind": true, "axis": true, "stack": true, "dash": true,
+	"interpolation": true, "tension": true, "step": true, "fill": true, "fillTo": true, "pointStyle": true, "pointRadius": true,
+	"colorSegments": true, "sizes": true, "from": true, "cornerRadius": true, "ids": true, "labels": true,
+}
+
+func applySeriesOptions(series map[string]any, options map[string]any) map[string]any {
+	for name, value := range options {
+		if !seriesOptionNames[name] {
+			var known []string
+			for k := range seriesOptionNames {
+				known = append(known, k)
+			}
+			sort.Strings(known)
+			panic(fmt.Sprintf("There is no series option %q: use one of %s.", name, strings.Join(known, ", ")))
+		}
+		if name == "sizes" || name == "from" {
+			var numbers []any
+			for _, item := range toSlice(value) {
+				numbers = append(numbers, toNum(item))
+			}
+			value = numbers
+		}
+		series[name] = value
+	}
+	return series
 }
 
 func parseOptions(args []any) *options {
@@ -349,19 +462,54 @@ func buildMessage(msgType, mime string, spec map[string]any, displayId string) s
 }
 
 // --------------------------------------------------------------------------------------------------- API
-func LineChart(data any, args ...any) *DisplayHandle {
-	opts := parseOptions(args)
-	return sendDisplay(ChartMime, chartSpec("line", data, opts.title, opts.extra))
+// chartDisplay draws a chart of data as kind, with the options (and the labels they name the places with).
+func chartDisplay(kind string, data any, opts *options) *DisplayHandle {
+	spec := chartSpec(kind, data, opts.title, opts.extra)
+	if len(opts.labels) > 0 {
+		names := make([]any, len(opts.labels))
+		for i, l := range opts.labels {
+			names[i] = l
+		}
+		if series, ok := spec["series"].([]map[string]any); ok {
+			for _, one := range series {
+				if y, ok := one["y"].([]any); ok && len(y) == len(names) {
+					one["labels"] = names
+				}
+			}
+		}
+	}
+	return sendDisplay(ChartMime, spec)
 }
 
-func ScatterChart(data any, args ...any) *DisplayHandle {
-	opts := parseOptions(args)
-	return sendDisplay(ChartMime, chartSpec("scatter", data, opts.title, opts.extra))
+func LineChart(data any, args ...any) *DisplayHandle    { return chartDisplay("line", data, parseOptions(args)) }
+func AreaChart(data any, args ...any) *DisplayHandle    { return chartDisplay("area", data, parseOptions(args)) }
+func ScatterChart(data any, args ...any) *DisplayHandle { return chartDisplay("scatter", data, parseOptions(args)) }
+func BarChart(data any, args ...any) *DisplayHandle     { return chartDisplay("bar", data, parseOptions(args)) }
+func PieChart(data any, args ...any) *DisplayHandle     { return chartDisplay("pie", data, parseOptions(args)) }
+func DonutChart(data any, args ...any) *DisplayHandle   { return chartDisplay("donut", data, parseOptions(args)) }
+
+// BubbleChart draws (x, y, size) items; the size is a radius in pixels.
+func BubbleChart(data any, args ...any) *DisplayHandle { return chartDisplay("bubble", data, parseOptions(args)) }
+
+// RadarChart draws a polygon for each series over a spoke for each value (name the spokes with fry.Labels).
+func RadarChart(data any, args ...any) *DisplayHandle { return chartDisplay("radar", data, parseOptions(args)) }
+
+func PolarAreaChart(data any, args ...any) *DisplayHandle {
+	return chartDisplay("polarArea", data, parseOptions(args))
 }
 
-func BarChart(data any, args ...any) *DisplayHandle {
+func StackedBarChart(data any, args ...any) *DisplayHandle {
 	opts := parseOptions(args)
-	return sendDisplay(ChartMime, chartSpec("bar", data, opts.title, opts.extra))
+	if _, set := opts.extra["stack"]; !set {
+		opts.extra["stack"] = "stacked"
+	}
+	return chartDisplay("bar", data, opts)
+}
+
+func HorizontalBarChart(data any, args ...any) *DisplayHandle {
+	opts := parseOptions(args)
+	opts.extra["orientation"] = "horizontal"
+	return chartDisplay("bar", data, opts)
 }
 
 func Chart(data any, args ...any) *DisplayHandle {
@@ -370,7 +518,7 @@ func Chart(data any, args ...any) *DisplayHandle {
 	if k == "" {
 		k = "line"
 	}
-	return sendDisplay(ChartMime, chartSpec(k, data, opts.title, opts.extra))
+	return chartDisplay(k, data, opts)
 }
 
 func Histogram(data any, args ...any) *DisplayHandle {
@@ -383,11 +531,6 @@ func Histogram(data any, args ...any) *DisplayHandle {
 		extra["bins"] = opts.bins
 	}
 	return sendDisplay(ChartMime, chartSpec("histogram", data, opts.title, extra))
-}
-
-func PieChart(data any, args ...any) *DisplayHandle {
-	opts := parseOptions(args)
-	return sendDisplay(ChartMime, chartSpec("pie", data, opts.title, opts.extra))
 }
 
 func Scatter3D(data any, args ...any) *DisplayHandle {
@@ -666,6 +809,14 @@ func chartSpec(kind string, data any, title string, extra map[string]any) map[st
 	}
 	var series []map[string]any
 
+	if kind == "bubble" {
+		spec["series"] = bubbleSeries(data)
+		if title != "" {
+			spec["title"] = title
+		}
+		return spec
+	}
+
 	slice := toSlice(data)
 	if slice != nil {
 		firstPair := toSlice(safeIndex(slice, 0))
@@ -707,21 +858,30 @@ func chartSpec(kind string, data any, title string, extra map[string]any) map[st
 	} else if om, ok := data.(OrderedMap); ok {
 		isMultiSeries := false
 		for _, e := range om {
-			if toSlice(e.Value) != nil {
+			if _, styled := e.Value.(SeriesData); styled || toSlice(e.Value) != nil {
 				isMultiSeries = true
 				break
 			}
 		}
 		if isMultiSeries {
 			for _, e := range om {
-				yVals := toSlice(e.Value)
+				value := e.Value
+				styled, hasOptions := value.(SeriesData)
+				if hasOptions {
+					value = styled.Values
+				}
+				yVals := toSlice(value)
 				var y []any
 				if yVals != nil {
 					for _, item := range yVals {
 						y = append(y, toNum(item))
 					}
 				}
-				series = append(series, map[string]any{"name": e.Key, "y": y})
+				one := map[string]any{"name": e.Key, "y": y}
+				if hasOptions {
+					applySeriesOptions(one, styled.Options)
+				}
+				series = append(series, one)
 			}
 		} else {
 			var labels []string
@@ -767,6 +927,35 @@ func chartSpec(kind string, data any, title string, extra map[string]any) map[st
 		spec["title"] = title
 	}
 	return spec
+}
+
+// bubbleSeries reads (x, y, size) items: a slice of them, or a map of names to slices (a series each).
+func bubbleSeries(data any) []map[string]any {
+	one := func(items []any, name string) map[string]any {
+		series := map[string]any{}
+		if name != "" {
+			series["name"] = name
+		}
+		var x, y, sizes []any
+		for _, item := range items {
+			parts := toSlice(item)
+			if len(parts) >= 3 {
+				x, y, sizes = append(x, toNum(parts[0])), append(y, toNum(parts[1])), append(sizes, toNum(parts[2]))
+			} else {
+				x, y, sizes = append(x, nil), append(y, nil), append(sizes, nil)
+			}
+		}
+		series["x"], series["y"], series["sizes"] = x, y, sizes
+		return series
+	}
+	if om, ok := data.(OrderedMap); ok {
+		var all []map[string]any
+		for _, e := range om {
+			all = append(all, one(toSlice(e.Value), e.Key))
+		}
+		return all
+	}
+	return []map[string]any{one(toSlice(data), "")}
 }
 
 func plot3dSpec(kind string, data any, title string) map[string]any {

@@ -78,6 +78,25 @@ public class JavaScriptVisualsConformanceTests : IDisposable
         D.islands([[1, 0], [1, 1]], "Islands");
         """;
 
+    // The newer chart features (VisualConformanceFixturesTests.ChartFeatureCases), made the way JavaScript writes them.
+    private const string TheFeatureCalls = """
+        const D = Display;
+        const months = ["Jan", "Feb", "Mar"];
+        const rev = [40, 55, 48], costs = [30, 35, 38], margin = [25, 36, 21];
+        D.barChart({ Revenue: rev, Costs: costs, Margin: { values: margin, kind: "line", axis: "right", dash: "dashed" } },
+                   "Combo", { labels: months, y2Title: "Margin %", y2Min: 0, y2Max: 100 });
+        D.stackedBarChart({ Revenue: rev, Costs: costs }, "Stacked", { labels: months });
+        D.horizontalBarChart({ Revenue: rev }, "Horizontal", { labels: months });
+        D.lineChart({ Smooth: { values: rev, interpolation: "smooth", tension: 0.5 },
+                      Steps: { values: costs, step: "after", dash: "dotted", pointStyle: "star", pointRadius: 6 },
+                      Filled: { values: margin, fill: true, color: "#ff8800" } }, "Line styles");
+        D.bubbleChart([[1, 2, 8], [2, 4, 12]], "Bubbles");
+        D.radarChart({ Ada: [8, 6, 9], Bo: [5, 9, 6] }, "Radar", { labels: ["Speed", "Power", "Skill"] });
+        D.polarAreaChart({ A: 3, B: 5 }, "Polar");
+        D.donutChart({ Done: 70, Left: 30 }, "Gauge", { gauge: true });
+        D.lineChart({ Growth: [1, 10, 100] }, "Scales", { yScale: "log", ySuggestedMin: 1, ySuggestedMax: 1000, reverseX: true });
+        """;
+
     private async Task<(ScriptRunSession Session, List<string> Console, List<RichCellOutput> Outputs, ExternalOutputProcessor Processor)> StartRun(
         string path,
         ExternalVisualSession? session = null)
@@ -143,6 +162,41 @@ public class JavaScriptVisualsConformanceTests : IDisposable
             Assert.Equal(mime, v.MimeType);
             Assert.Equal(drawn, VisualConformanceFixturesTests.DrawnAs(mime, VisualJson.SerializeToElement(v.Spec)));
         }
+    }
+
+    [JavaScriptFact]
+    public async Task Run_TheChartFeatureCases_DrawAsTheFixturesDo()
+    {
+        var script = Write("features.js", TheFeatureCalls);
+        var (session, console, outputs, processor) = await StartRun(script);
+        var result = await session.Completion.WaitAsync(Patience);
+        processor.Flush();
+
+        Assert.True(result.Succeeded, string.Concat(console));
+        Assert.Equal(VisualConformanceFixturesTests.ChartFeatureCases.Length, outputs.Count);
+
+        for (var i = 0; i < VisualConformanceFixturesTests.ChartFeatureCases.Length; i++)
+        {
+            var name = VisualConformanceFixturesTests.ChartFeatureCases[i].Name;
+            var (mime, drawn) = VisualConformanceFixturesTests.Expected(name);
+            var v = outputs[i].Visual!;
+            Assert.Equal(mime, v.MimeType);
+            Assert.Equal(drawn, VisualConformanceFixturesTests.DrawnAs(mime, VisualJson.SerializeToElement(v.Spec)));
+        }
+    }
+
+    [JavaScriptFact]
+    public async Task ASeriesOptionItDoesNotKnow_IsAnErrorThatListsTheOnesItDoes()
+    {
+        var script = Write("badoption.js", """
+            Display.lineChart({ a: { values: [1, 2], dashed: true } });
+            """);
+        var (session, console, _, processor) = await StartRun(script);
+        var result = await session.Completion.WaitAsync(Patience);
+        processor.Flush();
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("There is no series option 'dashed'", string.Concat(console));
     }
 
     [JavaScriptFact]

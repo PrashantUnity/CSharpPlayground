@@ -31,6 +31,15 @@ internal static class Snapshot
 
         if (options.Flag("light")) Application.Current!.RequestedThemeVariant = ThemeVariant.Light;
         if (options.Value("palette") is { } palette) ApplyGeneratedTheme(palette, dark: !options.Flag("light"));
+        if (options.Value("layout") is { } layoutId)
+        {
+            // --layout <preset id or name>: every view drawn with that layout.
+            var preset = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutPresets.All
+                .FirstOrDefault(p => p.Id.Equals(layoutId, StringComparison.OrdinalIgnoreCase) || p.Id.Equals("layout-" + layoutId, StringComparison.OrdinalIgnoreCase) || p.Name.Equals(layoutId, StringComparison.OrdinalIgnoreCase))
+                ?? throw new ArgumentException($"No layout preset '{layoutId}'. Presets: {string.Join(", ", PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutPresets.All.Select(p => p.Id))}");
+            PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.StudioAppContext.Instance.ThemeEngine.ApplyLayout(preset.Spec);
+            Console.WriteLine($"Layout: {preset.Name}");
+        }
 
         OutputFolder = Path.GetFullPath(options.Value("out") ?? DefaultOutputFolder());
         Directory.CreateDirectory(OutputFolder);

@@ -1,0 +1,19 @@
+{
+  "mime": "application/vnd.fry.chart.v1\u002Bjson",
+  "spec": {
+    "kind": "polarArea",
+    "series": [
+      {
+        "y": [
+          3,
+          5
+        ],
+        "labels": [
+          "A",
+          "B"
+        ]
+      }
+    ],
+    "title": "Polar"
+  }
+}

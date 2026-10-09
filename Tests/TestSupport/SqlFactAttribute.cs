@@ -12,6 +12,12 @@ public sealed class SqlFactAttribute : FactAttribute
 {
     public SqlFactAttribute()
     {
+        if (!TimeGate.IsEnabled && !TestSql.Required)
+        {
+            Skip = TimeGate.SkipReason;
+            return;
+        }
+
         if (TestSql.Toolchain == null && !TestSql.Required)
         {
             Skip = "Needs SQLite CLI (sqlite3). Install sqlite3, or set FRY_TEST_SQL to an executable.";

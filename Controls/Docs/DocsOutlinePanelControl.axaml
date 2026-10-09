@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -11,15 +11,15 @@
              x:DataType="docs:CSharpDocsViewModel"
              Width="260" Margin="32,0,0,0" VerticalAlignment="Top">
 
-    <StackPanel Spacing="16">
+    <StackPanel lt:Tokens.Spacing="DsSpace16">
         <!-- On This Page Navigation Card -->
         <Border Background="{DynamicResource DsSurfaceBrush}"
                 BorderBrush="{DynamicResource DsBorderBrush}"
-                BorderThickness="1" CornerRadius="10" Padding="14">
-            <StackPanel Spacing="10">
+                lt:Tokens.BorderThickness="DsCardBorder" lt:Tokens.CornerRadius="DsRadiusCard" Padding="14" lt:Tokens.BoxShadow="DsCardShadow">
+            <StackPanel lt:Tokens.Spacing="DsSpace10">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <materialIcons:MaterialIcon Kind="FormatListBulleted" Width="15" Height="15" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
-                    <TextBlock Text="ON THIS PAGE" FontSize="10" FontWeight="Bold" LetterSpacing="1.2" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="ON THIS PAGE" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightStrong" lt:Tokens.LetterSpacing="DsTracking120" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                 </StackPanel>
                 <Rectangle Height="1" Fill="{DynamicResource DsBorderBrush}" />
                 <ItemsControl ItemsSource="{Binding SelectedArticle.Sections}">
@@ -27,10 +27,10 @@
                         <DataTemplate x:DataType="models:DocSection">
                             <Border Classes="doc-article-item" Padding="6,4" Margin="0,1">
                                 <Grid ColumnDefinitions="Auto,*">
-                                    <Border Grid.Column="0" Width="4" Height="4" CornerRadius="2"
+                                    <Border Grid.Column="0" Width="4" Height="4" lt:Tokens.CornerRadius="DsRadiusXS"
                                             Background="{DynamicResource DsPrimaryBrush}"
                                             VerticalAlignment="Center" Margin="0,0,8,0" />
-                                    <TextBlock Grid.Column="1" Text="{Binding Heading}" FontSize="11.5"
+                                    <TextBlock Grid.Column="1" Text="{Binding Heading}" lt:Tokens.FontSize="DsFontSize250"
                                                Foreground="{DynamicResource DsTextBrush}"
                                                TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Heading}" />
                                 </Grid>
@@ -44,26 +44,26 @@
         <!-- Quick Studio Jump Card -->
         <Border Background="{DynamicResource DsSurfaceBrush}"
                 BorderBrush="{DynamicResource DsBorderBrush}"
-                BorderThickness="1" CornerRadius="10" Padding="14">
-            <StackPanel Spacing="10">
-                <TextBlock Text="QUICK ACTIONS" FontSize="10" FontWeight="Bold" LetterSpacing="1.2" Foreground="{DynamicResource DsMutedBrush}" />
+                lt:Tokens.BorderThickness="DsCardBorder" lt:Tokens.CornerRadius="DsRadiusCard" Padding="14" lt:Tokens.BoxShadow="DsCardShadow">
+            <StackPanel lt:Tokens.Spacing="DsSpace10">
+                <TextBlock Text="QUICK ACTIONS" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightStrong" lt:Tokens.LetterSpacing="DsTracking120" Foreground="{DynamicResource DsMutedBrush}" />
                 <Rectangle Height="1" Fill="{DynamicResource DsBorderBrush}" />
 
                 <Button Command="{Binding OpenCodeStudioCommand}" Classes="nexus-nav-item" Padding="8,6">
                     <Grid ColumnDefinitions="Auto,*">
-                        <Border Grid.Column="0" Width="26" Height="26" CornerRadius="6" Background="{DynamicResource NavScriptsBgBrush}">
+                        <Border Grid.Column="0" Width="26" Height="26" lt:Tokens.CornerRadius="DsRadiusMD" Background="{DynamicResource NavScriptsBgBrush}">
                             <materialIcons:MaterialIcon Kind="CodeBraces" Width="14" Height="14" Foreground="{DynamicResource NavScriptsFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
-                        <TextBlock Grid.Column="1" Text="Open Script Studio" FontSize="12" FontWeight="Medium" Margin="10,0,0,0" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Text="Open Script Studio" lt:Tokens.FontSize="DsFontSize300" lt:Tokens.FontWeight="DsWeightLabel" Margin="10,0,0,0" VerticalAlignment="Center" />
                     </Grid>
                 </Button>
 
                 <Button Command="{Binding OpenNotebookStudioCommand}" Classes="nexus-nav-item" Padding="8,6">
                     <Grid ColumnDefinitions="Auto,*">
-                        <Border Grid.Column="0" Width="26" Height="26" CornerRadius="6" Background="{DynamicResource NavNotebooksBgBrush}">
+                        <Border Grid.Column="0" Width="26" Height="26" lt:Tokens.CornerRadius="DsRadiusMD" Background="{DynamicResource NavNotebooksBgBrush}">
                             <materialIcons:MaterialIcon Kind="NotebookOutline" Width="14" Height="14" Foreground="{DynamicResource NavNotebooksFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
-                        <TextBlock Grid.Column="1" Text="Open Notebook" FontSize="12" FontWeight="Medium" Margin="10,0,0,0" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Text="Open Notebook" lt:Tokens.FontSize="DsFontSize300" lt:Tokens.FontWeight="DsWeightLabel" Margin="10,0,0,0" VerticalAlignment="Center" />
                     </Grid>
                 </Button>
             </StackPanel>

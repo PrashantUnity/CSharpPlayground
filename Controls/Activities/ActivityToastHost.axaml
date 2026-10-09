@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:common="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common"
@@ -20,9 +20,9 @@
             <DataTemplate x:DataType="common:ActivityToastViewModel">
                 <Border Background="{DynamicResource DsSurfaceBrush}"
                         BorderBrush="{DynamicResource DsBorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="8"
-                        BoxShadow="{DynamicResource DsFloatingShadow}"
+                        lt:Tokens.BorderThickness="DsCardBorder"
+                        lt:Tokens.CornerRadius="DsRadiusLG"
+                        lt:Tokens.BoxShadow="DsFloatingShadow"
                         Padding="12,10">
                     <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="6">
                         <materialIcons:MaterialIcon Grid.RowSpan="2" Kind="ProgressClock" Width="16" Height="16" VerticalAlignment="Top"
@@ -31,9 +31,9 @@
                         <materialIcons:MaterialIcon Grid.RowSpan="2" Kind="AlertCircleOutline" Width="16" Height="16" VerticalAlignment="Top"
                                                     Foreground="{DynamicResource DsErrorBrush}"
                                                     IsVisible="{Binding IsError}" />
-                        <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="12" FontWeight="SemiBold"
+                        <TextBlock Grid.Column="1" Text="{Binding Title}" lt:Tokens.FontSize="DsFontSize300" lt:Tokens.FontWeight="DsWeightEmphasis"
                                    TextTrimming="CharacterEllipsis" Foreground="{DynamicResource DsTextWhiteBrush}" />
-                        <TextBlock Grid.Column="1" Grid.Row="1" Text="{Binding Detail}" FontSize="11" TextWrapping="Wrap" MaxLines="3"
+                        <TextBlock Grid.Column="1" Grid.Row="1" Text="{Binding Detail}" lt:Tokens.FontSize="DsFontSize200" TextWrapping="Wrap" MaxLines="3"
                                    TextTrimming="CharacterEllipsis" Foreground="{DynamicResource DsMutedBrush}"
                                    IsVisible="{Binding HasDetail}" />
                         <ProgressBar Grid.Column="1" Grid.Row="2" Height="3" MinHeight="3" Minimum="0" Maximum="100"
@@ -42,7 +42,7 @@
                                      Background="{DynamicResource DsBgBrush}"
                                      IsVisible="{Binding HasProgress}" />
                         <StackPanel Grid.Column="2" Grid.RowSpan="3" Orientation="Horizontal" Spacing="4" VerticalAlignment="Top">
-                            <Button Content="Cancel" FontSize="11" Padding="8,2"
+                            <Button Content="Cancel" lt:Tokens.FontSize="DsFontSize200" Padding="8,2"
                                     Command="{Binding CancelCommand}"
                                     IsVisible="{Binding IsCancellable}" />
                             <Button Padding="4" Background="Transparent" BorderThickness="0"

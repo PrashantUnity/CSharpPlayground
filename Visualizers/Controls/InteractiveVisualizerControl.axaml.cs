@@ -62,6 +62,7 @@ public partial class InteractiveVisualizerControl : UserControl
         if (Find<VisualizerPlaybackControl>("PlaybackControl") is { } play) chrome.SetFooter(play);
         chrome.SpecGetter = () => Options != null ? VisualizerOptionsConverter.ToSpec(Canvas?.GetEffectiveOptions() ?? Options) : null;
         chrome.DataCsvGetter = () => Options != null ? VisualizerExportService.ToCsv(Canvas?.GetEffectiveOptions() ?? Options) : null;
+        chrome.CustomGifSaver = async () => await ExportGifAsync();
         chrome.ResetFitRequested += (_, _) => { Canvas?.FitToView(); UpdateZoomLevel(); };
         chrome.FullscreenRequested += (_, _) => ToggleFullScreen();
     }
@@ -126,6 +127,7 @@ public partial class InteractiveVisualizerControl : UserControl
         if (Find<VisualChromeControl>("Chrome") is { } chrome)
         {
             chrome.DefaultCanvasHeight = InlineCanvasHeight();
+            chrome.SupportsGifExport = opts.Sequence is { HasSteps: true };
         }
         ApplyViewMode();
         if (Find<VisualizerPlaybackControl>("PlaybackControl") is { } play) { play.Sequence = opts.Sequence; play.IsVisible = opts.Sequence is { HasSteps: true }; }
@@ -189,5 +191,43 @@ public partial class InteractiveVisualizerControl : UserControl
     {
         var step = _observedSequence?.CurrentStep;
         RaiseEvent(new VisualizerStepLineEventArgs(step?.SourceLine ?? 0, step?.SourceFile, reveal: false));
+    }
+
+    public async Task ExportGifAsync()
+    {
+        var seq = Options?.Sequence;
+        if (seq == null || !seq.HasSteps) return;
+
+        var top = TopLevel.GetTopLevel(this);
+        if (top?.StorageProvider is { CanSave: true } sp)
+        {
+            string rawTitle = !string.IsNullOrWhiteSpace(Options?.Title) ? Options.Title : "visualizer";
+            string safeTitle = string.Concat(rawTitle.Split(System.IO.Path.GetInvalidFileNameChars())).Replace(" ", "_");
+
+            var file = await sp.SaveFilePickerAsync(new Avalonia.Platform.Storage.FilePickerSaveOptions
+            {
+                Title = "Export Visualizer Animation as GIF",
+                DefaultExtension = "gif",
+                SuggestedFileName = $"{safeTitle}.gif",
+                FileTypeChoices = [new Avalonia.Platform.Storage.FilePickerFileType("Animated GIF (*.gif)") { Patterns = ["*.gif"] }]
+            });
+
+            if (file != null)
+            {
+                var eff = Canvas?.GetEffectiveOptions() ?? Options!;
+                int w = (int)Math.Max(320, Canvas?.Bounds.Width ?? 640);
+                int h = (int)Math.Max(200, Canvas?.Bounds.Height ?? 360);
+                var exportOptions = new VisualizerGifExportOptions
+                {
+                    Width = w,
+                    Height = h,
+                    IncludeBanner = true
+                };
+
+                await using var stream = await file.OpenWriteAsync();
+                byte[] bytes = await VisualizerGifExportService.ExportToGifBytesAsync(eff, exportOptions);
+                await stream.WriteAsync(bytes);
+            }
+        }
     }
 }

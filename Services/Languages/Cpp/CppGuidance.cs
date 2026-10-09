@@ -24,7 +24,7 @@ public static class CppGuidance
                 summary,
                 [
                     "Install WinLibs (GCC & Clang with full C++ STL): winget install BrechtSanders.WinLibs.POSIX.UCRT",
-                    "or Visual Studio C++ Build Tools: winget install Microsoft.VisualStudio.2022.BuildTools",
+                    "or Visual Studio C++ Build Tools: winget install Microsoft.VisualStudio.2022.BuildTools --override \"--passive --wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended\"",
                     "or MinGW-w64 via MSYS2: winget install MSYS2.MSYS2",
                     "or LLVM Clang: winget install LLVM.LLVM"
                 ],

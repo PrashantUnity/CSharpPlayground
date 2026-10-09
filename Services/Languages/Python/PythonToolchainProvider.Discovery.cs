@@ -74,7 +74,7 @@ public sealed partial class PythonToolchainProvider
             }
 
             if (insideRoot && SameFolder(folder, root!)) break;
-            folder = Path.GetDirectoryName(folder);
+            folder = ExecutableSearch.GetDirectoryName(folder);
         }
     }
 
@@ -165,8 +165,8 @@ public sealed partial class PythonToolchainProvider
         // "install the developer tools" dialog, so it's only tried when they're there.
         if (_host.IsMacOS && path == "/usr/bin/python3")
         {
-            _commandLineToolsInstalled ??= new Lazy<Task<bool>>(async () =>
-                (await _host.RunAsync("/usr/bin/xcode-select", ["-p"], TimeSpan.FromSeconds(3), ct)).Succeeded);
+            _commandLineToolsInstalled ??= new Lazy<Task<bool>>(() => Task.Run(async () =>
+                (await _host.RunAsync("/usr/bin/xcode-select", ["-p"], TimeSpan.FromSeconds(3), ct)).Succeeded));
             return await _commandLineToolsInstalled.Value;
         }
 

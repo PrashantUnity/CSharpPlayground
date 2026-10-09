@@ -197,4 +197,16 @@ public partial class VisualizerRecorder : IVisualSource
 
     /// <summary>The visualizer as a spec, as every language describes one.</summary>
     public VisualSpec ToVisualSpec() => VisualizerOptionsConverter.ToSpec(Options);
+
+    /// <summary>Exports the recorded visualizer steps into an animated GIF file.</summary>
+    public Task SaveGifAsync(string path, VisualizerGifExportOptions? exportOptions = null, IProgress<double>? progress = null, System.Threading.CancellationToken cancellationToken = default) =>
+        VisualizerGifExportService.ExportToFileAsync(Options, path, exportOptions, progress, cancellationToken);
+
+    /// <summary>Exports the recorded visualizer steps into an animated GIF file synchronously.</summary>
+    public void SaveGif(string path, VisualizerGifExportOptions? exportOptions = null) =>
+        SaveGifAsync(path, exportOptions).GetAwaiter().GetResult();
+
+    /// <summary>Exports the recorded visualizer steps into animated GIF bytes.</summary>
+    public Task<byte[]> ToGifBytesAsync(VisualizerGifExportOptions? exportOptions = null, IProgress<double>? progress = null, System.Threading.CancellationToken cancellationToken = default) =>
+        VisualizerGifExportService.ExportToGifBytesAsync(Options, exportOptions, progress, cancellationToken);
 }

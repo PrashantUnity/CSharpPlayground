@@ -1,0 +1,143 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:settings="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings"
+             mc:Ignorable="d" d:DesignWidth="380" d:DesignHeight="900"
+             x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Settings.LayoutSpecimenControl"
+             x:DataType="settings:CSharpSettingsViewModel"
+             FontFamily="{DynamicResource DsUiFontFamily}"
+             FontWeight="{DynamicResource DsWeightBody}">
+
+    <!-- The preview: the layout the levers describe, before the studio takes it. Its values come from this control's own
+         resources (swapped on every lever move), so here, and only here, layout tokens are dynamic resources. -->
+    <StackPanel Spacing="{DynamicResource DsSpace12}">
+        <TextBlock Text="PREVIEW" FontSize="{DynamicResource DsFontSize075}" FontWeight="{DynamicResource DsWeightStrong}"
+                   LetterSpacing="{DynamicResource DsTracking080}" Foreground="{DynamicResource DsMutedBrush}" />
+
+        <!-- A card with type, buttons, an input and chips -->
+        <Border Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}"
+                BorderThickness="{DynamicResource DsCardBorder}" CornerRadius="{DynamicResource DsRadiusCard}"
+                Padding="{DynamicResource DsCardPadding}" BoxShadow="{DynamicResource DsCardShadow}">
+            <StackPanel Spacing="{DynamicResource DsSpace8}">
+                <TextBlock Text="SECTION LABEL" FontSize="{DynamicResource DsFontSize075}" FontWeight="{DynamicResource DsWeightStrong}"
+                           LetterSpacing="{DynamicResource DsTracking080}" Foreground="{DynamicResource DsMutedBrush}" />
+                <TextBlock Text="Card title" FontSize="{DynamicResource DsFontSize600}" FontWeight="{DynamicResource DsWeightStrong}"
+                           Foreground="{DynamicResource DsTextWhiteBrush}" />
+                <TextBlock Text="Body text sits at the base size. Labels, captions and headings follow the ramp."
+                           FontSize="{DynamicResource DsFontSize300}" Foreground="{DynamicResource DsTextBrush}" TextWrapping="Wrap" />
+                <TextBlock Text="A caption, quieter and smaller." FontSize="{DynamicResource DsFontSize100}" Foreground="{DynamicResource DsMutedBrush}" />
+
+                <StackPanel Orientation="Horizontal" Spacing="{DynamicResource DsSpace8}" Margin="0,4,0,0">
+                    <Border Height="{DynamicResource DsControlHeight}" CornerRadius="{DynamicResource DsRadiusButton}" Padding="14,0"
+                            Background="{DynamicResource DsPrimaryBrush}">
+                        <TextBlock Text="Primary" FontSize="{DynamicResource DsFontSize250}" FontWeight="{DynamicResource DsWeightEmphasis}"
+                                   Foreground="{DynamicResource DsOnAccentBrush}" VerticalAlignment="Center" />
+                    </Border>
+                    <Border Height="{DynamicResource DsControlHeight}" CornerRadius="{DynamicResource DsRadiusButton}" Padding="14,0"
+                            BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="{DynamicResource DsBorderThin}">
+                        <TextBlock Text="Outlined" FontSize="{DynamicResource DsFontSize250}" FontWeight="{DynamicResource DsWeightLabel}"
+                                   Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
+                    </Border>
+                    <Border Height="{DynamicResource DsControlHeightSmall}" CornerRadius="{DynamicResource DsRadiusChip}" Padding="10,0"
+                            Background="{DynamicResource DsPrimarySubtleBrush}" VerticalAlignment="Center">
+                        <TextBlock Text="Chip" FontSize="{DynamicResource DsFontSize150}" FontWeight="{DynamicResource DsWeightLabel}"
+                                   Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                    </Border>
+                </StackPanel>
+
+                <Border Height="{DynamicResource DsControlHeight}" CornerRadius="{DynamicResource DsRadiusInput}" Padding="10,0"
+                        BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="{DynamicResource DsBorderThin}"
+                        Background="{DynamicResource DsBgBrush}">
+                    <Grid ColumnDefinitions="Auto,*">
+                        <materialIcons:MaterialIcon Kind="Magnify" Width="14" Height="14" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Text="Search files…" Margin="8,0,0,0" FontSize="{DynamicResource DsFontSize250}"
+                                   Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <!-- Tabs and list rows -->
+        <Border Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}"
+                BorderThickness="{DynamicResource DsCardBorder}" CornerRadius="{DynamicResource DsRadiusCard}" ClipToBounds="True">
+            <StackPanel>
+                <Border BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="{DynamicResource DsBorderBottom}">
+                    <StackPanel Orientation="Horizontal">
+                        <Border Height="{DynamicResource DsTabHeight}" Padding="14,0" Background="{DynamicResource DsSurfaceHighBrush}"
+                                BorderBrush="{DynamicResource DsPrimaryBrush}" BorderThickness="{DynamicResource DsBorderAccentLeft}"
+                                CornerRadius="{DynamicResource DsRadiusTabTop}">
+                            <TextBlock Text="Program.cs" FontSize="{DynamicResource DsFontSize250}" FontWeight="{DynamicResource DsWeightEmphasis}"
+                                       Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                        </Border>
+                        <Border Height="{DynamicResource DsTabHeight}" Padding="14,0">
+                            <TextBlock Text="notes.md" FontSize="{DynamicResource DsFontSize250}" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                        </Border>
+                    </StackPanel>
+                </Border>
+                <Border Height="{DynamicResource DsRowHeight}" Padding="10,0" Margin="6,6,6,0" CornerRadius="{DynamicResource DsRadiusRow}"
+                        Background="{DynamicResource DsPrimarySubtleBrush}" BorderBrush="{DynamicResource DsPrimaryBrush}"
+                        BorderThickness="{DynamicResource DsBorderAccentLeft}">
+                    <TextBlock Text="Selected row" FontSize="{DynamicResource DsFontSize250}" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                </Border>
+                <Border Height="{DynamicResource DsRowHeight}" Padding="10,0" Margin="6,0" BorderBrush="{DynamicResource DsBorderSubtleBrush}"
+                        BorderThickness="{DynamicResource DsBorderBottom}">
+                    <TextBlock Text="A row with a divider" FontSize="{DynamicResource DsFontSize250}" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
+                </Border>
+                <Border Height="{DynamicResource DsRowHeight}" Padding="10,0" Margin="6,0,6,6">
+                    <TextBlock Text="Another row" FontSize="{DynamicResource DsFontSize250}" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <!-- Code -->
+        <Border Background="{DynamicResource EditorBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="{DynamicResource DsBorderThin}"
+                CornerRadius="{DynamicResource DsRadiusMD}" Padding="12,10">
+            <TextBlock FontFamily="{DynamicResource DsCodeFontFamily}" FontSize="{DynamicResource DsFontSize300}" Foreground="{DynamicResource EditorFgBrush}">
+                <Run Text="var " Foreground="{DynamicResource DsPrimaryBrush}" /><Run Text="total = Sum(" /><Run Text="42" Foreground="{DynamicResource DsWarningBrush}" /><Run Text=");" />
+            </TextBlock>
+        </Border>
+
+        <!-- A dialog over the page, with a tooltip -->
+        <Grid>
+            <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="{DynamicResource DsBorderThin}"
+                    CornerRadius="{DynamicResource DsRadiusDialog}" Padding="{DynamicResource DsCardPadding}" BoxShadow="{DynamicResource DsFloatingShadow}" Margin="0,0,0,26">
+                <StackPanel Spacing="{DynamicResource DsSpace8}">
+                    <TextBlock Text="Delete this file?" FontSize="{DynamicResource DsFontSize500}" FontWeight="{DynamicResource DsWeightStrong}" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                    <TextBlock Text="Dialogs take the dialog radius and the floating shadow." FontSize="{DynamicResource DsFontSize200}" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+            <Border HorizontalAlignment="Right" VerticalAlignment="Bottom" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}"
+                    BorderThickness="{DynamicResource DsBorderThin}" CornerRadius="{DynamicResource DsRadiusTooltip}" Padding="8,4" BoxShadow="{DynamicResource DsShadowLevel2}">
+                <TextBlock Text="A tooltip" FontSize="{DynamicResource DsFontSize150}" Foreground="{DynamicResource DsTextBrush}" />
+            </Border>
+        </Grid>
+
+        <!-- Elevation levels -->
+        <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center" Margin="0,4,0,8">
+            <Border Width="44" Height="32" CornerRadius="{DynamicResource DsRadiusMD}" Background="{DynamicResource DsSurfaceBrush}" BoxShadow="{DynamicResource DsShadowLevel0}"><TextBlock Text="0" FontSize="{DynamicResource DsFontSize100}" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+            <Border Width="44" Height="32" CornerRadius="{DynamicResource DsRadiusMD}" Background="{DynamicResource DsSurfaceBrush}" BoxShadow="{DynamicResource DsShadowLevel1}"><TextBlock Text="1" FontSize="{DynamicResource DsFontSize100}" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+            <Border Width="44" Height="32" CornerRadius="{DynamicResource DsRadiusMD}" Background="{DynamicResource DsSurfaceBrush}" BoxShadow="{DynamicResource DsShadowLevel2}"><TextBlock Text="2" FontSize="{DynamicResource DsFontSize100}" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+            <Border Width="44" Height="32" CornerRadius="{DynamicResource DsRadiusMD}" Background="{DynamicResource DsSurfaceBrush}" BoxShadow="{DynamicResource DsShadowLevel3}"><TextBlock Text="3" FontSize="{DynamicResource DsFontSize100}" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+            <Border Width="44" Height="32" CornerRadius="{DynamicResource DsRadiusMD}" Background="{DynamicResource DsSurfaceBrush}" BoxShadow="{DynamicResource DsShadowLevel4}"><TextBlock Text="4" FontSize="{DynamicResource DsFontSize100}" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+        </StackPanel>
+
+        <!-- The type ramp -->
+        <Border Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="{DynamicResource DsCardBorder}"
+                CornerRadius="{DynamicResource DsRadiusCard}" Padding="12,10">
+            <ItemsControl ItemsSource="{Binding TypeRampRows}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="settings:LayoutRampRow">
+                        <Grid ColumnDefinitions="*,Auto" Margin="0,1">
+                            <TextBlock Grid.Column="0" Text="Aa · The quick brown fox" FontSize="{Binding Size}" Foreground="{DynamicResource DsTextBrush}" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Grid.Column="1" FontSize="{DynamicResource DsFontSize100}" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" Margin="8,0,0,0">
+                                <Run Text="{Binding Token}" /><Run Text=" · " /><Run Text="{Binding Size, StringFormat='{}{0:0.##} px'}" />
+                            </TextBlock>
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Border>
+    </StackPanel>
+</UserControl>

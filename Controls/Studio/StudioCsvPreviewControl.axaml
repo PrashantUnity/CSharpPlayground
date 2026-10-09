@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -14,30 +14,30 @@
         <Border Grid.Row="0"
                 Background="{DynamicResource DsSurfaceBrush}"
                 BorderBrush="{DynamicResource DsBorderBrush}"
-                BorderThickness="0,0,0,1"
+                lt:Tokens.BorderThickness="DsBorderBottom"
                 Height="38"
                 Padding="14,0">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <!-- Left: Table Mode Badge & Summary Metrics -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <Border Background="{DynamicResource DsGreenBrush}" CornerRadius="3" Padding="6,2" VerticalAlignment="Center">
-                        <TextBlock Text="DATA TABLE" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource DsOnAccentBrush}" />
+                    <Border Background="{DynamicResource DsGreenBrush}" lt:Tokens.CornerRadius="DsRadiusXS" Padding="6,2" VerticalAlignment="Center">
+                        <TextBlock Text="DATA TABLE" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsOnAccentBrush}" />
                     </Border>
                     <TextBlock Text="{Binding Script.Title}"
-                               FontSize="12"
-                               FontWeight="SemiBold"
+                               lt:Tokens.FontSize="DsFontSize300"
+                               lt:Tokens.FontWeight="DsWeightEmphasis"
                                Foreground="{DynamicResource DsTextWhiteBrush}"
                                VerticalAlignment="Center" />
-                    <TextBlock Text="•" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                    <Border Background="{DynamicResource DsSurfaceHighBrush}" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                    <TextBlock Text="•" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                    <Border Background="{DynamicResource DsSurfaceHighBrush}" lt:Tokens.CornerRadius="DsRadiusSM" Padding="6,2" VerticalAlignment="Center">
                         <TextBlock Text="{Binding CsvDimensionsSummary}"
-                                   FontSize="11"
-                                   FontWeight="Medium"
+                                   lt:Tokens.FontSize="DsFontSize200"
+                                   lt:Tokens.FontWeight="DsWeightLabel"
                                    Foreground="{DynamicResource DsTextWhiteBrush}" />
                     </Border>
-                    <Border Background="{DynamicResource DsSurfaceHighBrush}" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                    <Border Background="{DynamicResource DsSurfaceHighBrush}" lt:Tokens.CornerRadius="DsRadiusSM" Padding="6,2" VerticalAlignment="Center">
                         <TextBlock Text="{Binding CsvDelimiterSummary, StringFormat='Delimiter: {0}'}"
-                                   FontSize="10.5"
+                                   lt:Tokens.FontSize="DsFontSize150"
                                    Foreground="{DynamicResource DsMutedBrush}" />
                     </Border>
                 </StackPanel>
@@ -47,39 +47,39 @@
                     <!-- Copy as Markdown Table -->
                     <Button Command="{Binding CopyCsvAsMarkdownCommand}"
                             Classes="cs-toolbar-tonal"
-                            Height="26"
+                            lt:Tokens.Height="DsControlHeight100"
                             Padding="8,0"
-                            CornerRadius="4"
+                            lt:Tokens.CornerRadius="DsRadiusSM"
                             ToolTip.Tip="Copy Table as Markdown Grid">
                         <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="FormatHeaderPound" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
-                            <TextBlock Text="Copy Markdown" FontSize="11" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="Copy Markdown" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
 
                     <!-- Copy as JSON Array -->
                     <Button Command="{Binding CopyCsvAsJsonCommand}"
                             Classes="cs-toolbar-tonal"
-                            Height="26"
+                            lt:Tokens.Height="DsControlHeight100"
                             Padding="8,0"
-                            CornerRadius="4"
+                            lt:Tokens.CornerRadius="DsRadiusSM"
                             ToolTip.Tip="Copy Data as JSON Array of Objects">
                         <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="CodeJson" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
-                            <TextBlock Text="Copy JSON" FontSize="11" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="Copy JSON" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
 
                     <!-- Switch to Edit Raw Mode -->
                     <Button Command="{Binding ToggleDocumentPreviewModeCommand}"
                             Classes="cs-toolbar-tonal"
-                            Height="26"
+                            lt:Tokens.Height="DsControlHeight100"
                             Padding="8,0"
-                            CornerRadius="4"
+                            lt:Tokens.CornerRadius="DsRadiusSM"
                             ToolTip.Tip="Switch to Raw Text Editor (Ctrl+Shift+V)">
                         <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="PencilOutline" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
-                            <TextBlock Text="Edit Raw CSV" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="Edit Raw CSV" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
                 </StackPanel>

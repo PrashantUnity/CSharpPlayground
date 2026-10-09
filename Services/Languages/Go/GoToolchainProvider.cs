@@ -134,7 +134,9 @@ public sealed partial class GoToolchainProvider : IToolchainProvider
 
     private async Task<ProbeResult?> ProbeAsync(string path, CancellationToken ct)
     {
-        var probe = _probes.GetOrAdd(path, p => new Lazy<Task<ProbeResult?>>(() => RunProbeAsync(p, ct)));
+        // The probe starts a process, which can take a while: it starts on the pool, so the Lazy's lock is held only to make
+        // the task, and everyone else asking for it waits without holding a thread.
+        var probe = _probes.GetOrAdd(path, p => new Lazy<Task<ProbeResult?>>(() => Task.Run(() => RunProbeAsync(p, ct))));
         try
         {
             return await probe.Value;

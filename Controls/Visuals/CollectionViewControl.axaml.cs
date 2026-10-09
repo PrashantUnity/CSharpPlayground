@@ -80,7 +80,7 @@ public partial class CollectionViewControl : UserControl
         var indexFg = ResolveBrush("M3OnSurfaceVariantBrush", "#8B949E");
         var cellFg = ResolveBrush("M3OnSurfaceBrush", "#E6EDF3");
         var zebraBg = ResolveBrush("DsSurfaceHoverBrush", "#10FFFFFF");
-        var monoFont = new FontFamily("JetBrains Mono, Menlo, monospace");
+        var monoFont = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.CodeFont;
 
         // Render Header Row
         var headerGrid = CreateRowGrid();
@@ -89,8 +89,8 @@ public partial class CollectionViewControl : UserControl
             var headerBlock = new TextBlock
             {
                 Text = _headers[i],
-                FontSize = 11,
-                FontWeight = FontWeight.Bold,
+                FontSize = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.FontSize("200"),
+                FontWeight = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.Weight("Strong"),
                 Foreground = headerFg,
                 FontFamily = monoFont,
                 Margin = new Thickness(8, 4),
@@ -102,7 +102,7 @@ public partial class CollectionViewControl : UserControl
         TableContentPanel.Children.Add(new Border
         {
             Background = headerBg,
-            CornerRadius = new CornerRadius(4),
+            CornerRadius = new CornerRadius(PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.Radius("SM")),
             Child = headerGrid,
             Margin = new Thickness(0, 0, 0, 3)
         });
@@ -117,7 +117,7 @@ public partial class CollectionViewControl : UserControl
                 var cellBlock = new TextBlock
                 {
                     Text = row[i],
-                    FontSize = 11,
+                    FontSize = PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.FontSize("200"),
                     FontFamily = monoFont,
                     Foreground = i == 0 ? indexFg : cellFg,
                     Margin = new Thickness(8, 3),
@@ -130,7 +130,7 @@ public partial class CollectionViewControl : UserControl
             TableContentPanel.Children.Add(new Border
             {
                 Background = rowIndex % 2 == 1 ? zebraBg : Brushes.Transparent,
-                CornerRadius = new CornerRadius(3),
+                CornerRadius = new CornerRadius(PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutTokens.Radius("XS")),
                 Child = rowGrid,
                 Margin = new Thickness(0, 1)
             });

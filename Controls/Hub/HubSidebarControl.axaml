@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -13,21 +13,21 @@
             <Border Grid.Column="0"
                     Background="{DynamicResource DsSurfaceBrush}"
                     BorderBrush="{DynamicResource DsBorderBrush}"
-                    BorderThickness="0,0,1,0"
+                    lt:Tokens.BorderThickness="DsBorderRight"
                     ZIndex="20">
                 <Grid RowDefinitions="64,*,Auto">
 
                     <!-- Sidebar Header: Brand Logo & Title -->
                     <Border Grid.Row="0"
                             BorderBrush="{DynamicResource DsBorderBrush}"
-                            BorderThickness="0,0,0,1"
+                            lt:Tokens.BorderThickness="DsBorderBottom"
                             Padding="16,0">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="11">
                             <!-- Official Brand Logo Container (Circular) -->
-                            <Border Width="34" Height="34" CornerRadius="17"
+                            <Border Width="34" Height="34" lt:Tokens.CornerRadius="DsRadius3XL"
                                     Background="{DynamicResource DsOnAccentBrush}"
                                     BorderBrush="{DynamicResource DsBorderBrush}"
-                                    BorderThickness="1"
+                                    lt:Tokens.BorderThickness="DsBorderThin"
                                     ClipToBounds="True">
                                 <Image Source="avares://CSharpEditorPlugin/Assets/app-logo.png"
                                        Width="32" Height="32"
@@ -38,10 +38,10 @@
                             <!-- Brand Identity -->
                             <StackPanel VerticalAlignment="Center" Spacing="1">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="0">
-                                    <TextBlock Text="Fry" FontSize="16" FontWeight="ExtraBold" Foreground="{DynamicResource DsPrimaryBrush}" />
-                                    <TextBlock Text="Sharp" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                    <TextBlock Text="Fry" lt:Tokens.FontSize="DsFontSize600" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                    <TextBlock Text="Sharp" lt:Tokens.FontSize="DsFontSize600" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsTextWhiteBrush}" />
                                 </StackPanel>
-                                <TextBlock Text="Polyglot IDE • .NET 10" FontSize="10.5" FontWeight="Medium" Foreground="{DynamicResource DsMutedBrush}" />
+                                <TextBlock Text="Polyglot IDE • .NET 10" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightLabel" Foreground="{DynamicResource DsMutedBrush}" />
                             </StackPanel>
                         </StackPanel>
                     </Border>
@@ -52,9 +52,9 @@
 
                             <!-- MENU Section Label -->
                             <TextBlock Text="MENU"
-                                       FontSize="10"
-                                       FontWeight="Bold"
-                                       LetterSpacing="1.2"
+                                       lt:Tokens.FontSize="DsFontSize100"
+                                       lt:Tokens.FontWeight="DsWeightStrong"
+                                       lt:Tokens.LetterSpacing="DsTracking120"
                                        Foreground="{DynamicResource DsMutedBrush}"
                                        Margin="10,4,10,8" />
 
@@ -63,7 +63,7 @@
                                     Classes="nexus-nav-item"
                                     Classes.active="{Binding IsWorkspaceAllNavActive}">
                                 <Grid ColumnDefinitions="Auto,*,Auto">
-                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="{DynamicResource NavHomeBgBrush}">
+                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" lt:Tokens.CornerRadius="DsRadiusMD" Background="{DynamicResource NavHomeBgBrush}">
                                         <materialIcons:MaterialIcon Kind="Home" Width="16" Height="16" Foreground="{DynamicResource NavHomeFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Border>
                                     <TextBlock Grid.Column="1" Text="Home" Margin="10,0,0,0" VerticalAlignment="Center" />
@@ -74,7 +74,7 @@
                             <Button Command="{Binding SetSelectedTypeFilterCommand}" CommandParameter="All"
                                     Classes="nexus-nav-item">
                                 <Grid ColumnDefinitions="Auto,*,Auto">
-                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="{DynamicResource NavProjectsBgBrush}">
+                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" lt:Tokens.CornerRadius="DsRadiusMD" Background="{DynamicResource NavProjectsBgBrush}">
                                         <materialIcons:MaterialIcon Kind="FolderMultipleOutline" Width="16" Height="16" Foreground="{DynamicResource NavProjectsFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Border>
                                     <TextBlock Grid.Column="1" Text="All Projects" Margin="10,0,0,0" VerticalAlignment="Center" />
@@ -86,11 +86,11 @@
                                     Classes="nexus-nav-item"
                                     Classes.active="{Binding IsNotebooksNavActive}">
                                 <Grid ColumnDefinitions="Auto,*,Auto">
-                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="{DynamicResource NavNotebooksBgBrush}">
+                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" lt:Tokens.CornerRadius="DsRadiusMD" Background="{DynamicResource NavNotebooksBgBrush}">
                                         <materialIcons:MaterialIcon Kind="NotebookOutline" Width="16" Height="16" Foreground="{DynamicResource NavNotebooksFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Border>
                                     <TextBlock Grid.Column="1" Text="Notebooks" Margin="10,0,0,0" VerticalAlignment="Center" />
-                                    <Border Grid.Column="2" Classes="nexus-badge-pill" Background="{DynamicResource NavNotebooksBgBrush}" BorderBrush="{DynamicResource NavNotebooksFgBrush}" BorderThickness="1">
+                                    <Border Grid.Column="2" Classes="nexus-badge-pill" Background="{DynamicResource NavNotebooksBgBrush}" BorderBrush="{DynamicResource NavNotebooksFgBrush}" lt:Tokens.BorderThickness="DsBorderThin">
                                         <TextBlock Text="{Binding TotalNotebooks}" Foreground="{DynamicResource NavNotebooksFgBrush}" />
                                     </Border>
                                 </Grid>
@@ -101,11 +101,11 @@
                                     Classes="nexus-nav-item"
                                     Classes.active="{Binding IsScriptsNavActive}">
                                 <Grid ColumnDefinitions="Auto,*,Auto">
-                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="{DynamicResource NavScriptsBgBrush}">
+                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" lt:Tokens.CornerRadius="DsRadiusMD" Background="{DynamicResource NavScriptsBgBrush}">
                                         <materialIcons:MaterialIcon Kind="CodeBraces" Width="16" Height="16" Foreground="{DynamicResource NavScriptsFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Border>
                                     <TextBlock Grid.Column="1" Text="Scripts" Margin="10,0,0,0" VerticalAlignment="Center" />
-                                    <Border Grid.Column="2" Classes="nexus-badge-pill" Background="{DynamicResource NavScriptsBgBrush}" BorderBrush="{DynamicResource NavScriptsFgBrush}" BorderThickness="1">
+                                    <Border Grid.Column="2" Classes="nexus-badge-pill" Background="{DynamicResource NavScriptsBgBrush}" BorderBrush="{DynamicResource NavScriptsFgBrush}" lt:Tokens.BorderThickness="DsBorderThin">
                                         <TextBlock Text="{Binding TotalScripts}" Foreground="{DynamicResource NavScriptsFgBrush}" />
                                     </Border>
                                 </Grid>
@@ -116,11 +116,11 @@
                                     Classes="nexus-nav-item"
                                     Classes.active="{Binding IsServersNavActive}">
                                 <Grid ColumnDefinitions="Auto,*,Auto">
-                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="{DynamicResource NavServersBgBrush}">
+                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" lt:Tokens.CornerRadius="DsRadiusMD" Background="{DynamicResource NavServersBgBrush}">
                                         <materialIcons:MaterialIcon Kind="ServerNetwork" Width="16" Height="16" Foreground="{DynamicResource NavServersFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Border>
                                     <TextBlock Grid.Column="1" Text="API Servers" Margin="10,0,0,0" VerticalAlignment="Center" />
-                                    <Border Grid.Column="2" Classes="nexus-badge-pill" Background="{DynamicResource NavServersBgBrush}" BorderBrush="{DynamicResource NavServersFgBrush}" BorderThickness="1">
+                                    <Border Grid.Column="2" Classes="nexus-badge-pill" Background="{DynamicResource NavServersBgBrush}" BorderBrush="{DynamicResource NavServersFgBrush}" lt:Tokens.BorderThickness="DsBorderThin">
                                         <TextBlock Text="{Binding TotalServers}" Foreground="{DynamicResource NavServersFgBrush}" />
                                     </Border>
                                 </Grid>
@@ -131,11 +131,11 @@
                                     Classes="nexus-nav-item"
                                     Classes.active="{Binding IsPinnedFilterActive}">
                                 <Grid ColumnDefinitions="Auto,*,Auto">
-                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="{DynamicResource NavPinnedBgBrush}">
+                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" lt:Tokens.CornerRadius="DsRadiusMD" Background="{DynamicResource NavPinnedBgBrush}">
                                         <materialIcons:MaterialIcon Kind="PinOutline" Width="16" Height="16" Foreground="{DynamicResource NavPinnedFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Border>
                                     <TextBlock Grid.Column="1" Text="Pinned" Margin="10,0,0,0" VerticalAlignment="Center" />
-                                    <Border Grid.Column="2" Classes="nexus-badge-pill" Background="{DynamicResource NavPinnedBgBrush}" BorderBrush="{DynamicResource NavPinnedFgBrush}" BorderThickness="1">
+                                    <Border Grid.Column="2" Classes="nexus-badge-pill" Background="{DynamicResource NavPinnedBgBrush}" BorderBrush="{DynamicResource NavPinnedFgBrush}" lt:Tokens.BorderThickness="DsBorderThin">
                                         <TextBlock Text="{Binding PinnedCount}" Foreground="{DynamicResource NavPinnedFgBrush}" />
                                     </Border>
                                 </Grid>
@@ -146,11 +146,11 @@
                                     Classes="nexus-nav-item"
                                     Classes.active="{Binding IsTemplatesSectionActive}">
                                 <Grid ColumnDefinitions="Auto,*,Auto">
-                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="{DynamicResource NavTemplatesBgBrush}">
+                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" lt:Tokens.CornerRadius="DsRadiusMD" Background="{DynamicResource NavTemplatesBgBrush}">
                                         <materialIcons:MaterialIcon Kind="LightningBoltOutline" Width="16" Height="16" Foreground="{DynamicResource NavTemplatesFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Border>
                                     <TextBlock Grid.Column="1" Text="Templates" Margin="10,0,0,0" VerticalAlignment="Center" />
-                                    <Border Grid.Column="2" Classes="nexus-badge-pill" Background="{DynamicResource NavTemplatesBgBrush}" BorderBrush="{DynamicResource NavTemplatesFgBrush}" BorderThickness="1">
+                                    <Border Grid.Column="2" Classes="nexus-badge-pill" Background="{DynamicResource NavTemplatesBgBrush}" BorderBrush="{DynamicResource NavTemplatesFgBrush}" lt:Tokens.BorderThickness="DsBorderThin">
                                         <TextBlock Text="{Binding StarterTemplates.Count}" Foreground="{DynamicResource NavTemplatesFgBrush}" />
                                     </Border>
                                 </Grid>
@@ -161,7 +161,7 @@
                                     Classes="nexus-nav-item"
                                     ToolTip.Tip="Open existing project or document from disk (Ctrl+O / ⌘O)">
                                 <Grid ColumnDefinitions="Auto,*,Auto">
-                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="{DynamicResource NavOpenBgBrush}">
+                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" lt:Tokens.CornerRadius="DsRadiusMD" Background="{DynamicResource NavOpenBgBrush}">
                                         <materialIcons:MaterialIcon Kind="FolderOpenOutline" Width="16" Height="16" Foreground="{DynamicResource NavOpenFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Border>
                                     <TextBlock Grid.Column="1" Text="Open Project..." Margin="10,0,0,0" VerticalAlignment="Center" />
@@ -173,11 +173,11 @@
                                     Classes="nexus-nav-item"
                                     ToolTip.Tip="Blind 75 Coding Interview Track">
                                 <Grid ColumnDefinitions="Auto,*,Auto">
-                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="{DynamicResource NavBlind75BgBrush}">
+                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" lt:Tokens.CornerRadius="DsRadiusMD" Background="{DynamicResource NavBlind75BgBrush}">
                                         <materialIcons:MaterialIcon Kind="TrophyOutline" Width="16" Height="16" Foreground="{DynamicResource NavBlind75FgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Border>
                                     <TextBlock Grid.Column="1" Text="Blind 75" Margin="10,0,0,0" VerticalAlignment="Center" />
-                                    <Border Grid.Column="2" Classes="nexus-badge-pill" Background="{DynamicResource NavBlind75BgBrush}" BorderBrush="{DynamicResource NavBlind75FgBrush}" BorderThickness="1">
+                                    <Border Grid.Column="2" Classes="nexus-badge-pill" Background="{DynamicResource NavBlind75BgBrush}" BorderBrush="{DynamicResource NavBlind75FgBrush}" lt:Tokens.BorderThickness="DsBorderThin">
                                         <TextBlock Text="76" Foreground="{DynamicResource NavBlind75FgBrush}" />
                                     </Border>
                                 </Grid>
@@ -188,11 +188,11 @@
                                     Classes="nexus-nav-item"
                                     ToolTip.Tip="Documentation, App Guides &amp; VisualizerRecorder API (F1)">
                                 <Grid ColumnDefinitions="Auto,*,Auto">
-                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="{DynamicResource NavDocsBgBrush}">
+                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" lt:Tokens.CornerRadius="DsRadiusMD" Background="{DynamicResource NavDocsBgBrush}">
                                         <materialIcons:MaterialIcon Kind="BookOpenPageVariantOutline" Width="16" Height="16" Foreground="{DynamicResource NavDocsFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Border>
                                     <TextBlock Grid.Column="1" Text="Documentation" Margin="10,0,0,0" VerticalAlignment="Center" />
-                                    <Border Grid.Column="2" Classes="nexus-badge-pill" Background="{DynamicResource NavDocsBgBrush}" BorderBrush="{DynamicResource NavDocsFgBrush}" BorderThickness="1">
+                                    <Border Grid.Column="2" Classes="nexus-badge-pill" Background="{DynamicResource NavDocsBgBrush}" BorderBrush="{DynamicResource NavDocsFgBrush}" lt:Tokens.BorderThickness="DsBorderThin">
                                         <TextBlock Text="Docs" Foreground="{DynamicResource NavDocsFgBrush}" />
                                     </Border>
                                 </Grid>
@@ -203,7 +203,7 @@
                                     Classes="nexus-nav-item"
                                     ToolTip.Tip="Toggle Light/Dark Theme">
                                 <Grid ColumnDefinitions="Auto,*,Auto">
-                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="{DynamicResource NavThemeBgBrush}">
+                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" lt:Tokens.CornerRadius="DsRadiusMD" Background="{DynamicResource NavThemeBgBrush}">
                                         <materialIcons:MaterialIcon Kind="ThemeLightDark" Width="16" Height="16" Foreground="{DynamicResource NavThemeFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Border>
                                     <TextBlock Grid.Column="1" Text="{Binding ThemeToggleLabel}" Margin="10,0,0,0" VerticalAlignment="Center" />
@@ -215,9 +215,9 @@
 
                             <!-- ENVIRONMENTS Section Label -->
                             <TextBlock Text="ENVIRONMENTS"
-                                       FontSize="10"
-                                       FontWeight="Bold"
-                                       LetterSpacing="1.2"
+                                       lt:Tokens.FontSize="DsFontSize100"
+                                       lt:Tokens.FontWeight="DsWeightStrong"
+                                       lt:Tokens.LetterSpacing="DsTracking120"
                                        Foreground="{DynamicResource DsMutedBrush}"
                                        Margin="10,0,10,8" />
 
@@ -227,11 +227,11 @@
                                     Classes="nexus-nav-item"
                                     ToolTip.Tip="Configure language interpreters, SDKs, and environments">
                                 <Grid ColumnDefinitions="Auto,*,Auto">
-                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="{DynamicResource NavToolchainsBgBrush}">
+                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" lt:Tokens.CornerRadius="DsRadiusMD" Background="{DynamicResource NavToolchainsBgBrush}">
                                         <materialIcons:MaterialIcon Kind="TuneVariant" Width="16" Height="16" Foreground="{DynamicResource NavToolchainsFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Border>
                                     <TextBlock Grid.Column="1" Text="Toolchains &amp; SDKs" Margin="10,0,0,0" VerticalAlignment="Center" />
-                                    <Border Grid.Column="2" Classes="nexus-badge-pill" Background="{DynamicResource NavToolchainsBgBrush}" BorderBrush="{DynamicResource NavToolchainsFgBrush}" BorderThickness="1">
+                                    <Border Grid.Column="2" Classes="nexus-badge-pill" Background="{DynamicResource NavToolchainsBgBrush}" BorderBrush="{DynamicResource NavToolchainsFgBrush}" lt:Tokens.BorderThickness="DsBorderThin">
                                         <TextBlock Text="Setup" Foreground="{DynamicResource NavToolchainsFgBrush}" />
                                     </Border>
                                 </Grid>
@@ -240,12 +240,12 @@
                             <!-- Roslyn .NET 10 Kernel -->
                             <Button Classes="nexus-nav-item" IsHitTestVisible="False">
                                 <Grid ColumnDefinitions="Auto,*,Auto">
-                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="{DynamicResource NavKernelsBgBrush}">
+                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" lt:Tokens.CornerRadius="DsRadiusMD" Background="{DynamicResource NavKernelsBgBrush}">
                                         <materialIcons:MaterialIcon Kind="Cpu64Bit" Width="16" Height="16" Foreground="{DynamicResource NavKernelsFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Border>
                                     <TextBlock Grid.Column="1" Text=".NET 10 Kernels" Margin="10,0,0,0" VerticalAlignment="Center" />
                                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                        <Border Width="7" Height="7" CornerRadius="3.5" Background="{DynamicResource DsGreenBrush}" Classes="status-pulse-dot" VerticalAlignment="Center" />
+                                        <Border Width="7" Height="7" lt:Tokens.CornerRadius="DsRadiusXS" Background="{DynamicResource DsGreenBrush}" Classes="status-pulse-dot" VerticalAlignment="Center" />
                                     </StackPanel>
                                 </Grid>
                             </Button>
@@ -253,10 +253,10 @@
                         </StackPanel>
                     </ScrollViewer>
 
-                    <!-- Sidebar Bottom Actions: Settings, Return to FryPDF & User Profile -->
+                    <!-- Sidebar Bottom Actions: Settings & User Profile -->
                     <Border Grid.Row="2"
                             BorderBrush="{DynamicResource DsBorderBrush}"
-                            BorderThickness="0,1,0,0"
+                            lt:Tokens.BorderThickness="DsBorderTop"
                             Padding="14,14">
                         <StackPanel Spacing="8">
                             <!-- Settings & Preferences -->
@@ -264,48 +264,36 @@
                                     Classes="nexus-nav-item"
                                     ToolTip.Tip="Settings &amp; Environment Setup (Ctrl+, / ⌘,)">
                                 <Grid ColumnDefinitions="Auto,*,Auto">
-                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="{DynamicResource NavSettingsBgBrush}">
+                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" lt:Tokens.CornerRadius="DsRadiusMD" Background="{DynamicResource NavSettingsBgBrush}">
                                         <materialIcons:MaterialIcon Kind="CogOutline" Width="16" Height="16" Foreground="{DynamicResource NavSettingsFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Border>
                                     <TextBlock Grid.Column="1" Text="Settings" Margin="10,0,0,0" VerticalAlignment="Center" />
                                 </Grid>
                             </Button>
 
-                            <!-- Return to FryPDF Home -->
-                            <Button Command="{Binding NavigateToHomeCommand}"
-                                    Classes="nexus-nav-item"
-                                    ToolTip.Tip="Return to FryPDF Studio Home (Esc / ⌘W)">
-                                <Grid ColumnDefinitions="Auto,*,Auto">
-                                    <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="{DynamicResource NavFrySharpBgBrush}">
-                                        <materialIcons:MaterialIcon Kind="HomeOutline" Width="16" Height="16" Foreground="{DynamicResource NavFrySharpFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                    </Border>
-                                    <TextBlock Grid.Column="1" Text="FrySharp" Margin="10,0,0,0" VerticalAlignment="Center" />
-                                </Grid>
-                            </Button>
-
                             <!-- User Profile Row -->
                             <Border Background="{DynamicResource DsSurfaceHighBrush}"
                                     BorderBrush="{DynamicResource DsBorderBrush}"
-                                    BorderThickness="1"
-                                    CornerRadius="10"
+                                    lt:Tokens.BorderThickness="DsCardBorder"
+                                    lt:Tokens.CornerRadius="DsRadiusCard"
                                     Padding="10,8"
-                                    Margin="0,4,0,0">
+                                    Margin="0,4,0,0" lt:Tokens.BoxShadow="DsCardShadow">
                                 <Grid ColumnDefinitions="Auto,*,Auto">
                                     <!-- User Avatar Circle with Gradient -->
-                                    <Border Grid.Column="0" Width="34" Height="34" CornerRadius="17"
+                                    <Border Grid.Column="0" Width="34" Height="34" lt:Tokens.CornerRadius="DsRadius3XL"
                                             Background="{DynamicResource DsAvatarGradientBrush}">
-                                        <TextBlock Text="FD" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsOnAccentBrush}"
+                                        <TextBlock Text="FD" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsOnAccentBrush}"
                                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Border>
 
                                     <!-- User Text -->
                                     <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center" Spacing="1">
-                                        <TextBlock Text="Developer" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
-                                        <TextBlock Text=".NET 10" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" />
+                                        <TextBlock Text="Developer" lt:Tokens.FontSize="DsFontSize400" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                        <TextBlock Text=".NET 10" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsMutedBrush}" />
                                     </StackPanel>
 
                                     <!-- Online Status Indicator -->
-                                    <Border Grid.Column="2" Width="8" Height="8" CornerRadius="4"
+                                    <Border Grid.Column="2" Width="8" Height="8" lt:Tokens.CornerRadius="DsRadiusSM"
                                             Background="{DynamicResource DsGreenBrush}" VerticalAlignment="Center"
                                             ToolTip.Tip="Studio connected" />
                                 </Grid>

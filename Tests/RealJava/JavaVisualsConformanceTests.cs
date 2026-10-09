@@ -190,6 +190,44 @@ public class JavaVisualsConformanceTests : IDisposable
     }
 
     [JavaFact]
+    public async Task Run_TheChartFeatureCases_DrawAsTheFixturesDo()
+    {
+        // The newer chart features (VisualConformanceFixturesTests.ChartFeatureCases), made the way Java writes them.
+        var scriptCode = BuildMainProgram("""
+            List<Integer> rev = List.of(40, 55, 48), costs = List.of(30, 35, 38), margin = List.of(25, 36, 21);
+            Display.barChart(Display.map("Revenue", rev, "Costs", costs, "Margin", Display.series(margin).kind("line").rightAxis().dash("dashed")),
+                Display.options().title("Combo").labels("Jan", "Feb", "Mar").y2Axis("Margin %", 0, 100));
+            Display.stackedBarChart(Display.map("Revenue", rev, "Costs", costs), Display.options().title("Stacked").labels("Jan", "Feb", "Mar"));
+            Display.horizontalBarChart(Display.map("Revenue", rev), Display.options().title("Horizontal").labels("Jan", "Feb", "Mar"));
+            Display.lineChart(Display.map("Smooth", Display.series(rev).smooth(0.5),
+                "Steps", Display.series(costs).step("after").dash("dotted").pointStyle("star", 6),
+                "Filled", Display.series(margin).fill(true).color("#ff8800")), "Line styles");
+            Display.bubbleChart(List.of(List.of(1, 2, 8), List.of(2, 4, 12)), "Bubbles");
+            Display.radarChart(Display.map("Ada", List.of(8, 6, 9), "Bo", List.of(5, 9, 6)), Display.options().title("Radar").labels("Speed", "Power", "Skill"));
+            Display.polarAreaChart(Display.map("A", 3, "B", 5), "Polar");
+            Display.donutChart(Display.map("Done", 70, "Left", 30), Display.options().title("Gauge").gauge());
+            Display.lineChart(Display.map("Growth", List.of(1, 10, 100)), Display.options().title("Scales").yScale("log").suggestedY(1, 1000).reverseX());
+        """);
+        var script = Write("Main.java", scriptCode);
+        var (session, console, outputs, processor) = await StartRun(script);
+        var result = await session.Completion.WaitAsync(Patience);
+        processor.Flush();
+
+        Assert.True(result.Succeeded, string.Concat(console));
+        Assert.Equal(VisualConformanceFixturesTests.ChartFeatureCases.Length, outputs.Count);
+
+        for (var i = 0; i < VisualConformanceFixturesTests.ChartFeatureCases.Length; i++)
+        {
+            var name = VisualConformanceFixturesTests.ChartFeatureCases[i].Name;
+            var (mime, drawn) = VisualConformanceFixturesTests.Expected(name);
+            var v = outputs[i].Visual;
+            Assert.NotNull(v);
+            Assert.Equal(mime, v.MimeType);
+            Assert.Equal(drawn, VisualConformanceFixturesTests.DrawnAs(mime, VisualJson.SerializeToElement(v.Spec)));
+        }
+    }
+
+    [JavaFact]
     public async Task Run_AnUpdate_DrawsTheNewTitle()
     {
         var scriptCode = BuildMainProgram("""
@@ -226,7 +264,7 @@ public class JavaVisualsConformanceTests : IDisposable
         await WaitUntil(() => outputs.Count == 1 && outputs[0].Visual?.IsInteractive == true);
         outputs[0].Visual!.Raise(VisualEvent.Click(new VisualEventTarget { Series = 0, Index = 1 }));
 
-        await WaitUntil(() => console.Any(c => c.Contains("clicked 1")));
+        await WaitUntil(() => string.Concat(console).Contains("clicked 1"));
         session.Stop();
     }
 

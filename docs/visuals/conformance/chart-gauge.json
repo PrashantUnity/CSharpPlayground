@@ -1,0 +1,21 @@
+{
+  "mime": "application/vnd.fry.chart.v1\u002Bjson",
+  "spec": {
+    "kind": "donut",
+    "startAngle": -90,
+    "sweep": 180,
+    "series": [
+      {
+        "y": [
+          70,
+          30
+        ],
+        "labels": [
+          "Done",
+          "Left"
+        ]
+      }
+    ],
+    "title": "Gauge"
+  }
+}

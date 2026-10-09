@@ -12,6 +12,12 @@ public sealed class JavaScriptFactAttribute : FactAttribute
 {
     public JavaScriptFactAttribute()
     {
+        if (!TimeGate.IsEnabled && !TestJavaScript.Required)
+        {
+            Skip = TimeGate.SkipReason;
+            return;
+        }
+
         if (TestJavaScript.Toolchain == null && !TestJavaScript.Required)
         {
             Skip = "Needs Node.js 18 or newer (install it, or set FRY_TEST_NODE to an executable).";

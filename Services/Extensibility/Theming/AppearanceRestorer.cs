@@ -8,7 +8,8 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming;
 
 /// <summary>
 /// Puts the studio back the way the user left it: the active theme (built in, from the library, or a generated or
-/// imported one that was never saved, from its snapshot), density, single-token overrides and the light/dark choice.
+/// imported one that was never saved, from its snapshot), the layout (with its density), single-token overrides and the
+/// light/dark choice.
 /// The studio's entry points (the plugin and the Runner) call it once when the studio opens; the customization script
 /// runs afterwards, so the user's own code still has the last word.
 /// </summary>
@@ -65,10 +66,15 @@ public static class AppearanceRestorer
             applied = engine.ApplyTheme(dark ? BuiltInThemes.DarkPlus.Id : BuiltInThemes.LightPlus.Id) ? (dark ? BuiltInThemes.DarkPlus.Id : BuiltInThemes.LightPlus.Id) : null;
         }
 
-        if (Enum.TryParse<LayoutDensity>(appearance.Density, ignoreCase: true, out var density) && density != LayoutDensity.Comfortable)
+        // The layout (fonts, sizes, radii, borders, spacing, shadows); a preferences file from before layouts had only a
+        // density, which becomes a layout with that density.
+        var layout = Layout.LayoutSpec.FromJson(appearance.Layout);
+        if (layout == null && Enum.TryParse<LayoutDensity>(appearance.Density, ignoreCase: true, out var density) && density != LayoutDensity.Comfortable)
         {
-            engine.SetDensity(density);
+            layout = Layout.LayoutSpec.Default with { Density = density };
         }
+
+        if (layout != null && !layout.SameLayoutAs(Layout.LayoutSpec.Default)) engine.ApplyLayout(layout);
 
         foreach (var (token, hex) in appearance.TokenOverrides)
         {

@@ -759,7 +759,8 @@ internal static class StudioSnapshots
             "kernel" => "The notebook's kernels",
             "toolchain" => "Choose which installed toolchain",
             "mode" => "Select C# Execution Mode",
-            _ => throw new ArgumentException($"--menu is language, kernel (notebook), toolchain or mode (studio); not '{menu}'.")
+            "newfile" => "New File...",
+            _ => throw new ArgumentException($"--menu is language, kernel (notebook), toolchain, mode or newfile (studio); not '{menu}'.")
         };
         // Every cell has a language menu (only the selected cell's toolbar is opaque), so it's the selected cell's.
         var button = window.GetVisualDescendants().OfType<Button>().FirstOrDefault(b =>
@@ -1513,6 +1514,8 @@ internal static class StudioSnapshots
 
         var languages = new StudioLanguageServices(Snapshot.TempFolder("languages"));
         var storage = new LocalScriptStorageService(Snapshot.TempFolder("server_scripts"), languages.Registry);
+        // --workspace <folder>: the Explorer shows that folder (as when the studio has a workspace open).
+        if (options.Value("workspace") is { } serverWorkspace) Snapshot.Wait(storage.OpenExternalProjectAsync(serverWorkspace));
         var compiler = new RoslynServerCompilationService();
         var portService = new PortAvailabilityService();
         var engine = new FryHttpListenerServerEngine(portService, compiler);

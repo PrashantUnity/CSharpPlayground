@@ -138,7 +138,7 @@ public partial class DocumentationService
                     AppSettings.Instance.Theme = "Light";
 
                     // Every reference to Instance points at the same object.
-                    Console.WriteLine($"Same instance? {ReferenceEquals(AppSettings.Instance, AppSettings.Instance)}");
+                    Console.WriteLine($"Same instance? {object.ReferenceEquals(AppSettings.Instance, AppSettings.Instance)}");
                     Console.WriteLine($"Updated theme seen everywhere: {AppSettings.Instance.Theme}");
                     """
                 },

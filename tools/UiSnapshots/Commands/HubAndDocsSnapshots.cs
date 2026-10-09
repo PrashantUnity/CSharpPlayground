@@ -104,6 +104,17 @@ internal static class HubAndDocsSnapshots
                 ?? throw new ArgumentException($"No docs article's title contains '{wanted}'. Try `docs --list`.");
             vm.SelectArticle(article);
         }
+        if (options.Int("sample", 0) is var sampleNumber and > 0 && vm.SelectedArticle is { } whole)
+        {
+            // The article with only its nth code sample, so a tall page can be looked at one output at a time.
+            var only = new PdfEditorApp.Plugins.CSharpEditor.Models.DocArticle
+            {
+                Id = whole.Id + "#" + sampleNumber, CategoryId = whole.CategoryId, Title = whole.Title, Subtitle = whole.Subtitle,
+                Sections = [], CodeSnippets = [whole.CodeSnippets[sampleNumber - 1]]
+            };
+            vm.SelectedArticle = only;
+        }
+
         if (options.Flag("list"))
         {
             foreach (var category in vm.Categories)
@@ -114,7 +125,26 @@ internal static class HubAndDocsSnapshots
             return;
         }
 
+        // The samples run first, so their output is there when the page is drawn.
+        if (options.Flag("run") && vm.SelectedArticle is { } shown)
+        {
+            foreach (var snippet in shown.CodeSnippets)
+            {
+                if (snippet.Run is { CanRun: true } run) Snapshot.Wait(run.RunAsync());
+            }
+        }
+
         var window = Snapshot.Show(new CSharpDocsView { DataContext = vm }, options.Int("width", 1400), options.Int("height", 900));
+        if (options.Flag("run")) Snapshot.Settle(30);
+        if (options.Flag("fullscreen"))
+        {
+            // The expand button of the first chart, plot or visualizer drawn on the page.
+            var first = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(window).OfType<Avalonia.Controls.Control>()
+                .FirstOrDefault(c => c is PdfEditorApp.Plugins.CSharpEditor.Charting.Controls.InteractiveChartControl);
+            (first as PdfEditorApp.Plugins.CSharpEditor.Charting.Controls.InteractiveChartControl ?? throw new InvalidOperationException("No chart on the page: add --run.")).ToggleFullScreen();
+            Snapshot.Settle(30);
+        }
+
         Snapshot.Save(window, options, "docs");
     }
 

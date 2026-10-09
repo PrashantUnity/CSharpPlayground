@@ -158,7 +158,8 @@ public static class ObjectInspectorBuilder
             {
                 Name = name,
                 SimpleValueText = FormatScalarValue(val),
-                IsNull = false
+                IsNull = false,
+                IsString = val is string or char
             };
         }
 

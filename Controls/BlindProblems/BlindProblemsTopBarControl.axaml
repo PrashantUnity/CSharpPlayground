@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -11,7 +11,7 @@
 
     <Border Background="{DynamicResource DsSurfaceBrush}"
             BorderBrush="{DynamicResource DsBorderBrush}"
-            BorderThickness="0,0,0,1"
+            lt:Tokens.BorderThickness="DsBorderBottom"
             Padding="16,10">
         <Grid>
             <Grid.ColumnDefinitions>
@@ -27,29 +27,29 @@
             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                 <Button Command="{Binding BackToHubCommand}"
                         Classes="nexus-btn-surface"
-                        Height="34" Padding="12,0"
+                        lt:Tokens.Height="DsControlHeight400" Padding="12,0"
                         ToolTip.Tip="Return to Hub (Esc)">
                     <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                         <materialIcons:MaterialIcon Kind="ArrowLeft" Width="15" Height="15" Foreground="{DynamicResource DsMutedBrush}" />
-                        <TextBlock Text="Hub" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12.5" />
+                        <TextBlock Text="Hub" VerticalAlignment="Center" lt:Tokens.FontWeight="DsWeightEmphasis" lt:Tokens.FontSize="DsFontSize350" />
                     </StackPanel>
                 </Button>
                 <Rectangle Width="1" Height="20" Fill="{DynamicResource DsBorderBrush}" Margin="4,0,8,0" />
             </StackPanel>
 
             <!-- 2. Page Title (Matches Manager Category Style) -->
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" Margin="0,0,16,0">
-                <Border Width="30" Height="30" CornerRadius="8"
+            <StackPanel Grid.Column="1" Orientation="Horizontal" lt:Tokens.Spacing="DsSpace10" VerticalAlignment="Center" Margin="0,0,16,0">
+                <Border Width="30" Height="30" lt:Tokens.CornerRadius="DsRadiusLG"
                         Background="{DynamicResource NavBlind75BgBrush}"
                         BorderBrush="{DynamicResource DsBorderBrush}"
-                        BorderThickness="1">
+                        lt:Tokens.BorderThickness="DsBorderThin">
                     <materialIcons:MaterialIcon Kind="TrophyOutline" Width="17" Height="17"
                                                 Foreground="{DynamicResource NavBlind75FgBrush}"
                                                 HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <StackPanel VerticalAlignment="Center" Spacing="1">
-                    <TextBlock Text="Blind 75" FontSize="14.5" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" />
-                    <TextBlock Text="LeetCode Interview Track • 76 Problems" FontSize="10" Foreground="{DynamicResource DsMutedBrush}" />
+                    <TextBlock Text="Blind 75" lt:Tokens.FontSize="DsFontSize500" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                    <TextBlock Text="LeetCode Interview Track • 76 Problems" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsMutedBrush}" />
                 </StackPanel>
             </StackPanel>
 
@@ -68,8 +68,8 @@
                     <TextBox Grid.Column="1"
                              Text="{Binding SearchQuery, Mode=TwoWay}"
                              PlaceholderText="Search by number, title or topic (Ctrl+F)"
-                             FontSize="12.5"
-                             MinHeight="0" Height="26" Padding="0"
+                             lt:Tokens.FontSize="DsFontSize350"
+                             MinHeight="0" lt:Tokens.Height="DsControlHeight100" Padding="0"
                              Foreground="{DynamicResource DsTextWhiteBrush}"
                              VerticalAlignment="Center"
                              VerticalContentAlignment="Center" />
@@ -81,10 +81,10 @@
                             ToolTip.Tip="Clear search">
                         <materialIcons:MaterialIcon Kind="CloseCircleOutline" Width="15" Height="15" Foreground="{DynamicResource DsMutedBrush}" />
                     </Button>
-                    <Border Grid.Column="3" Background="{DynamicResource DsBorderBrush}" CornerRadius="4" Padding="5,2" Margin="6,0,0,0" VerticalAlignment="Center">
+                    <Border Grid.Column="3" Background="{DynamicResource DsBorderBrush}" lt:Tokens.CornerRadius="DsRadiusSM" Padding="5,2" Margin="6,0,0,0" VerticalAlignment="Center">
                         <StackPanel Orientation="Horizontal" Spacing="2">
-                            <TextBlock Text="Ctrl" FontSize="9.5" FontFamily="{DynamicResource DsCodeFontFamily}" Foreground="{DynamicResource DsMutedBrush}" />
-                            <TextBlock Text="F" FontSize="9.5" FontFamily="{DynamicResource DsCodeFontFamily}" Foreground="{DynamicResource DsMutedBrush}" />
+                            <TextBlock Text="Ctrl" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource DsMutedBrush}" />
+                            <TextBlock Text="F" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource DsMutedBrush}" />
                         </StackPanel>
                     </Border>
                 </Grid>
@@ -116,12 +116,12 @@
 
             <!-- 5. Random "Pick One" (Shuffle) Button -->
             <Button Grid.Column="5" Command="{Binding PickRandomUnsolvedProblemCommand}"
-                    Classes="nexus-btn-surface" Height="34" Padding="12,0"
+                    Classes="nexus-btn-surface" lt:Tokens.Height="DsControlHeight400" Padding="12,0"
                     VerticalAlignment="Center"
                     ToolTip.Tip="Open a random unsolved problem">
                 <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                     <materialIcons:MaterialIcon Kind="ShuffleVariant" Width="15" Height="15" Foreground="{DynamicResource NavBlind75FgBrush}" />
-                    <TextBlock Text="Pick One" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12" />
+                    <TextBlock Text="Pick One" VerticalAlignment="Center" lt:Tokens.FontWeight="DsWeightEmphasis" lt:Tokens.FontSize="DsFontSize300" />
                 </StackPanel>
             </Button>
         </Grid>

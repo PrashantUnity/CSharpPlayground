@@ -20,6 +20,11 @@ public partial class ObjectInspectorPropertyRow : ObservableObject
     [ObservableProperty]
     private bool _isNull;
 
+    /// <summary>The value is text (shown without quotes, coloured as a string).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ValueForegroundKey))]
+    private bool _isString;
+
     [ObservableProperty]
     private bool _isComplexChild;
 
@@ -28,15 +33,15 @@ public partial class ObjectInspectorPropertyRow : ObservableObject
 
     /// <summary>
     /// Returns a semantic theme-resource key that resolves to the correct foreground brush for this
-    /// value in both Light and Dark themes. Consumed by <c>ResourceKeyBrushConverter</c> in the view.
+    /// value in both Light and Dark themes. Consumed by <c>ThemeBrush.Foreground</c> in the view.
     /// </summary>
     public string ValueForegroundKey
     {
         get
         {
             if (IsNull) return "CodeNullBrush";
+            if (IsString || SimpleValueText.StartsWith("\"") || SimpleValueText.StartsWith("'")) return "CodeStringBrush";
             if (string.IsNullOrEmpty(SimpleValueText)) return "M3OnSurfaceBrush";
-            if (SimpleValueText.StartsWith("\"") || SimpleValueText.StartsWith("'")) return "CodeStringBrush";
             if (bool.TryParse(SimpleValueText, out _)) return "CodeKeywordBrush";
             if (char.IsDigit(SimpleValueText[0]) || (SimpleValueText.Length > 1 && (SimpleValueText[0] == '-' || SimpleValueText[0] == '+') && char.IsDigit(SimpleValueText[1])))
                 return "CodeNumberBrush";

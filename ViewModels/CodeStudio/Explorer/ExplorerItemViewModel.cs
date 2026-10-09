@@ -113,6 +113,7 @@ public partial class ExplorerItemViewModel : ObservableObject
         {
             case ".frynb" or ".ipynb": return ("NotebookOutline", NotebookAmberHex);
             case ".cs" or ".frycs": return ("LanguageCsharp", "#58A6FF");
+            case ".fryserver": return ("ServerNetwork", "#3FB9A2");
             case ".json": return ("CodeJson", "#E5C07B");
             case ".md": return ("FormatHeaderPound", "#4EC9B0");
             case ".png" or ".jpg" or ".jpeg" or ".gif" or ".bmp" or ".ico" or ".webp" or ".svg" or ".tiff" or ".tif": return ("ImageOutline", "#C586C0");
@@ -175,6 +176,8 @@ public partial class ExplorerItemViewModel : ObservableObject
     public Action<ExplorerItemViewModel>? OnItemClicked { get; set; }
     public Action<ExplorerItemViewModel>? OnDeleteRequested { get; set; }
     public Action<ExplorerItemViewModel>? OnNewFileRequested { get; set; }
+    public Action<ExplorerItemViewModel>? OnNewNotebookRequested { get; set; }
+    public Action<ExplorerItemViewModel>? OnNewServerRequested { get; set; }
     public Action<ExplorerItemViewModel>? OnNewFolderRequested { get; set; }
     public Action<ExplorerItemViewModel>? OnRenameCommitted { get; set; }
     public Action<ExplorerItemViewModel>? OnDuplicateRequested { get; set; }
@@ -284,6 +287,18 @@ public partial class ExplorerItemViewModel : ObservableObject
     public void RequestNewFile()
     {
         OnNewFileRequested?.Invoke(this);
+    }
+
+    [RelayCommand]
+    public void RequestNewNotebook()
+    {
+        OnNewNotebookRequested?.Invoke(this);
+    }
+
+    [RelayCommand]
+    public void RequestNewServer()
+    {
+        OnNewServerRequested?.Invoke(this);
     }
 
     [RelayCommand]

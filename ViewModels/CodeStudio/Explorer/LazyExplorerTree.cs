@@ -70,6 +70,20 @@ public sealed class LazyExplorerTree
         AddListing(null, top);
     }
 
+    /// <summary>
+    /// Makes <paramref name="folder"/> one whose contents are listed when it is opened (it shows a "Loading..." row until
+    /// then): a folder the workspace walk doesn't go into (node_modules, bin, .venv), shown closed as VS Code does. One
+    /// that was open before a refresh is listed now.
+    /// </summary>
+    public void MakeUnlisted(ExplorerItemViewModel folder)
+    {
+        folder.ChildrenLoaded = false;
+        folder.LoadChildrenRequested = f => _ = LoadChildrenAsync(f);
+        folder.Children.Clear();
+        folder.Children.Add(Placeholder("Loading...", folder));
+        if (folder.IsExpanded) _ = LoadChildrenAsync(folder);
+    }
+
     /// <summary>Lists <paramref name="folder"/>'s contents (once); completes when they are in the tree.</summary>
     public Task LoadChildrenAsync(ExplorerItemViewModel folder)
     {
@@ -173,8 +187,7 @@ public sealed class LazyExplorerTree
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var summary in listing.Items)
         {
-            var extension = summary.DisplayExtension;
-            var name = summary.Title.EndsWith(extension, StringComparison.OrdinalIgnoreCase) ? summary.Title : $"{summary.Title}{extension}";
+            var name = summary.ExplorerName; // the file's own name: copies with one title are all listed
             if (!names.Add(name)) continue;
 
             files.Add(_createFile(summary, name, parent == null ? name : $"{parent.FullPath}/{name}", parent));

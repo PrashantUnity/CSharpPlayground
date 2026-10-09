@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
@@ -173,9 +174,16 @@ public partial class MainWindow : Window
     public void CloseWindow_OnClick(object? sender, EventArgs e) => Close();
 
     // ── Edit Menu Actions ──
+    private AvaloniaEdit.TextEditor? GetFocusedTextEditor()
+    {
+        var focused = FocusManager?.GetFocusedElement() as Visual;
+        return focused as AvaloniaEdit.TextEditor ?? focused?.FindAncestorOfType<AvaloniaEdit.TextEditor>();
+    }
+
     public void Undo_OnClick(object? sender, EventArgs e)
     {
         if (FocusManager?.GetFocusedElement() is TextBox tb) { tb.Undo(); return; }
+        if (GetFocusedTextEditor() is { } editor) { editor.Undo(); return; }
         if (ActiveCodeStudio != null && StudioHost.Pages.ViewFor(ActiveCodeStudio) is CSharpCodeStudioView cv) { cv.GetEditor()?.Undo(); return; }
         if (ActiveNotebookStudio != null && StudioHost.Pages.ViewFor(ActiveNotebookStudio) is CSharpNotebookStudioView nv) { nv.GetActiveEditor()?.Undo(); return; }
     }
@@ -183,6 +191,7 @@ public partial class MainWindow : Window
     public void Redo_OnClick(object? sender, EventArgs e)
     {
         if (FocusManager?.GetFocusedElement() is TextBox tb) { tb.Redo(); return; }
+        if (GetFocusedTextEditor() is { } editor) { editor.Redo(); return; }
         if (ActiveCodeStudio != null && StudioHost.Pages.ViewFor(ActiveCodeStudio) is CSharpCodeStudioView cv) { cv.GetEditor()?.Redo(); return; }
         if (ActiveNotebookStudio != null && StudioHost.Pages.ViewFor(ActiveNotebookStudio) is CSharpNotebookStudioView nv) { nv.GetActiveEditor()?.Redo(); return; }
     }
@@ -190,6 +199,7 @@ public partial class MainWindow : Window
     public void Cut_OnClick(object? sender, EventArgs e)
     {
         if (FocusManager?.GetFocusedElement() is TextBox tb) { tb.Cut(); return; }
+        if (GetFocusedTextEditor() is { } editor) { editor.Cut(); return; }
         if (ActiveCodeStudio != null && StudioHost.Pages.ViewFor(ActiveCodeStudio) is CSharpCodeStudioView cv) { cv.GetEditor()?.Cut(); return; }
         if (ActiveNotebookStudio != null && StudioHost.Pages.ViewFor(ActiveNotebookStudio) is CSharpNotebookStudioView nv) { nv.GetActiveEditor()?.Cut(); return; }
     }
@@ -197,6 +207,7 @@ public partial class MainWindow : Window
     public void Copy_OnClick(object? sender, EventArgs e)
     {
         if (FocusManager?.GetFocusedElement() is TextBox tb) { tb.Copy(); return; }
+        if (GetFocusedTextEditor() is { } editor) { editor.Copy(); return; }
         if (ActiveCodeStudio != null && StudioHost.Pages.ViewFor(ActiveCodeStudio) is CSharpCodeStudioView cv) { cv.GetEditor()?.Copy(); return; }
         if (ActiveNotebookStudio != null && StudioHost.Pages.ViewFor(ActiveNotebookStudio) is CSharpNotebookStudioView nv) { nv.GetActiveEditor()?.Copy(); return; }
         if (FocusManager?.GetFocusedElement() is SelectableTextBlock stb && !string.IsNullOrEmpty(stb.SelectedText) && Clipboard != null)
@@ -208,6 +219,7 @@ public partial class MainWindow : Window
     public void Paste_OnClick(object? sender, EventArgs e)
     {
         if (FocusManager?.GetFocusedElement() is TextBox tb) { tb.Paste(); return; }
+        if (GetFocusedTextEditor() is { } editor) { editor.Paste(); return; }
         if (ActiveCodeStudio != null && StudioHost.Pages.ViewFor(ActiveCodeStudio) is CSharpCodeStudioView cv) { cv.GetEditor()?.Paste(); return; }
         if (ActiveNotebookStudio != null && StudioHost.Pages.ViewFor(ActiveNotebookStudio) is CSharpNotebookStudioView nv) { nv.GetActiveEditor()?.Paste(); return; }
     }
@@ -215,6 +227,7 @@ public partial class MainWindow : Window
     public void SelectAll_OnClick(object? sender, EventArgs e)
     {
         if (FocusManager?.GetFocusedElement() is TextBox tb) { tb.SelectAll(); return; }
+        if (GetFocusedTextEditor() is { } editor) { editor.SelectAll(); return; }
         if (ActiveCodeStudio != null && StudioHost.Pages.ViewFor(ActiveCodeStudio) is CSharpCodeStudioView cv) { cv.GetEditor()?.SelectAll(); return; }
         if (ActiveNotebookStudio != null && StudioHost.Pages.ViewFor(ActiveNotebookStudio) is CSharpNotebookStudioView nv) { nv.GetActiveEditor()?.SelectAll(); return; }
     }

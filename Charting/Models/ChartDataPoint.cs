@@ -8,6 +8,12 @@ public class ChartDataPoint
     public double Y { get; set; }
     public string Label { get; set; } = string.Empty;
     public string? CustomColor { get; set; }
+
+    /// <summary>A bubble's radius in pixels.</summary>
+    public double? Size { get; set; }
+
+    /// <summary>Where a bar starts (a floating bar runs from here to <see cref="Y"/>); null: the baseline.</summary>
+    public double? From { get; set; }
     public object? Tag { get; set; }
 
     public ChartDataPoint() { }

@@ -64,6 +64,7 @@ public class BindableTextEditor : TextEditor
     private NotebookCellViewModel? _cellVm;
     // The cell's language (null: C#, as for an editor that isn't a notebook cell's).
     private ILanguageDefinition? _language;
+    private bool _isMarkdown; // a markdown cell being edited: markdown colours, wrapped, no code helpers
     private IDisposable? _languageAssistant;
     private static readonly Lazy<RoslynCompilerService> SharedCompiler = new(() => new RoslynCompilerService());
     private static readonly Lazy<CSharpQuickInfoService> SharedQuickInfo = new(() => new CSharpQuickInfoService(SharedCompiler.Value));
@@ -73,7 +74,6 @@ public class BindableTextEditor : TextEditor
     private readonly DebugLineRenderer _debugLineRenderer = new();
     private readonly DebugLineRenderer _stepLineRenderer = new(DebugLineRenderer.VisualizerStepColor);
 
-    private static readonly FontFamily s_defaultCodeFont = new("JetBrains Mono, Menlo, Monaco, Consolas, Roboto Mono, monospace");
 
     private static readonly IBrush s_darkForeground = new SolidColorBrush(Color.Parse("#D4D4D4"));
     private static readonly IBrush s_darkLineNumbers = new SolidColorBrush(Color.Parse("#6E7681"));
@@ -111,10 +111,12 @@ public class BindableTextEditor : TextEditor
         HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
         VerticalScrollBarVisibility = ScrollBarVisibility.Disabled;
 
-        FontFamily = Application.Current != null && Application.Current.TryFindResource("DsCodeFontFamily", out var fontRes) && fontRes is FontFamily ff ? ff : s_defaultCodeFont;
+        // The layout's code font (Settings → Layout & Typography), and every change to it.
+        PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.Tokens.SetFontFamily(this, "DsCodeFontFamily");
         FontSize = 13;
 
-        Options.HighlightCurrentLine = true;
+        // The current line is marked in the cell being typed in only (as in VS Code): a band in every cell was noise.
+        Options.HighlightCurrentLine = false;
         Options.ConvertTabsToSpaces = true;
         Options.IndentationSize = 4;
         TextArea.IndentationStrategy = new AvaloniaEdit.Indentation.CSharp.CSharpIndentationStrategy(Options);
@@ -152,6 +154,25 @@ public class BindableTextEditor : TextEditor
             IsSuppressed = () => !_language.UsesRoslynHelper(LanguageCapabilities.QuickInfo)
         };
         TextChanged += OnEditorTextChanged;
+
+        EditorContextMenu.Attach(this, new EditorContextMenuOptions
+        {
+            LanguageProvider = () => _language,
+            FormatAction = () => FormatCode(),
+            RunAction = () =>
+            {
+                if (ExecuteCommand != null && ExecuteCommand.CanExecute(null))
+                    ExecuteCommand.Execute(null);
+            },
+            RunHeader = "Run Cell",
+            ToggleBreakpointAction = line =>
+            {
+                if (_breakpointMargin.HasBreakpoint(line))
+                    _breakpointMargin.RemoveBreakpoint(line);
+                else
+                    _breakpointMargin.AddBreakpoint(line);
+            }
+        });
 
         // Prevent oversized cell editors from snapping the parent notebook ScrollViewer to the top of the cell
         AddHandler(RequestBringIntoViewEvent, OnRequestBringIntoView, RoutingStrategies.Bubble, handledEventsToo: true);
@@ -221,12 +242,10 @@ public class BindableTextEditor : TextEditor
                       (ActualThemeVariant != ThemeVariant.Light && (Application.Current?.ActualThemeVariant == ThemeVariant.Dark));
 
         bool syntaxEnabled = StudioSettings?.GetSettings().EnableSyntaxHighlighting ?? true;
+        SyntaxColoring.Apply(this, _language, isDark, syntaxEnabled, _isMarkdown ? ".md" : null);
 
         if (isDark)
         {
-            SyntaxHighlighting = syntaxEnabled
-                ? PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.SyntaxPaletteApplier.Themed(_language != null ? _language.GetHighlighting(isDark: true) : CSharpSyntaxHighlightingTheme.GetDarkTheme())
-                : null;
             Background = Brushes.Transparent;
             Foreground = ResolveBrush("EditorFgBrush", s_darkForeground);
             LineNumbersForeground = ResolveBrush("EditorLineNumbersBrush", s_darkLineNumbers);
@@ -237,9 +256,6 @@ public class BindableTextEditor : TextEditor
         }
         else
         {
-            SyntaxHighlighting = syntaxEnabled
-                ? PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.SyntaxPaletteApplier.Themed(_language != null ? _language.GetHighlighting(isDark: false) : CSharpSyntaxHighlightingTheme.GetLightTheme())
-                : null;
             Background = Brushes.Transparent;
             Foreground = ResolveBrush("EditorFgBrush", s_lightForeground);
             LineNumbersForeground = ResolveBrush("EditorLineNumbersBrush", s_lightLineNumbers);
@@ -297,7 +313,24 @@ public class BindableTextEditor : TextEditor
         _cellVm.RequestUnfoldAllCode += UnfoldAll;
         _cellVm.RequestFormatCode += FormatCode;
         _cellVm.PropertyChanged += OnCellPropertyChanged;
-        ApplyLanguage(vm.EffectiveLanguageDefinition);
+        ApplyCell();
+    }
+
+    // A code cell gets its language; a markdown cell is text (no completion or folding) coloured as markdown, wrapped.
+    private void ApplyCell()
+    {
+        if (_cellVm == null) return;
+        var markdown = _cellVm.IsMarkdownCell;
+        var language = markdown ? StudioLanguageServices.Default.Registry.Get(LanguageIds.Text) : _cellVm.EffectiveLanguageDefinition;
+        if (markdown != _isMarkdown)
+        {
+            _isMarkdown = markdown;
+            WordWrap = markdown;
+            HorizontalScrollBarVisibility = markdown ? ScrollBarVisibility.Disabled : ScrollBarVisibility.Auto;
+            if (ReferenceEquals(_language, language)) ApplyThemeVariant();
+        }
+
+        ApplyLanguage(language);
     }
 
     private bool Supports(LanguageCapabilities capability) => _language?.Has(capability) ?? true;
@@ -339,9 +372,9 @@ public class BindableTextEditor : TextEditor
         {
             SetStepLine(-1);
         }
-        else if (e.PropertyName == nameof(NotebookCellViewModel.EffectiveLanguage) && _cellVm != null)
+        else if (e.PropertyName is nameof(NotebookCellViewModel.EffectiveLanguage) or nameof(NotebookCellViewModel.Type) && _cellVm != null)
         {
-            ApplyLanguage(_cellVm.EffectiveLanguageDefinition);
+            ApplyCell();
         }
     }
 
@@ -511,6 +544,12 @@ public class BindableTextEditor : TextEditor
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
+
+        if (change.Property == IsKeyboardFocusWithinProperty)
+        {
+            Options.HighlightCurrentLine = change.GetNewValue<bool>();
+            return;
+        }
 
         if (change.Property == TextContentProperty)
         {

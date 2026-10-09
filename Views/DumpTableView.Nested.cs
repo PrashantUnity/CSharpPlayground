@@ -38,8 +38,8 @@ public partial class DumpTableView
                 : ResolveBrush("M3SurfaceContainerHighestBrush", "#2D3748"),
             Foreground = cell.IsNestedExpanded ? Brushes.White : onSurfaceBrush,
             BorderBrush = cell.IsNestedExpanded ? primaryBrush : borderBrush,
-            BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(4),
+            BorderThickness = new Thickness(brushes.Line),
+            CornerRadius = new CornerRadius(brushes.SmallRadius),
             Padding = new Thickness(6, 2),
             Cursor = new Cursor(StandardCursorType.Hand),
             VerticalAlignment = VerticalAlignment.Center
@@ -60,14 +60,14 @@ public partial class DumpTableView
         btnStack.Children.Add(new TextBlock
         {
             Text = countText,
-            FontSize = 11,
-            FontWeight = FontWeight.SemiBold,
+            FontSize = brushes.SmallSize,
+            FontWeight = brushes.Emphasis,
             VerticalAlignment = VerticalAlignment.Center
         });
         btnStack.Children.Add(new TextBlock
         {
             Text = cell.IsNestedExpanded ? "▲" : "▼",
-            FontSize = 9,
+            FontSize = brushes.TinySize,
             Foreground = cell.IsNestedExpanded ? Brushes.White : onSurfaceMutedBrush,
             VerticalAlignment = VerticalAlignment.Center
         });
@@ -124,9 +124,9 @@ public partial class DumpTableView
         {
             Background = ResolveBrush("M3SurfaceContainerLowBrush", "#14181F"),
             BorderBrush = primaryBrush,
-            BorderThickness = new Thickness(2, 0, 0, 1),
+            BorderThickness = new Thickness(brushes.Accent, 0, 0, brushes.Line),
             Margin = new Thickness(36, 4, 12, 10),
-            CornerRadius = new CornerRadius(0, 0, 6, 6),
+            CornerRadius = new CornerRadius(0, 0, brushes.MediumRadius, brushes.MediumRadius),
             Padding = new Thickness(10, 8)
         };
 
@@ -147,15 +147,15 @@ public partial class DumpTableView
         subTitle.Children.Add(new TextBlock
         {
             Text = $"{colHeader}: {cell.NestedTable!.FullHeaderTitle}",
-            FontSize = 12,
-            FontWeight = FontWeight.Bold,
+            FontSize = brushes.TextSize,
+            FontWeight = brushes.Strong,
             Foreground = onSurfaceBrush,
             VerticalAlignment = VerticalAlignment.Center
         });
         subTitle.Children.Add(new TextBlock
         {
             Text = cell.NestedTable.SummaryText,
-            FontSize = 11,
+            FontSize = brushes.SmallSize,
             Foreground = onSurfaceMutedBrush,
             VerticalAlignment = VerticalAlignment.Center
         });

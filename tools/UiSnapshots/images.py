@@ -176,6 +176,32 @@ def info(args):
             print(f"{path}: {image.width}x{image.height}")
 
 
+def gif(args):
+    """Assemble several PNG snapshots into an animated GIF."""
+    paths = []
+    for pattern in args.images:
+        expanded = sorted(glob.glob(pattern))
+        paths.extend(expanded if expanded else [pattern])
+    paths = [p for p in paths if os.path.isfile(p)]
+    if not paths:
+        sys.exit("no input images found")
+
+    frames = [Image.open(p).convert("RGBA") for p in paths]
+    first = frames[0]
+    root, _ = os.path.splitext(paths[0])
+    out_path = args.output or f"{root}_anim.gif"
+
+    first.save(
+        out_path,
+        save_all=True,
+        append_images=frames[1:],
+        duration=args.delay,
+        loop=0 if args.loop else 1,
+        optimize=True
+    )
+    print(out_path)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -211,6 +237,13 @@ def main():
     p.add_argument("--width", type=int, default=700, help="width of each tile")
     p.add_argument("-o", "--output")
     p.set_defaults(run=sheet)
+
+    p = commands.add_parser("gif", help="assemble several images into an animated GIF")
+    p.add_argument("images", nargs="+", help="files or glob patterns (e.g. out/p1_v1_s*.png)")
+    p.add_argument("--delay", type=int, default=300, help="frame delay in ms (default 300)")
+    p.add_argument("--loop", action="store_true", default=True, help="loop infinitely (default)")
+    p.add_argument("-o", "--output")
+    p.set_defaults(run=gif)
 
     p = commands.add_parser("info", help="print image sizes")
     p.add_argument("images", nargs="+")

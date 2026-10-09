@@ -65,6 +65,17 @@ public static class SyntaxPaletteApplier
         return definition;
     }
 
+    /// <summary>Gives a definition its language's own colours back and stops recolouring it (tests that borrowed the shared definitions).</summary>
+    public static void Forget(IHighlightingDefinition definition)
+    {
+        ArgumentNullException.ThrowIfNull(definition);
+        lock (Gate)
+        {
+            Apply(definition, new Dictionary<string, Color>());
+            Definitions.Remove(definition);
+        }
+    }
+
     /// <summary>Applies the given role colours (an empty map restores every language's own colours). For tests and tools.</summary>
     public static void Apply(IHighlightingDefinition definition, IReadOnlyDictionary<string, Color> roleColors)
     {
@@ -120,7 +131,7 @@ public static class SyntaxPaletteApplier
         {
             // A slider drag changes the theme many times a second: recolour once per burst, on the UI thread, after the
             // theme's resources were committed.
-            if (Avalonia.Application.Current == null)
+            if (!PdfEditorApp.Plugins.CSharpEditor.Services.Common.UiDispatchHelper.HasLiveUiLifetime)
             {
                 Refresh();
                 EditorColorsChanged?.Invoke();

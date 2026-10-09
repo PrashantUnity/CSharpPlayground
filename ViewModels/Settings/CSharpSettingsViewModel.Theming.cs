@@ -196,7 +196,7 @@ public partial class CSharpSettingsViewModel
 
     private void UpdateHarmonyChords()
     {
-        if (Avalonia.Application.Current == null)
+        if (!PdfEditorApp.Plugins.CSharpEditor.Services.Common.UiDispatchHelper.HasLiveUiLifetime)
         {
             UpdateHarmonyChordsNow();
             return;

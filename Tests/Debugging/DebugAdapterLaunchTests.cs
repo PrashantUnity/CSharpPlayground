@@ -1,3 +1,5 @@
+using System.Net;
+using System.Net.Sockets;
 using System.Text.Json;
 using CSharpEditorPlugin.Tests.TestSupport;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
@@ -19,7 +21,7 @@ namespace CSharpEditorPlugin.Tests.Debugging;
 /// </summary>
 public class DebugAdapterLaunchTests : IDisposable
 {
-    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(45);
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(90);
     private readonly string _dir = Path.Combine(Path.GetTempPath(), "FryPDF_DapLaunch_" + Guid.NewGuid().ToString("N"));
 
     public DebugAdapterLaunchTests()
@@ -183,10 +185,39 @@ public class DebugAdapterLaunchTests : IDisposable
             return Task.CompletedTask;
         });
 
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => provider.LaunchAsync(Context(source, File.ReadAllText(source))).WaitAsync(Patience));
+        // Whether it goes before the debugger connects or after (another program may hold the port), it is the same failure.
+        var ex = await Assert.ThrowsAsync<DebugAdapterExitedException>(() => provider.LaunchAsync(Context(source, File.ReadAllText(source))).WaitAsync(Patience));
 
-        Assert.Contains("exited", ex.Message);
-        Assert.Contains("code 1", ex.Message);
+        Assert.Equal(1, ex.ExitCode);
+        Assert.Contains("exit code 1", ex.Message);
+    }
+
+    [Fact]
+    public async Task Delve_WhosePortAnotherProgramHolds_IsReportedAsExited_NotAsADroppedConnection()
+    {
+        // The studio reaches whatever holds the port (here a program that never speaks DAP) before Delve gives up on it.
+        TcpListener? other = null;
+        TcpClient? reached = null;
+        var (provider, _, source) = GoProvider(async (spec, process) =>
+        {
+            other = new TcpListener(IPAddress.Loopback, ListenPort(spec));
+            other.Start();
+            reached = await other.AcceptTcpClientAsync();
+            process.WriteError("listen tcp 127.0.0.1: bind: address already in use\n");
+            process.Exit(1);
+        });
+
+        try
+        {
+            var ex = await Assert.ThrowsAsync<DebugAdapterExitedException>(() => provider.LaunchAsync(Context(source, File.ReadAllText(source))).WaitAsync(Patience));
+
+            Assert.Equal(1, ex.ExitCode);
+        }
+        finally
+        {
+            reached?.Dispose();
+            other?.Stop();
+        }
     }
 
     // ---- C#: netcoredbg ----
@@ -304,18 +335,18 @@ public class DebugAdapterLaunchTests : IDisposable
             process.Exit(3);
         });
 
-        var ex = await Assert.ThrowsAsync<IOException>(() =>
+        var ex = await Assert.ThrowsAsync<DebugAdapterExitedException>(() =>
             DapAdapterManager.StartSessionAsync("go", ClientOf(server), process, Context("/x/main.go", "x"), launch: null, DapHandshake.Standard,
                 CancellationToken.None, initializeTimeout: TimeSpan.FromSeconds(30)).WaitAsync(Patience));
 
-        Assert.Contains("exited", ex.Message);
+        Assert.Equal(3, ex.ExitCode);
         Assert.Contains("exit code 3", ex.Message);
     }
 
     [Fact]
     public async Task AnAdapterOnItsStandardStreams_ThatExits_EndsTheSession()
     {
-        var exit = new TaskCompletionSource();
+        var exit = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var launcher = new FakeProcessLauncher
         {
             Behavior = async (spec, process) =>

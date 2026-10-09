@@ -245,7 +245,7 @@ public class VisualizerCanvasControl : Control
     protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
     {
         base.OnPointerWheelChanged(e);
-        if (Options == null) return;
+        if (Options == null || !WheelZoomGate.ShouldZoom(this, e.KeyModifiers)) return;
 
         ZoomBy(e.Delta.Y > 0 ? 1.15 : 0.87);
         e.Handled = true;

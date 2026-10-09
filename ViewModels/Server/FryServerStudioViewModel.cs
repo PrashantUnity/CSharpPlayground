@@ -2,8 +2,8 @@ using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Avalonia.Controls;
-using Avalonia.Media;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -12,6 +12,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Models.Server;
 using PdfEditorApp.Plugins.CSharpEditor.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Server;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.Server;
 
@@ -161,14 +162,27 @@ public partial class FryServerStudioViewModel : ObservableObject, IDisposable
         _ => "ServerNetwork"
     };
 
-    private static readonly IBrush FallbackActiveTypeColor = new SolidColorBrush(Color.Parse("#2F81F7"));
-    public IBrush ActiveCellTypeColor => ActiveCell?.TypeBadgeBrush ?? (Avalonia.Application.Current?.TryFindResource("DsPrimaryBrush", out var res) == true && res is IBrush b ? b : FallbackActiveTypeColor);
+    /// <summary>The breadcrumb icon's theme colour: the active cell's badge colour, or the accent.</summary>
+    public string ActiveCellTypeColorKey => ActiveCell?.TypeBadgeFgKey ?? "DsPrimaryBrush";
 
-    partial void OnActiveCellChanged(FryServerCellViewModel? value)
+    partial void OnActiveCellChanged(FryServerCellViewModel? oldValue, FryServerCellViewModel? newValue)
     {
+        if (oldValue != null) oldValue.PropertyChanged -= OnActiveCellPropertyChanged;
+        if (newValue != null) newValue.PropertyChanged += OnActiveCellPropertyChanged;
         OnPropertyChanged(nameof(ActiveCellBadgeText));
         OnPropertyChanged(nameof(ActiveCellTypeIcon));
-        OnPropertyChanged(nameof(ActiveCellTypeColor));
+        OnPropertyChanged(nameof(ActiveCellTypeColorKey));
+    }
+
+    // The active cell's method or type changed: the breadcrumb shows it at once.
+    private void OnActiveCellPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(FryServerCellViewModel.TypeBadgeFgKey))
+        {
+            OnPropertyChanged(nameof(ActiveCellBadgeText));
+            OnPropertyChanged(nameof(ActiveCellTypeIcon));
+            OnPropertyChanged(nameof(ActiveCellTypeColorKey));
+        }
     }
 
     partial void OnDocumentTitleChanged(string value)
@@ -186,7 +200,9 @@ public partial class FryServerStudioViewModel : ObservableObject, IDisposable
         IScriptStorageService? storageService = null,
         Action? backToHubAction = null,
         Action? backToHomeAction = null,
-        IFryServerRegistry? registry = null)
+        IFryServerRegistry? registry = null,
+        Action<ScriptDocumentItem>? openScriptAction = null,
+        Action<NotebookDocumentItem>? openNotebookAction = null)
     {
         _portService = portService ?? new PortAvailabilityService();
         _registry = registry ?? FryServerRegistry.Shared;
@@ -226,6 +242,10 @@ public partial class FryServerStudioViewModel : ObservableObject, IDisposable
         PopulateCells();
         SyncRunningServers();
         _ = CheckPortAvailabilityAsync();
+
+        _openScriptAction = openScriptAction;
+        _openNotebookAction = openNotebookAction;
+        if (storageService != null) Explorer = CreateExplorer(storageService);
     }
 
     private void PopulateCells()
@@ -342,6 +362,71 @@ public partial class FryServerStudioViewModel : ObservableObject, IDisposable
         }
     }
 
+    // ── Explorer: the workspace folder, as in the other studios ──────────────
+
+    private readonly Action<ScriptDocumentItem>? _openScriptAction;
+    private readonly Action<NotebookDocumentItem>? _openNotebookAction;
+
+    /// <summary>The workspace folder's files, as the Code Studio and Notebook show them (null without a workspace).</summary>
+    public StudioWorkspaceExplorer? Explorer { get; }
+
+    /// <summary>The server's overview (runtime, metrics, exports) under the Explorer: a section that opens on demand.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ServerInfoChevron))]
+    private bool _isServerInfoExpanded;
+
+    public string ServerInfoChevron => IsServerInfoExpanded ? "ChevronDown" : "ChevronRight";
+
+    [RelayCommand]
+    private void ToggleServerInfo() => IsServerInfoExpanded = !IsServerInfoExpanded;
+
+    private StudioWorkspaceExplorer CreateExplorer(IScriptStorageService storage)
+    {
+        var explorer = new StudioWorkspaceExplorer(storage, OpenFromExplorerAsync, async folder =>
+        {
+            var created = await storage.CreateNewServerDocumentAsync("New Server", folder);
+            return created.Id;
+        });
+
+        // The open server document's file was renamed or deleted from the Explorer.
+        explorer.DocumentRenamed += (id, fileName) =>
+        {
+            if (!string.Equals(id, Document?.Id, StringComparison.OrdinalIgnoreCase)) return;
+            Document!.Title = Path.GetFileNameWithoutExtension(fileName);
+            DocumentTitle = Document.Title;
+            if (!string.IsNullOrEmpty(FilePath)) FilePath = Path.Combine(Path.GetDirectoryName(FilePath) ?? string.Empty, fileName);
+        };
+        explorer.DocumentDeleted += id =>
+        {
+            if (string.Equals(id, Document?.Id, StringComparison.OrdinalIgnoreCase)) LoadDocument(CreateDefaultDocument());
+        };
+
+        storage.ActiveWorkspaceChanged += () => Dispatcher.UIThread.Post(() => _ = explorer.RefreshExplorer());
+        storage.ExternalChangeDetected += () => Dispatcher.UIThread.Post(() => _ = explorer.RefreshIfStaleAsync());
+        explorer.Highlight(Document?.Id); // marked when the listing arrives
+        _ = explorer.RefreshExplorer();
+        return explorer;
+    }
+
+    // A server document opens here; a notebook in the Notebook Studio; anything else in the Code Studio.
+    private async Task OpenFromExplorerAsync(PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer.ExplorerItemViewModel item)
+    {
+        if (_storageService == null || string.IsNullOrEmpty(item.DocumentId)) return;
+        var extension = item.FileExtension;
+        if (extension.Equals(".fryserver", StringComparison.OrdinalIgnoreCase))
+        {
+            if (await _storageService.LoadServerDocumentAsync(item.DocumentId) is { } server) LoadDocument(server, item.FullPath);
+        }
+        else if (extension.Equals(".frynb", StringComparison.OrdinalIgnoreCase))
+        {
+            if (await _storageService.LoadNotebookAsync(item.DocumentId) is { } notebook) _openNotebookAction?.Invoke(notebook);
+        }
+        else if (await _storageService.LoadScriptAsync(item.DocumentId) is { } script)
+        {
+            _openScriptAction?.Invoke(script);
+        }
+    }
+
     public void LoadDocument(FryServerDocumentItem document, string? filePath = null)
     {
         _engine.StateChanged -= OnServerStateChanged;
@@ -378,6 +463,7 @@ public partial class FryServerStudioViewModel : ObservableObject, IDisposable
         PopulateCells();
         _ = CheckPortAvailabilityAsync();
         SyncRunningServers();
+        Explorer?.Highlight(document.Id);
     }
 
     [RelayCommand]

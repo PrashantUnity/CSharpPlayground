@@ -22,6 +22,9 @@ public sealed partial class ThemePresetItemViewModel : ObservableObject
     /// <summary>The palette a saved theme was made from (its sections, locks and engine), if it came from the palette studio.</summary>
     public System.Text.Json.JsonElement? Palette { get; set; }
 
+    /// <summary>The layout saved with the theme ("Include current layout"), applied with it.</summary>
+    public System.Text.Json.JsonElement? Layout { get; set; }
+
     public string Id { get; init; } = string.Empty;
 
     [ObservableProperty]
@@ -267,6 +270,13 @@ public partial class CSharpSettingsViewModel
             foreach (var p in AllThemePresets)
             {
                 p.IsActive = string.Equals(p.Id, themeId, StringComparison.OrdinalIgnoreCase);
+            }
+
+            // A theme saved with a layout brings its layout too.
+            if (PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout.LayoutSpec.FromJson(preset?.Layout) is { } layout)
+            {
+                PushLayoutUndo(StudioAppContext.Instance.ThemeEngine.Layout);
+                ApplyLayoutNow(layout, layout.PresetId);
             }
 
             // A saved theme made in the palette studio opens its palette there again, ready to be changed.

@@ -120,4 +120,70 @@ public class AnimationLifecycleTests
 
         Assert.All(controls, c => Assert.True(c.WasDisposed));
     }
+
+    [Fact]
+    public void AFrameCallbackThatThrows_StopsTheAnimation_AndSaysWhy()
+    {
+        var frames = 0;
+        var control = new AnimatedRenderControl((_, _) => { frames++; throw new InvalidOperationException("boom"); }, interval: TimeSpan.FromMilliseconds(50));
+        Assert.Null(control.Failure);
+
+        Assert.False(control.RunFrame(null!));
+
+        Assert.Equal(1, frames);
+        Assert.Contains("boom", control.Failure);
+        Assert.Contains("InvalidOperationException", control.Failure);
+        Assert.False(control.IsTicking);
+    }
+
+    [Fact]
+    public void Stop_FreezesTheAnimation_ButItStillDrawsItsLastFrame()
+    {
+        var times = new List<TimeSpan>();
+        var control = new AnimatedRenderControl((_, elapsed) => times.Add(elapsed), interval: TimeSpan.FromMilliseconds(50));
+
+        control.Stop();
+        control.Stop(); // idempotent
+
+        Assert.True(control.IsStopped);
+        Assert.False(control.IsTicking);
+        Assert.True(control.RunFrame(null!)); // a repaint still draws the frame, with the time it stopped at
+        Assert.True(control.RunFrame(null!));
+        Assert.Equal(times[0], times[1]);
+    }
+
+    [Fact]
+    public void AFrameCallbackThatWorks_KeepsAnimating()
+    {
+        var control = new AnimatedRenderControl((_, _) => { }, interval: TimeSpan.FromMilliseconds(50));
+
+        Assert.True(control.RunFrame(null!));
+        Assert.Null(control.Failure);
+    }
+
+    [Fact]
+    public async Task DisplayAnimate_ShowsTheControlItMade_WhenTheScriptRunsOnAnotherThread()
+    {
+        RichCellOutput? shown = null;
+        using var scope = InteractiveDisplayContext.EnterScope(output => shown = output);
+
+        // (Without a studio there is no UI thread to build on, so this proves the call and its output; the real window is
+        // checked with UiSnapshots: docs --article "Live Animations" --run.)
+        var control = await Task.Run(() => Display.Animate((_, _) => { }, width: 120, height: 80));
+
+        Assert.Same(control, shown!.InteractiveControl);
+        Assert.Equal(CellOutputKind.Control, shown.Kind);
+    }
+
+    [Fact]
+    public void DisplayControl_WithAFactory_ReturnsTheControlItShows()
+    {
+        RichCellOutput? shown = null;
+        using var scope = InteractiveDisplayContext.EnterScope(output => shown = output);
+
+        var button = Display.Control(() => new Avalonia.Controls.Button { Width = 70 });
+
+        Assert.Same(button, shown!.InteractiveControl);
+        Assert.Equal(70, button.Width);
+    }
 }

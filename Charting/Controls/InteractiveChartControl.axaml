@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -15,8 +15,8 @@
         <StackPanel x:Name="KindToolsPanel" Orientation="Horizontal" Spacing="4" IsVisible="False">
             <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}"
                     BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                    BorderThickness="1"
-                    CornerRadius="4"
+                    lt:Tokens.BorderThickness="DsBorderThin"
+                    lt:Tokens.CornerRadius="DsRadiusSM"
                     Padding="2"
                     Margin="0,0,4,0">
                 <StackPanel Orientation="Horizontal" Spacing="1">
@@ -39,6 +39,9 @@
             </Border>
             <Button Name="GridToggleBtn" Classes="chrome-tool-btn" Width="22" Height="22" ToolTip.Tip="Toggle Grid Lines">
                 <materialIcons:MaterialIcon Kind="Grid" Width="12" Height="12" />
+            </Button>
+            <Button Name="StackToggleBtn" Classes="chrome-tool-btn" Width="22" Height="22" ToolTip.Tip="Stack or unstack the series" IsVisible="False">
+                <materialIcons:MaterialIcon Kind="ChartBarStacked" Width="12" Height="12" />
             </Button>
         </StackPanel>
 

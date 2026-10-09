@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -11,8 +11,8 @@
 
     <Border Background="{DynamicResource M3SurfaceContainerLowestBrush}"
             BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-            BorderThickness="1"
-            CornerRadius="6"
+            lt:Tokens.BorderThickness="DsBorderThin"
+            lt:Tokens.CornerRadius="DsRadiusMD"
             Margin="0,0,0,12"
             HorizontalAlignment="Stretch">
         <DockPanel>
@@ -20,8 +20,8 @@
             <Border DockPanel.Dock="Top"
                     Background="{DynamicResource M3SurfaceContainerHighBrush}"
                     BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                    BorderThickness="0,0,0,1"
-                    CornerRadius="5,5,0,0"
+                    lt:Tokens.BorderThickness="DsBorderBottom"
+                    lt:Tokens.CornerRadius="DsRadiusSMTop"
                     Padding="10,6">
                 <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                     <!-- Collapse Toggle Button & Type Title -->
@@ -34,15 +34,15 @@
                             ToolTip.Tip="Toggle collapse table">
                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <TextBlock Text="{Binding CollapseIcon}"
-                                       FontSize="11" FontWeight="Bold"
+                                       lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong"
                                        Foreground="{DynamicResource M3PrimaryBrush}"
                                        VerticalAlignment="Center" />
                             <TextBlock Text="{Binding FullHeaderTitle}"
-                                       FontSize="12" FontWeight="SemiBold"
+                                       lt:Tokens.FontSize="DsFontSize300" lt:Tokens.FontWeight="DsWeightEmphasis"
                                        Foreground="{DynamicResource M3OnSurfaceBrush}"
                                        VerticalAlignment="Center" />
                             <TextBlock Text="{Binding SummaryText}"
-                                       FontSize="11"
+                                       lt:Tokens.FontSize="DsFontSize200"
                                        Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
                                        VerticalAlignment="Center"
                                        Margin="4,0,0,0" />
@@ -56,8 +56,8 @@
                     <Border Grid.Column="2"
                             Background="{DynamicResource M3SurfaceContainerLowestBrush}"
                             BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                            BorderThickness="1"
-                            CornerRadius="4"
+                            lt:Tokens.BorderThickness="DsBorderThin"
+                            lt:Tokens.CornerRadius="DsRadiusSM"
                             Height="24"
                             Margin="8,0"
                             VerticalAlignment="Center"
@@ -72,7 +72,7 @@
                             <TextBox Grid.Column="1"
                                      Text="{Binding FilterText, Mode=TwoWay}"
                                      PlaceholderText="Filter rows..."
-                                     FontSize="11"
+                                     lt:Tokens.FontSize="DsFontSize200"
                                      Width="130"
                                      Height="22"
                                      Padding="2,1"
@@ -137,7 +137,7 @@
                             </MenuFlyout>
                         </Button.Flyout>
                         <TextBlock Text="•••"
-                                   FontSize="13" FontWeight="Heavy"
+                                   lt:Tokens.FontSize="DsFontSize400" lt:Tokens.FontWeight="DsWeightStrong"
                                    Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Button>
@@ -149,13 +149,13 @@
             <Border x:Name="TableBodyBorder"
                     IsVisible="{Binding !IsCollapsed}"
                     BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                    BorderThickness="0,1,0,0"
+                    lt:Tokens.BorderThickness="DsBorderTop"
                     HorizontalAlignment="Stretch">
                 <ScrollViewer x:Name="TableScrollViewer" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
                     <Grid x:Name="TableHost" RowDefinitions="Auto,Auto,*" HorizontalAlignment="Left">
                         <Grid x:Name="TableGrid" Grid.Row="0" />
                         <Border x:Name="EmptyRow" Grid.Row="1" Padding="16,14" IsVisible="False">
-                            <TextBlock x:Name="EmptyText" FontSize="12" FontStyle="Italic" HorizontalAlignment="Center"
+                            <TextBlock x:Name="EmptyText" lt:Tokens.FontSize="DsFontSize300" FontStyle="Italic" HorizontalAlignment="Center"
                                        Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                         </Border>
                         <views:DumpTableRowsList x:Name="RowsPart" Grid.Row="2" />

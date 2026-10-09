@@ -71,6 +71,17 @@ recorder.Step(new[] { 5, 2, 8, 1 }, "Initial state");
 recorder.Display();
 ```
 
+Every chart and 3D helper takes the same named settings (`xLabel`, `yLabel`, `zLabel`, `width`, `height`, `legend`), and `Charts` builds the same visual one setting at a time. Both draw the same spec:
+
+```csharp
+Display.LineChart(sales, "Sales", xLabel: "Month", yLabel: "USD");
+
+Charts.Line(sales).Title("Sales").XLabel("Month").YLabel("USD").Size(640, 320).Show();
+Charts.Surface((x, y) => Math.Sin(x) * Math.Cos(y)).ColorMap(ColorMapPreset.Plasma).Show();
+```
+
+`Show()` returns the handle (`Update`, `OnClick`). A builder returned as a notebook cell's last value is shown without `.Show()`; once shown it can't be changed, so change the handle instead.
+
 ### Python
 ```python
 from fry_display import Display
@@ -86,67 +97,67 @@ Display.plot3d_surface(lambda x, y: x**2 + y**2, x_range=(-3, 3), y_range=(-3, 3
 ```javascript
 const { Display } = require('fry_display');
 
-Display.chart({
-    type: 'bar',
-    title: 'Resource Allocation',
-    labels: ['CPU', 'Memory', 'Disk'],
-    series: [{ name: 'Usage %', values: [45, 78, 62] }]
-});
+Display.barChart({ CPU: 45, Memory: 78, Disk: 62 }, 'Resource Allocation');
 ```
 
 ### Java
 ```java
-import com.frypdf.display.Visualizer;
-
-int[][] matrix = { { 1, 0 }, { 0, 1 } };
+// In a notebook cell (Display and Visualizer need no import there)
+var matrix = List.of(List.of(1, 0), List.of(0, 1));
 Visualizer.grid(matrix).title("Identity Matrix").show();
 ```
 
 ### Go
 ```go
 package main
-import "fry_display"
+
+import "fry"
 
 func main() {
-    fry_display.Chart(fry_display.ChartOptions{
-        Type: "scatter",
-        Title: "Point Distribution",
-        X: []float64{1.0, 2.0, 3.0},
-        Y: []float64{2.5, 3.7, 1.8},
-    })
+    fry.ScatterChart([][]any{{1, 2.5}, {2, 3.7}, {3, 1.8}}, "Point Distribution")
 }
 ```
 
 ### Rust
 ```rust
-use fry_display::prelude::*;
-
 fn main() {
-    let chart = Chart::new()
-        .title("Telemetry")
-        .line_series("Sensor", vec![(0.0, 1.0), (1.0, 4.0), (2.0, 9.0)]);
-    Display::show(chart);
+    fry::scatter_chart(&vec![vec![0.0, 1.0], vec![1.0, 4.0], vec![2.0, 9.0]]).title("Telemetry").show();
 }
 ```
 
 ### C++
 ```cpp
-#include <fry_display.hpp>
+#include <fry/display.hpp>
 
 int main() {
-    fry::Surface3D surface("Saddle", [](double x, double y) { return x*x - y*y; }, -3.0, 3.0, -3.0, 3.0, 30);
-    surface.show();
+    fry::tree(fry::make_tree(2, fry::make_tree(1), fry::make_tree(3)), "Tree");
     return 0;
 }
 ```
 
 ### F#
 ```fsharp
-open FryDisplay
+open Fry
 
-let data = [ for x in 0.0 .. 0.1 .. 6.28 -> (x, sin x) ]
-Display.chart [ "Sine Wave", data ]
+Display.lineChart([ for x in 0.0 .. 0.1 .. 6.28 -> sin x ], "Sine Wave") |> ignore
 ```
+
+Every sample in the docs' visual articles runs with its real toolchain under the Run button, and `SnippetRunTests.Every*Sample_Runs` keeps them honest.
+
+### More chart kinds and options (every language)
+
+All chart kinds beyond line, bar, scatter, pie and histogram are optional additions to chart v1, so older specs read unchanged. Each language's SDK writes the same spec, checked against `docs/visuals/conformance/chart-*.json` by a real-toolchain test per language.
+
+| Feature | Spec field | Python | JavaScript | Go | F# | Dart |
+|---|---|---|---|---|---|---|
+| Combo (a series of another kind, on the right axis) | `series[].kind`, `series[].axis`, `y2Axis` | `{"values": v, "kind": "line", "axis": "right"}` + `y2_title=` | series option `kind`/`axis` | `fry.S(v, "kind", "line", "axis", "right")` + `fry.RightAxis(...)` | `Display.series(v).Kind("line").RightAxis()` + `ChartStyle().Y2Axis(...)` | `{'values': v, 'kind': 'line', 'axis': 'right'}` + `'y2Axis'` |
+| Stacked, horizontal | `stack`, `orientation` | `stacked_bar_chart`, `horizontal_bar_chart` | `stackedBarChart`, `horizontalBarChart` | `StackedBarChart`, `HorizontalBarChart` | `stackedBarChart`, `horizontalBarChart` | `stackedBarChart`, `horizontalBarChart` |
+| Line styling | `dash`, `interpolation`, `tension`, `step`, `fill`, `pointStyle`, `pointRadius`, `colorSegments` | per-series options | per-series options | `fry.S(...)` options | `SeriesData` methods | per-series map keys |
+| Bubble, radar, polar area | `kind: bubble \| radar \| polarArea`, `series[].sizes` | `bubble_chart`, `radar_chart`, `polar_area_chart` | `bubbleChart`, `radarChart`, `polarAreaChart` | `BubbleChart`, `RadarChart`, `PolarAreaChart` | `bubbleChart`, `radarChart`, `polarAreaChart` | `bubbleChart`, `radarChart`, `polarAreaChart` |
+| Gauge (half donut) | `startAngle`, `sweep` | `gauge=True` | `gauge: true` | `fry.Gauge()` | `ChartStyle().Gauge()` | `'gauge': true` |
+| Log, time and reversed scales, suggested range | `xAxis`/`yAxis`: `scale`, `suggestedMin`, `suggestedMax`, `reverse` | `y_scale=`, `y_suggested_min=`, `reverse_x=` | same names in camelCase | `fry.YScale`, `fry.SuggestedY`, `fry.ReverseX` | `ChartStyle().YScale/SuggestedY/ReverseX` | `'yAxis': {...}` |
+
+Java, Rust and C++ follow the same shapes with their own naming (`Display.java`, `lib.rs`, `display.hpp`). The Python tab of the docs and the conformance tests under `Tests/Real*` show the exact calls per language.
 
 ---
 
@@ -155,3 +166,67 @@ Display.chart [ "Sine Wave", data ]
 - **In-Place Updates**: Returned visual handles support `.update(...)`, throttling mutations and refreshing the visual in-place without generating new cells.
 - **Event Callbacks**: Clicking visual elements routes event messages back through the transport or kernel pipes (`event` message type with `target`, `element`, `modifiers`).
 - **Process Disconnection**: When a program terminates, visual handles are marked disconnected, gracefully preserving the last rendered state while alerting the user.
+
+---
+
+## 6. ECharts in C#: `EChart`
+
+`EChart` draws a chart with Apache ECharts 5.5 (echarts-gl 2.0.9 for 3D) in a web view, in C# only. It has the same
+shape as `Charts`: a factory, settings, `Show()`; and it reads data the same way (numbers, `[x, y]` pairs, a
+label → number map, a name → sequence map, tuples, records by member name). A chart returned as a cell's last value
+shows without `Show()`.
+
+```csharp
+EChart.Line(sales, "Sales").Title("Sales").XLabel("Month").YLabel("USD").Smooth().Show();
+EChart.Bar(revenue, "Revenue").Series("Profit", profit, EChartType.Line).Zoom().Toolbox().Show();
+EChart.Bar(regions, r => r.Region, r => r.Revenue).Horizontal().ValueLabels().Show();
+sales.ToEChart(EChartType.Donut).Title("Share").Show();     // any data, any kind
+sales.DumpEChart("Sales", EChartType.Bar);                   // shows it, returns the data
+```
+
+| Factory | Data |
+| --- | --- |
+| `Line`, `Area`, `Bar`, `Scatter` | as for `Charts`; records with x and y selectors; `params (name, values)` |
+| `Pie`, `Donut`, `Funnel` | label → number, or records with label and value selectors |
+| `Radar(data, spokes?, max?)` | a series per name, a value per spoke |
+| `Heatmap(grid, xLabels?, yLabels?)` | `double[,]` or rows; a row per y, the first at the top |
+| `Candlestick` | `[open, close, low, high]` items, or records with a date and those four |
+| `Gauge(value, max)` | one number |
+| `Treemap`, `Sunburst` | a map of names to numbers or to the maps inside them, or records with name, value, children |
+| `Sankey`, `Graph` | `(from, to, amount)` links, or an adjacency map |
+| `Surface(f, xRange, yRange, resolution)`, `Surface(grid)` | z = f(x, y), or heights; NaN is a hole |
+| `ParametricSurface(x, y, z, u, v)` | three functions of (u, v): spheres, tori, strips |
+| `Bar3D`, `Scatter3D` | a grid, or `(x, y, z)` items; text places are categories (`xLabels`/`yLabels` keep their order) |
+
+Settings: `Title`, `Subtitle`, `XLabel`, `YLabel`, `ZLabel`, `XRange`, `YRange`, `Labels`, `YLabels`, `Legend`,
+`LegendAt`, `Tooltip`, `Toolbox`, `Zoom`, `Stacked`, `Horizontal`, `Smooth`, `ValueLabels`, `Colors`, `ColorMap`
+(a `ColorMapPreset` or colours), `Wireframe`, `Shading`, `AutoRotate`, `Theme` (`Auto` follows the studio), `Svg`. A
+setting a chart can't have says what it is for instead of doing nothing.
+
+### The whole option
+
+Every setting writes into `chart.Option`, the ECharts option itself as a `JsonObject`. What no setting reaches:
+
+```csharp
+EChart.Bar(temps)
+    .Set("series.label.show", true)                     // a list without an index: every item
+    .Set("xAxis.axisLabel.rotate", 30)
+    .Set("tooltip.formatter", JsFunc.From("p => p[0].name + ': ' + p[0].value"))
+    .Merge("""{ "animationDuration": 300 }""")
+    .Configure(o => o["animation"] = true)
+    .Show();
+
+EChart.FromJson(json).Title("From JSON").Show();          // bad JSON says where it is wrong
+EChart.FromJs("option = { series: [{ type: 'pie', data: [1, 2] }] };").Show(); // an ECharts example, as it is
+EChart.FromOption(new { series = new[] { new { type = "pie", data = new[] { 1, 2 } } } }).Show();
+```
+
+`JsFunc` is written into the page as code, wherever it is in the option.
+
+### The page
+
+An output carries the option and names the libraries (`<script data-fry-asset="echarts.min.js">`); the HTML view
+writes them in when it shows the page (`HtmlAssets.ForDisplay`), so a chart is a few kilobytes in a notebook, not
+a megabyte. `chart.ToHtml()` / `chart.SaveHtml(path)` and the view's "open in browser" give a page with the libraries
+in it. echarts-gl is only loaded for charts that need it. The view also sets `window.fryHost = { theme, background }`,
+which `Theme(EChartTheme.Auto)` follows. An option ECharts refuses shows its error on the page.

@@ -27,8 +27,8 @@ public static class RustGuidance
         if (host.IsWindows)
         {
             steps.Add("Install via winget: winget install Rustlang.Rustup");
+            steps.Add("Rust links with the MSVC linker: install Visual Studio Build Tools via winget install Microsoft.VisualStudio.2022.BuildTools --override \"--passive --wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended\"");
             steps.Add("Or download rustup-init.exe from https://rustup.rs");
-            steps.Add("Rust links with the MSVC linker: install Visual Studio Build Tools with the \"Desktop development with C++\" workload (winget install Microsoft.VisualStudio.2022.BuildTools).");
         }
         else if (host.IsMacOS)
         {

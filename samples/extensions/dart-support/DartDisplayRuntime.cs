@@ -198,6 +198,43 @@ class Display {
     return _send(_kChartMime, spec);
   }
 
+  /// Bubble chart: [x, y, size] items; the size is a radius in pixels.
+  static DisplayHandle bubbleChart(dynamic data, [dynamic titleOrOpts, dynamic extra]) {
+    final spec = _buildChartSpec(data, kind: 'bubble', titleOrOpts: titleOrOpts, extra: extra);
+    return _send(_kChartMime, spec);
+  }
+  static DisplayHandle bubble_chart(dynamic data, [dynamic titleOrOpts, dynamic extra]) => bubbleChart(data, titleOrOpts, extra);
+
+  /// Radar chart: one polygon per series over a spoke per value (name the spokes with {'labels': [...]}).
+  static DisplayHandle radarChart(dynamic data, [dynamic titleOrOpts, dynamic extra]) {
+    final spec = _buildChartSpec(data, kind: 'radar', titleOrOpts: titleOrOpts, extra: extra);
+    return _send(_kChartMime, spec);
+  }
+  static DisplayHandle radar_chart(dynamic data, [dynamic titleOrOpts, dynamic extra]) => radarChart(data, titleOrOpts, extra);
+
+  /// Polar area chart: slices of equal angle whose radius is the value.
+  static DisplayHandle polarAreaChart(dynamic data, [dynamic titleOrOpts, dynamic extra]) {
+    final spec = _buildChartSpec(data, kind: 'polarArea', titleOrOpts: titleOrOpts, extra: extra);
+    return _send(_kChartMime, spec);
+  }
+  static DisplayHandle polar_area_chart(dynamic data, [dynamic titleOrOpts, dynamic extra]) => polarAreaChart(data, titleOrOpts, extra);
+
+  /// Bar chart with the series stacked on each other.
+  static DisplayHandle stackedBarChart(dynamic data, [dynamic titleOrOpts, dynamic extra]) {
+    final spec = _buildChartSpec(data, kind: 'bar', titleOrOpts: titleOrOpts, extra: extra);
+    spec.putIfAbsent('stack', () => 'stacked');
+    return _send(_kChartMime, spec);
+  }
+  static DisplayHandle stacked_bar_chart(dynamic data, [dynamic titleOrOpts, dynamic extra]) => stackedBarChart(data, titleOrOpts, extra);
+
+  /// Bar chart with horizontal bars.
+  static DisplayHandle horizontalBarChart(dynamic data, [dynamic titleOrOpts, dynamic extra]) {
+    final spec = _buildChartSpec(data, kind: 'bar', titleOrOpts: titleOrOpts, extra: extra);
+    spec.putIfAbsent('orientation', () => 'horizontal');
+    return _send(_kChartMime, spec);
+  }
+  static DisplayHandle horizontal_bar_chart(dynamic data, [dynamic titleOrOpts, dynamic extra]) => horizontalBarChart(data, titleOrOpts, extra);
+
   // --------------------------------------------------------------------------
   // 3D Visuals & Plots
   // --------------------------------------------------------------------------
@@ -958,6 +995,17 @@ void _applyOptions(Map<String, dynamic> spec, Map<String, dynamic> opts) {
   if (opts.containsKey('cellSize')) spec['cellSize'] = opts['cellSize'];
   if (opts.containsKey('xAxis')) spec['xAxis'] = opts['xAxis'];
   if (opts.containsKey('yAxis')) spec['yAxis'] = opts['yAxis'];
+  if (opts.containsKey('y2Axis')) spec['y2Axis'] = opts['y2Axis'];
+  if (opts.containsKey('stack')) spec['stack'] = opts['stack'];
+  if (opts.containsKey('orientation')) spec['orientation'] = opts['orientation'];
+  if (opts.containsKey('legend')) spec['legend'] = opts['legend'];
+  if (opts.containsKey('startAngle')) spec['startAngle'] = opts['startAngle'];
+  if (opts.containsKey('sweep')) spec['sweep'] = opts['sweep'];
+  if (opts.containsKey('cutout')) spec['cutout'] = opts['cutout'];
+  if (opts['gauge'] == true) {
+    spec['startAngle'] = -90;
+    spec['sweep'] = 180;
+  }
 }
 
 Map<String, dynamic> _buildChartSpec(dynamic data, {String kind = 'line', dynamic titleOrOpts, dynamic extra}) {
@@ -980,6 +1028,18 @@ Map<String, dynamic> _buildChartSpec(dynamic data, {String kind = 'line', dynami
       }
     }
     seriesList.add({'values': values});
+  } else if (actualKind == 'bubble' && data is List) {
+    final x = <dynamic>[];
+    final y = <dynamic>[];
+    final sizes = <dynamic>[];
+    for (final item in data) {
+      if (item is List && item.length >= 3) {
+        x.add(item[0]);
+        y.add(item[1]);
+        sizes.add(item[2]);
+      }
+    }
+    seriesList.add({'x': x, 'y': y, 'sizes': sizes});
   } else if (data is List) {
     if (data.isNotEmpty && data.first is List) {
       final x = <dynamic>[];
@@ -1029,15 +1089,25 @@ Map<String, dynamic> _buildChartSpec(dynamic data, {String kind = 'line', dynami
       seriesList.add({'y': y});
     }
   } else if (data is Map) {
-    final isMulti = data.values.isNotEmpty && data.values.first is List;
+    bool isSeries(dynamic v) => v is List || (v is Map && v.containsKey('values'));
+    final isMulti = data.values.isNotEmpty && data.values.any(isSeries);
     if (isMulti) {
       for (final entry in data.entries) {
-        final yVals = (entry.value as List).map((e) {
+        // A series is its values, or {'values': [...], 'kind': 'line', 'axis': 'right', 'dash': 'dashed', ...}.
+        final value = entry.value;
+        final raw = value is Map ? (value['values'] as List) : (value as List);
+        final yVals = raw.map((e) {
           if (e == null) return null;
           if (e is num) return e;
           return num.tryParse(e.toString()) ?? 0;
         }).toList();
-        seriesList.add({'name': entry.key.toString(), 'y': yVals});
+        final one = <String, dynamic>{'name': entry.key.toString(), 'y': yVals};
+        if (value is Map) {
+          for (final o in value.entries) {
+            if (o.key.toString() != 'values') one[o.key.toString()] = o.value;
+          }
+        }
+        seriesList.add(one);
       }
     } else {
       final labels = <String>[];
@@ -1054,6 +1124,17 @@ Map<String, dynamic> _buildChartSpec(dynamic data, {String kind = 'line', dynami
         }
       }
       seriesList.add({'y': y, 'labels': labels});
+    }
+  }
+
+  // {'labels': [...]} names the places of the values (x positions, radar spokes, slices) of each series that has none.
+  final names = opts['labels'];
+  if (names is List) {
+    for (final one in seriesList) {
+      final y = one['y'];
+      if (!one.containsKey('labels') && y is List && y.length == names.length) {
+        one['labels'] = names.map((n) => n.toString()).toList();
+      }
     }
   }
 

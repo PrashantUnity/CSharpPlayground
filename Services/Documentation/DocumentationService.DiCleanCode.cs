@@ -228,6 +228,7 @@ public partial class DocumentationService
                     Title = "Registering Services with ServiceCollection",
                     Description = "Illustrative example of wiring up the same IEmailSender/NotificationService pair through the standard .NET DI container. Requires the Microsoft.Extensions.DependencyInjection NuGet package - it will not run as-is in a plain script without that reference.",
                     TargetKind = WorkspaceItemKind.Script,
+                    NotRunnable = true, // needs the Microsoft.Extensions.DependencyInjection package
                     Code = """
                     using System;
                     using Microsoft.Extensions.DependencyInjection; // NuGet: Microsoft.Extensions.DependencyInjection

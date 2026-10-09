@@ -98,6 +98,7 @@ public partial class DocumentationService
                     Title = "xUnit — [Fact] and [Theory]",
                     Description = "A simple calculator class tested with a fixed [Fact] test and a parameterized [Theory] test. Assumes the xUnit NuGet package (xunit + xunit.runner.visualstudio); the test class itself won't execute directly in this app's script runner without a test host, but the logic and assertions are ordinary, compilable C#.",
                     TargetKind = WorkspaceItemKind.Script,
+                    NotRunnable = true, // needs the xunit package: it runs as a test project
                     Code = """
                     public class Calculator
                     {
@@ -145,6 +146,7 @@ public partial class DocumentationService
                     Title = "Mocking a Dependency with Moq",
                     Description = "A notification service depends on an IEmailSender interface, mocked so the test never sends a real email. Assumes the Moq and xUnit NuGet packages; illustrative of test code — not runnable directly in this app's script runner without a test host.",
                     TargetKind = WorkspaceItemKind.Script,
+                    NotRunnable = true, // needs the xunit and Moq packages: it runs as a test project
                     Code = """
                     public interface IEmailSender
                     {

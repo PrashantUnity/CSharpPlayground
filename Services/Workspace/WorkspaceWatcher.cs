@@ -64,7 +64,8 @@ internal sealed class WorkspaceWatcher : IDisposable
 
     private void Report(string? path, bool structural)
     {
-        // Folders the Explorer leaves out (.git, node_modules...) change constantly and show nothing.
+        // Inside the folders the walk leaves out (.git, node_modules...) things change constantly; the Explorer lists them
+        // only when opened (as VS Code's watcher, which ignores them too).
         if (path != null && WorkspaceWalker.IsInsideSkippedFolder(path, _root)) return;
 
         if (structural) Interlocked.Exchange(ref _structural, 1);

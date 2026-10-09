@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -36,7 +36,7 @@
         <Border Grid.Row="0"
                 Background="{DynamicResource DsSurfaceBrush}"
                 BorderBrush="{DynamicResource DsBorderBrush}"
-                BorderThickness="0,0,0,1"
+                lt:Tokens.BorderThickness="DsBorderBottom"
                 Height="32"
                 Padding="12,0,8,0">
             <Grid ColumnDefinitions="Auto,*,Auto">
@@ -44,31 +44,31 @@
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                         <materialIcons:MaterialIcon Kind="ImageOutline" Width="14" Height="14" Foreground="{DynamicResource NavScriptsFgBrush}" VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding Script.Title}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding Script.Title}" lt:Tokens.FontSize="DsFontSize300" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                     </StackPanel>
 
                     <!-- Format Pill -->
                     <Border Background="{DynamicResource DsSurfaceHighBrush}"
                             BorderBrush="{DynamicResource DsBorderBrush}"
-                            BorderThickness="1" CornerRadius="4" Padding="6,2"
+                            lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusSM" Padding="6,2"
                             IsVisible="{Binding ImageFormatText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                        <TextBlock Text="{Binding ImageFormatText}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource NavScriptsFgBrush}" />
+                        <TextBlock Text="{Binding ImageFormatText}" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource NavScriptsFgBrush}" />
                     </Border>
 
                     <!-- Dimensions Pill -->
                     <Border Background="{DynamicResource DsSurfaceHighBrush}"
                             BorderBrush="{DynamicResource DsBorderBrush}"
-                            BorderThickness="1" CornerRadius="4" Padding="6,2"
+                            lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusSM" Padding="6,2"
                             IsVisible="{Binding ImageDimensionsText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                        <TextBlock Text="{Binding ImageDimensionsText}" FontSize="10" FontWeight="Medium" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                        <TextBlock Text="{Binding ImageDimensionsText}" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightLabel" Foreground="{DynamicResource DsTextWhiteBrush}" />
                     </Border>
 
                     <!-- File Size Pill -->
                     <Border Background="{DynamicResource DsSurfaceHighBrush}"
                             BorderBrush="{DynamicResource DsBorderBrush}"
-                            BorderThickness="1" CornerRadius="4" Padding="6,2"
+                            lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusSM" Padding="6,2"
                             IsVisible="{Binding ImageFileSizeText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                        <TextBlock Text="{Binding ImageFileSizeText}" FontSize="10" FontWeight="Medium" Foreground="{DynamicResource DsMutedBrush}" />
+                        <TextBlock Text="{Binding ImageFileSizeText}" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightLabel" Foreground="{DynamicResource DsMutedBrush}" />
                     </Border>
                 </StackPanel>
 
@@ -81,7 +81,7 @@
 
                     <!-- Zoom Percentage Text / Reset -->
                     <Button Command="{Binding ImageResetZoomCommand}" Classes="cs-toolbar-tonal" Height="24" Padding="6,0" ToolTip.Tip="Reset Zoom (100%)">
-                        <TextBlock Text="{Binding ImageZoomPercentageText}" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding ImageZoomPercentageText}" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
                     </Button>
 
                     <!-- Zoom In -->
@@ -100,7 +100,7 @@
                     <Button Command="{Binding CopyActiveImageRelativePathCommand}" Classes="cs-toolbar-tonal" Height="24" Padding="6,0" ToolTip.Tip="Copy Relative Path to Clipboard">
                         <StackPanel Orientation="Horizontal" Spacing="4">
                             <materialIcons:MaterialIcon Kind="ContentCopy" Width="12" Height="12" Foreground="{DynamicResource DsPrimaryBrush}" />
-                            <TextBlock Text="Copy Path" FontSize="10.5" FontWeight="Medium" VerticalAlignment="Center" />
+                            <TextBlock Text="Copy Path" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightLabel" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
 
@@ -108,7 +108,7 @@
                     <ToggleButton IsChecked="{Binding ShowImageCodeDrawer, Mode=TwoWay}" Classes="cs-toolbar-icon" ToolTip.Tip="Toggle C# and Python Loading Code Snippets">
                         <StackPanel Orientation="Horizontal" Spacing="4">
                             <materialIcons:MaterialIcon Kind="CodeBraces" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" />
-                            <TextBlock Text="Code" FontSize="10.5" FontWeight="Medium" VerticalAlignment="Center" />
+                            <TextBlock Text="Code" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightLabel" VerticalAlignment="Center" />
                         </StackPanel>
                     </ToggleButton>
                 </StackPanel>
@@ -145,22 +145,22 @@
                 <!-- Error Display (corrupted / unreadable image) -->
                 <Border Background="{DynamicResource DsSurfaceBrush}"
                         BorderBrush="{DynamicResource DsBorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="8"
+                        lt:Tokens.BorderThickness="DsCardBorder"
+                        lt:Tokens.CornerRadius="DsRadiusLG"
                         Padding="24"
                         MaxWidth="450"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
-                        IsVisible="{Binding ImageErrorText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                    <StackPanel Spacing="12" HorizontalAlignment="Center">
+                        IsVisible="{Binding ImageErrorText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" lt:Tokens.BoxShadow="DsCardShadow">
+                    <StackPanel lt:Tokens.Spacing="DsSpace12" HorizontalAlignment="Center">
                         <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="36" Height="36" Foreground="{DynamicResource DsErrorBrush}" HorizontalAlignment="Center" />
-                        <TextBlock Text="Unable to Display Image Preview" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" />
-                        <TextBlock Text="{Binding ImageErrorText}" FontSize="12" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" TextAlignment="Center" />
+                        <TextBlock Text="Unable to Display Image Preview" lt:Tokens.FontSize="DsFontSize500" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" />
+                        <TextBlock Text="{Binding ImageErrorText}" lt:Tokens.FontSize="DsFontSize300" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" TextAlignment="Center" />
                         <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" Margin="0,8,0,0">
                             <Button Command="{Binding CopyActiveImagePathCommand}" Classes="cs-toolbar-tonal" Padding="12,6">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                     <materialIcons:MaterialIcon Kind="ContentCopy" Width="14" Height="14" />
-                                    <TextBlock Text="Copy Path" FontSize="11" />
+                                    <TextBlock Text="Copy Path" lt:Tokens.FontSize="DsFontSize200" />
                                 </StackPanel>
                             </Button>
                         </StackPanel>
@@ -174,7 +174,7 @@
                 IsVisible="{Binding ShowImageCodeDrawer}"
                 Background="{DynamicResource DsSurfaceBrush}"
                 BorderBrush="{DynamicResource DsBorderBrush}"
-                BorderThickness="0,1,0,0"
+                lt:Tokens.BorderThickness="DsBorderTop"
                 MaxHeight="260"
                 Padding="16,10,16,14">
             <Grid RowDefinitions="Auto,*">
@@ -182,8 +182,8 @@
                 <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                         <materialIcons:MaterialIcon Kind="CodeTags" Width="15" Height="15" Foreground="{DynamicResource DsPrimaryBrush}" />
-                        <TextBlock Text="Script Integration Snippets" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
-                        <TextBlock Text="(Click any card to copy code to clipboard)" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" Margin="6,0,0,0" />
+                        <TextBlock Text="Script Integration Snippets" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="(Click any card to copy code to clipboard)" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" Margin="6,0,0,0" />
                     </StackPanel>
                     <Button Grid.Column="1" Command="{Binding ToggleImageCodeDrawerCommand}" Classes="explorer-tool-btn" Width="20" Height="20">
                         <materialIcons:MaterialIcon Kind="Close" Width="12" Height="12" Foreground="{DynamicResource DsMutedBrush}" />
@@ -197,20 +197,20 @@
                         <Border Grid.Row="0" Grid.Column="0" Margin="4"
                                 Background="{DynamicResource DsSurfaceHighBrush}"
                                 BorderBrush="{DynamicResource DsBorderBrush}"
-                                BorderThickness="1" CornerRadius="6" Padding="10">
+                                lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="10">
                             <Grid RowDefinitions="Auto,Auto">
                                 <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,4">
-                                    <TextBlock Grid.Column="0" Text="C# (SkiaSharp)" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                    <TextBlock Grid.Column="0" Text="C# (SkiaSharp)" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsPrimaryBrush}" />
                                     <Button Grid.Column="1" Command="{Binding CopyImageCodeSnippetCommand}" CommandParameter="skia" Classes="snippet-action-btn" Height="20" Padding="6,0">
                                         <StackPanel Orientation="Horizontal" Spacing="3">
                                             <materialIcons:MaterialIcon Kind="ContentCopy" Width="10" Height="10" />
-                                            <TextBlock Text="Copy" FontSize="9.5" />
+                                            <TextBlock Text="Copy" lt:Tokens.FontSize="DsFontSize075" />
                                         </StackPanel>
                                     </Button>
                                 </Grid>
                                 <TextBlock Grid.Row="1"
                                            Text="using SkiaSharp;&#x0a;using var stream = File.OpenRead(...);&#x0a;using var bitmap = SKBitmap.Decode(stream);"
-                                           FontFamily="JetBrains Mono, Menlo, monospace" FontSize="10"
+                                           lt:Tokens.FontFamily="DsCodeFontFamily" lt:Tokens.FontSize="DsFontSize100"
                                            Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
                             </Grid>
                         </Border>
@@ -219,20 +219,20 @@
                         <Border Grid.Row="0" Grid.Column="1" Margin="4"
                                 Background="{DynamicResource DsSurfaceHighBrush}"
                                 BorderBrush="{DynamicResource DsBorderBrush}"
-                                BorderThickness="1" CornerRadius="6" Padding="10">
+                                lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="10">
                             <Grid RowDefinitions="Auto,Auto">
                                 <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,4">
-                                    <TextBlock Grid.Column="0" Text="C# (Raw Bytes)" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                    <TextBlock Grid.Column="0" Text="C# (Raw Bytes)" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsPrimaryBrush}" />
                                     <Button Grid.Column="1" Command="{Binding CopyImageCodeSnippetCommand}" CommandParameter="bytes" Classes="snippet-action-btn" Height="20" Padding="6,0">
                                         <StackPanel Orientation="Horizontal" Spacing="3">
                                             <materialIcons:MaterialIcon Kind="ContentCopy" Width="10" Height="10" />
-                                            <TextBlock Text="Copy" FontSize="9.5" />
+                                            <TextBlock Text="Copy" lt:Tokens.FontSize="DsFontSize075" />
                                         </StackPanel>
                                     </Button>
                                 </Grid>
                                 <TextBlock Grid.Row="1"
                                            Text="byte[] bytes = File.ReadAllBytes(...);"
-                                           FontFamily="{DynamicResource DsCodeFontFamily}" FontSize="10"
+                                           lt:Tokens.FontFamily="DsCodeFontFamily" lt:Tokens.FontSize="DsFontSize100"
                                            Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
                             </Grid>
                         </Border>
@@ -241,20 +241,20 @@
                         <Border Grid.Row="1" Grid.Column="0" Margin="4"
                                 Background="{DynamicResource DsSurfaceHighBrush}"
                                 BorderBrush="{DynamicResource DsBorderBrush}"
-                                BorderThickness="1" CornerRadius="6" Padding="10">
+                                lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="10">
                             <Grid RowDefinitions="Auto,Auto">
                                 <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,4">
-                                    <TextBlock Grid.Column="0" Text="C# (Avalonia UI)" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource NavScriptsFgBrush}" />
+                                    <TextBlock Grid.Column="0" Text="C# (Avalonia UI)" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource NavScriptsFgBrush}" />
                                     <Button Grid.Column="1" Command="{Binding CopyImageCodeSnippetCommand}" CommandParameter="avalonia" Classes="snippet-action-btn" Height="20" Padding="6,0">
                                         <StackPanel Orientation="Horizontal" Spacing="3">
                                             <materialIcons:MaterialIcon Kind="ContentCopy" Width="10" Height="10" />
-                                            <TextBlock Text="Copy" FontSize="9.5" />
+                                            <TextBlock Text="Copy" lt:Tokens.FontSize="DsFontSize075" />
                                         </StackPanel>
                                     </Button>
                                 </Grid>
                                 <TextBlock Grid.Row="1"
                                            Text="using var stream = File.OpenRead(...);&#x0a;var bitmap = new Avalonia.Media.Imaging.Bitmap(stream);"
-                                           FontFamily="{DynamicResource DsCodeFontFamily}" FontSize="10"
+                                           lt:Tokens.FontFamily="DsCodeFontFamily" lt:Tokens.FontSize="DsFontSize100"
                                            Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
                             </Grid>
                         </Border>
@@ -263,20 +263,20 @@
                         <Border Grid.Row="1" Grid.Column="1" Margin="4"
                                 Background="{DynamicResource DsSurfaceHighBrush}"
                                 BorderBrush="{DynamicResource DsBorderBrush}"
-                                BorderThickness="1" CornerRadius="6" Padding="10">
+                                lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="10">
                             <Grid RowDefinitions="Auto,Auto">
                                 <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,4">
-                                    <TextBlock Grid.Column="0" Text="Python (PIL / Pillow)" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsGreenBrush}" />
+                                    <TextBlock Grid.Column="0" Text="Python (PIL / Pillow)" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsGreenBrush}" />
                                     <Button Grid.Column="1" Command="{Binding CopyImageCodeSnippetCommand}" CommandParameter="python" Classes="snippet-action-btn" Height="20" Padding="6,0">
                                         <StackPanel Orientation="Horizontal" Spacing="3">
                                             <materialIcons:MaterialIcon Kind="ContentCopy" Width="10" Height="10" />
-                                            <TextBlock Text="Copy" FontSize="9.5" />
+                                            <TextBlock Text="Copy" lt:Tokens.FontSize="DsFontSize075" />
                                         </StackPanel>
                                     </Button>
                                 </Grid>
                                 <TextBlock Grid.Row="1"
                                            Text="from PIL import Image&#x0a;img = Image.open(...)"
-                                           FontFamily="JetBrains Mono, Menlo, monospace" FontSize="10"
+                                           lt:Tokens.FontFamily="DsCodeFontFamily" lt:Tokens.FontSize="DsFontSize100"
                                            Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
                             </Grid>
                         </Border>

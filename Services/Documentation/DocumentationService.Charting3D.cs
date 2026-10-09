@@ -40,6 +40,11 @@ public partial class DocumentationService
                 },
                 new()
                 {
+                    Heading = "Axis names, size and the builder",
+                    Content = "Every 3D helper takes xLabel, yLabel, zLabel, width and height. Charts.Surface(...), Charts.Scatter3D(...) and the others build the same plot one setting at a time: Charts.Surface(f).Title(\"Wave\").ZLabel(\"height\").ColorMap(ColorMapPreset.Plasma).Show()."
+                },
+                new()
+                {
                     Heading = "Exporting to Standalone Three.js WebGL",
                     Content = "Click the HTML button in the 3D toolbar to copy a standalone, self-contained Three.js HTML document that can be viewed in any web browser or shared with others."
                 }
@@ -57,8 +62,23 @@ public partial class DocumentationService
     yRange: (-6.0, 6.0),
     resolution: 32,
     title: ""Wave Ripple Surface"",
-    colorMap: ColorMapPreset.Viridis
+    colorMap: ColorMapPreset.Viridis,
+    zLabel: ""height""
 );"
+                },
+                new()
+                {
+                    Id = "doc_snippet_surface3d_builder",
+                    Title = "3D Surface, built one setting at a time",
+                    Description = "The same kind of plot with Charts.Surface: defaults to -5..5 on both axes.",
+                    Code = """
+                        Charts.Surface((x, y) => Math.Sin(x) * Math.Cos(y))
+                            .Title("Wave")
+                            .XLabel("x").YLabel("y").ZLabel("height")
+                            .ColorMap(ColorMapPreset.Plasma)
+                            .AutoRotate()
+                            .Show();
+                        """
                 },
                 new()
                 {

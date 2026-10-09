@@ -39,11 +39,11 @@ public partial class StudioExplorerPanelControl : UserControl
         if (sender is MenuFlyout menu) AddNewFileEntries(menu, target: null, afterIndex: 0);
     }
 
-    // A folder's menu: the same entries after "New Script Here", creating the file in that folder.
+    // A folder's menu: the same entries after "New Server Here", creating the file in that folder.
     private void OnItemMenuOpening(object? sender, EventArgs e)
     {
         if (sender is not MenuFlyout menu || menu.Target?.DataContext is not ExplorerItemViewModel item) return;
-        AddNewFileEntries(menu, item.IsManageableDirectory ? item : null, afterIndex: 1, show: item.IsManageableDirectory);
+        AddNewFileEntries(menu, item.IsManageableDirectory ? item : null, afterIndex: 3, show: item.IsManageableDirectory);
     }
 
     private void AddNewFileEntries(MenuFlyout menu, ExplorerItemViewModel? target, int afterIndex, bool show = true)

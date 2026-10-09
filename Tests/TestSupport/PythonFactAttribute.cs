@@ -14,6 +14,12 @@ public sealed class PythonFactAttribute : FactAttribute
 {
     public PythonFactAttribute()
     {
+        if (!TimeGate.IsEnabled && !TestPython.Required)
+        {
+            Skip = TimeGate.SkipReason;
+            return;
+        }
+
         if (TestPython.Toolchain == null && !TestPython.Required)
         {
             Skip = "Needs Python 3.9 or newer (install it, or set FRY_TEST_PYTHON to an interpreter).";

@@ -12,6 +12,12 @@ public sealed class JavaFactAttribute : FactAttribute
 {
     public JavaFactAttribute()
     {
+        if (!TimeGate.IsEnabled && !TestJava.Required)
+        {
+            Skip = TimeGate.SkipReason;
+            return;
+        }
+
         if (TestJava.Toolchain == null && !TestJava.Required)
         {
             Skip = "Needs Java JDK 11 or newer (install it, or set FRY_TEST_JAVA to an executable).";

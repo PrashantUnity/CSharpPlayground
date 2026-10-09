@@ -145,9 +145,10 @@ public static class StickyGutterBehavior
             // When naturalY < TopPadding → needed > 0 → gutter slides to sit at TopPadding.
             double needed = TopPadding - naturalY;
 
-            // Clamp: 0 = no slide (natural position), maxSlide = gutter at cell bottom.
-            double maxSlide = Math.Max(0, cellHeight - gutterH);
-            tx.Y = Math.Clamp(needed, 0, maxSlide);
+            // Clamp: 0 = no slide (natural position). When the cell has scrolled almost completely
+            // past the viewport, release it so it scrolls off naturally instead of pinning at the bottom seam.
+            double maxSlide = Math.Max(0, cellHeight - gutterH - 8);
+            tx.Y = (needed >= 0 && needed <= maxSlide) ? needed : 0;
         }
     }
 }

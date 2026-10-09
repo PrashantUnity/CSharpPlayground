@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -15,13 +15,13 @@
     <Grid RowDefinitions="Auto,*">
         <!-- Section Header Bar (VS Code SCM Header) -->
         <Border Grid.Row="0" Background="{DynamicResource DsSurfaceBrush}"
-                BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="0,0,0,1"
+                BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderBottom"
                 Padding="12,6,8,6">
             <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                     <materialIcons:MaterialIcon Kind="SourceBranch" Width="14" Height="14"
                                                 Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding SideBarTitle}" FontSize="10.5" FontWeight="Bold"
+                    <TextBlock Text="{Binding SideBarTitle}" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightStrong"
                                Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center"
                                TextTrimming="CharacterEllipsis" />
                 </StackPanel>
@@ -83,31 +83,31 @@
         <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
             <Panel Margin="8,8">
                 <!-- State 1: Git Not Installed -->
-                <StackPanel Spacing="10" Margin="10,24" HorizontalAlignment="Center"
+                <StackPanel lt:Tokens.Spacing="DsSpace10" Margin="10,24" HorizontalAlignment="Center"
                             IsVisible="{Binding !IsGitInstalled}">
                     <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="36" Height="36"
                                                 Foreground="{DynamicResource DsWarningBrush}" HorizontalAlignment="Center" />
-                    <TextBlock Text="Git is not installed or not in PATH." FontSize="11.5" FontWeight="SemiBold"
+                    <TextBlock Text="Git is not installed or not in PATH." lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightEmphasis"
                                Foreground="{DynamicResource DsTextWhiteBrush}" TextAlignment="Center" />
                     <TextBlock Text="Install Git or ensure the git executable is accessible to enable version control."
-                               FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" TextAlignment="Center" />
+                               lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" TextAlignment="Center" />
                 </StackPanel>
 
                 <!-- State 2: Not a Git Repository -->
-                <StackPanel Spacing="12" Margin="10,24" HorizontalAlignment="Center"
+                <StackPanel lt:Tokens.Spacing="DsSpace12" Margin="10,24" HorizontalAlignment="Center"
                             IsVisible="{Binding !IsGitRepository}">
                     <materialIcons:MaterialIcon Kind="SourceBranch" Width="40" Height="40"
                                                 Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
-                    <TextBlock Text="No Git repository found." FontSize="11.5" FontWeight="SemiBold"
+                    <TextBlock Text="No Git repository found." lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightEmphasis"
                                Foreground="{DynamicResource DsTextWhiteBrush}" TextAlignment="Center" />
                     <TextBlock Text="Initialize a repository to enable version control and track workspace changes."
-                               FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" TextAlignment="Center" />
+                               lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" TextAlignment="Center" />
                     <Button Command="{Binding InitGitRepositoryCommand}" Classes="cs-toolbar-filled"
                             Background="{DynamicResource DsPrimaryBrush}" Foreground="{DynamicResource DsTextWhiteBrush}"
                             HorizontalAlignment="Center" Padding="14,6">
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <materialIcons:MaterialIcon Kind="SourceBranchPlus" Width="14" Height="14" Foreground="{DynamicResource DsTextWhiteBrush}" />
-                            <TextBlock Text="Initialize Repository" FontSize="11" FontWeight="Bold" />
+                            <TextBlock Text="Initialize Repository" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong" />
                         </StackPanel>
                     </Button>
                 </StackPanel>
@@ -120,12 +120,12 @@
                             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                 <materialIcons:MaterialIcon Kind="SourceBranch" Width="12" Height="12"
                                                             Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
-                                <TextBlock Text="{Binding CurrentGitBranch}" FontSize="10.5" FontWeight="Bold"
+                                <TextBlock Text="{Binding CurrentGitBranch}" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightStrong"
                                            Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                                 <materialIcons:MaterialIcon Kind="ChevronDown" Width="10" Height="10"
                                                             Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                             </StackPanel>
-                            <TextBlock Grid.Column="2" Text="{Binding SyncStatusText}" FontSize="10"
+                            <TextBlock Grid.Column="2" Text="{Binding SyncStatusText}" lt:Tokens.FontSize="DsFontSize100"
                                        Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                         </Grid>
                         <Button.Flyout>
@@ -137,13 +137,13 @@
 
                     <!-- Commit Message Card (VS Code Authentic Input) -->
                     <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}"
-                            BorderThickness="1" CornerRadius="6" Padding="6">
+                            lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="6">
                         <StackPanel Spacing="6">
                             <TextBox Text="{Binding GitCommitMessage, Mode=TwoWay}"
                                      KeyDown="OnCommitBoxKeyDown"
                                      AcceptsReturn="True"
                                      MinHeight="56" MaxHeight="120"
-                                     FontSize="11"
+                                     lt:Tokens.FontSize="DsFontSize200"
                                      Background="Transparent" BorderThickness="0"
                                      TextWrapping="Wrap"
                                      PlaceholderText="Message (⌘Enter to commit)" />
@@ -153,23 +153,23 @@
                                 <Button Grid.Column="0" Command="{Binding CommitCommand}"
                                         Classes="cs-toolbar-filled"
                                         Background="{DynamicResource DsPrimaryBrush}" Foreground="{DynamicResource DsTextWhiteBrush}"
-                                        Height="26" CornerRadius="4" HorizontalAlignment="Stretch"
+                                        lt:Tokens.Height="DsControlHeight100" lt:Tokens.CornerRadius="DsRadiusSM" HorizontalAlignment="Stretch"
                                         ToolTip.Tip="Commit Changes (⌘Enter / Ctrl+Enter)">
                                     <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
                                         <materialIcons:MaterialIcon Kind="Check" Width="13" Height="13" Foreground="{DynamicResource DsTextWhiteBrush}" />
-                                        <TextBlock Text="Commit" FontSize="10.5" FontWeight="Bold" VerticalAlignment="Center" />
+                                        <TextBlock Text="Commit" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightStrong" VerticalAlignment="Center" />
                                     </StackPanel>
                                 </Button>
 
                                 <Button Grid.Column="1" Command="{Binding GenerateSmartCommitMessageCommand}"
-                                        Classes="git-tool-btn" Width="26" Height="26" Margin="4,0,0,0"
+                                        Classes="git-tool-btn" Width="26" lt:Tokens.Height="DsControlHeight100" Margin="4,0,0,0"
                                         ToolTip.Tip="Generate Commit Message ✨">
                                     <materialIcons:MaterialIcon Kind="Creation" Width="13" Height="13"
                                                                 Foreground="{DynamicResource DsWarningBrush}" />
                                 </Button>
 
                                 <Button Grid.Column="2" Command="{Binding RefreshGitStatusCommand}"
-                                        Classes="git-tool-btn" Width="26" Height="26" Margin="4,0,0,0"
+                                        Classes="git-tool-btn" Width="26" lt:Tokens.Height="DsControlHeight100" Margin="4,0,0,0"
                                         ToolTip.Tip="Refresh Changes">
                                     <materialIcons:MaterialIcon Kind="Refresh" Width="13" Height="13"
                                                                 Foreground="{DynamicResource DsMutedBrush}" />
@@ -180,12 +180,12 @@
                             <Button Command="{Binding SyncChangesCommand}"
                                     Classes="cs-toolbar-filled"
                                     Background="{DynamicResource DsPrimaryBrush}" Foreground="{DynamicResource DsTextWhiteBrush}"
-                                    Height="28" CornerRadius="4" HorizontalAlignment="Stretch"
+                                    lt:Tokens.Height="DsControlHeight150" lt:Tokens.CornerRadius="DsRadiusSM" HorizontalAlignment="Stretch"
                                     IsVisible="{Binding IsSyncButtonVisible}"
                                     ToolTip.Tip="Pull from and push to remote repository">
                                 <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="Sync" Width="14" Height="14" Foreground="{DynamicResource DsTextWhiteBrush}" />
-                                    <TextBlock Text="{Binding SyncButtonText}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding SyncButtonText}" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
                         </StackPanel>
@@ -200,10 +200,10 @@
                                                             Kind="{Binding IsStagedSectionExpanded, Converter={x:Static ObjectConverters.IsNull}}"
                                                             Width="12" Height="12" Margin="0,0,4,0"
                                                             Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                                <TextBlock Grid.Column="1" Text="STAGED CHANGES" FontSize="10" FontWeight="Bold"
+                                <TextBlock Grid.Column="1" Text="STAGED CHANGES" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightStrong"
                                            Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                 <TextBlock Grid.Column="2" Text="{Binding StagedChanges.Count, StringFormat='({0})'}"
-                                           FontSize="10" Foreground="{DynamicResource DsMutedBrush}"
+                                           lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsMutedBrush}"
                                            Margin="4,0" VerticalAlignment="Center" />
                                 <Button Grid.Column="3" Command="{Binding UnstageAllCommand}"
                                         Classes="git-tool-btn" ToolTip.Tip="Unstage All Changes">
@@ -222,10 +222,10 @@
                                         <Grid ColumnDefinitions="*,Auto,Auto">
                                             <!-- File details -->
                                             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding FileName}" FontSize="11"
+                                                <TextBlock Text="{Binding FileName}" lt:Tokens.FontSize="DsFontSize200"
                                                            Foreground="{DynamicResource DsTextWhiteBrush}"
                                                            TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                                                <TextBlock Text="{Binding DirectoryDisplay}" FontSize="9.5"
+                                                <TextBlock Text="{Binding DirectoryDisplay}" lt:Tokens.FontSize="DsFontSize075"
                                                            Foreground="{DynamicResource DsMutedBrush}"
                                                            TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
                                             </StackPanel>
@@ -248,7 +248,7 @@
 
                                             <!-- Status letter badge -->
                                             <Border Grid.Column="2" Margin="4,0,0,0" Width="14" Height="14" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding StatusLetter}" FontSize="10" FontWeight="Bold"
+                                                <TextBlock Text="{Binding StatusLetter}" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightStrong"
                                                            Foreground="{Binding StatusColorHex}" TextAlignment="Center"
                                                            ToolTip.Tip="{Binding TooltipText}" />
                                             </Border>
@@ -268,10 +268,10 @@
                                                             Kind="{Binding IsWorkingSectionExpanded, Converter={x:Static ObjectConverters.IsNull}}"
                                                             Width="12" Height="12" Margin="0,0,4,0"
                                                             Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                                <TextBlock Grid.Column="1" Text="CHANGES" FontSize="10" FontWeight="Bold"
+                                <TextBlock Grid.Column="1" Text="CHANGES" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightStrong"
                                            Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                 <TextBlock Grid.Column="2" Text="{Binding WorkingChanges.Count, StringFormat='({0})'}"
-                                           FontSize="10" Foreground="{DynamicResource DsMutedBrush}"
+                                           lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsMutedBrush}"
                                            Margin="4,0" VerticalAlignment="Center" />
 
                                 <Button Grid.Column="3" Command="{Binding DiscardAllChangesCommand}"
@@ -296,10 +296,10 @@
                                         <Grid ColumnDefinitions="*,Auto,Auto">
                                             <!-- File details -->
                                             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding FileName}" FontSize="11"
+                                                <TextBlock Text="{Binding FileName}" lt:Tokens.FontSize="DsFontSize200"
                                                            Foreground="{DynamicResource DsTextWhiteBrush}"
                                                            TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                                                <TextBlock Text="{Binding DirectoryDisplay}" FontSize="9.5"
+                                                <TextBlock Text="{Binding DirectoryDisplay}" lt:Tokens.FontSize="DsFontSize075"
                                                            Foreground="{DynamicResource DsMutedBrush}"
                                                            TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
                                             </StackPanel>
@@ -328,7 +328,7 @@
 
                                             <!-- Status letter badge -->
                                             <Border Grid.Column="2" Margin="4,0,0,0" Width="14" Height="14" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding StatusLetter}" FontSize="10" FontWeight="Bold"
+                                                <TextBlock Text="{Binding StatusLetter}" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightStrong"
                                                            Foreground="{Binding StatusColorHex}" TextAlignment="Center"
                                                            ToolTip.Tip="{Binding TooltipText}" />
                                             </Border>
@@ -343,7 +343,7 @@
                                     IsVisible="{Binding !HasAnyGitChanges}">
                             <materialIcons:MaterialIcon Kind="CheckCircleOutline" Width="14" Height="14"
                                                         Foreground="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
-                            <TextBlock Text="No uncommitted changes." FontSize="10.5"
+                            <TextBlock Text="No uncommitted changes." lt:Tokens.FontSize="DsFontSize150"
                                        Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                         </StackPanel>
                     </StackPanel>

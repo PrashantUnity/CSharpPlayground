@@ -184,6 +184,7 @@ public partial class DocumentationService
                     Title = "XML Serialization Round-Trip",
                     Description = "Serialize a plain class to an XML file with XmlSerializer, then deserialize it back.",
                     TargetKind = WorkspaceItemKind.Script,
+                    NotRunnable = true, // XmlSerializer can't serialize a type declared in a notebook cell: run it in a script
                     Code = """
                     using System;
                     using System.IO;

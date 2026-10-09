@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -13,7 +13,7 @@
     <!-- Every category is visible at once: the chips wrap onto another line instead of hiding behind a scrollbar. -->
     <Border Background="{DynamicResource DsSurfaceBrush}"
             BorderBrush="{DynamicResource DsBorderBrush}"
-            BorderThickness="0,0,0,1"
+            lt:Tokens.BorderThickness="DsBorderBottom"
             Padding="16,8">
         <ItemsControl ItemsSource="{Binding Categories}">
             <ItemsControl.ItemsPanel>

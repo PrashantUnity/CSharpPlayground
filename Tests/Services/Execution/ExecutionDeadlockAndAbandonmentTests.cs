@@ -3,6 +3,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
+using CSharpEditorPlugin.Tests.TestSupport;
 using Xunit;
 using CSharpCodeStudioViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.CSharpCodeStudioViewModel;
 using NotebookTabViewModel = PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks.NotebookTabViewModel;
@@ -180,7 +181,7 @@ public class ExecutionDeadlockAndAbandonmentTests : IDisposable
         Assert.Contains((string)"done blocking", (string?)cell.OutputText);
     }
 
-    [Fact]
+    [TimeFact]
     public async Task RunCodeCommand_DefaultTimeoutSetting_RunsPastTenSecondsWithoutBeingAutoCancelled()
     {
         // The execution timeout defaults to 0 (no automatic limit) — a script/notebook cell now runs
@@ -202,7 +203,7 @@ public class ExecutionDeadlockAndAbandonmentTests : IDisposable
 
     // ── Abandon-and-recover: Stop/timeout must give up promptly, and the kernel must stay usable ──
 
-    [Fact]
+    [TimeFact]
     public async Task RunCodeCommand_TrulyStuckScript_AbandonsPromptlyAndKernelRecoversForNextRun()
     {
         var script = await _testStorage.CreateNewScriptAsync("Stuck Script");

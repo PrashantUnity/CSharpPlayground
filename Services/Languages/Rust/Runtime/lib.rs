@@ -319,11 +319,82 @@ fn emit_update(mime: &str, spec_json: &str, display_id: &str) {
 
 // ── Builders ──────────────────────────────────────────────────────────────
 
+/// How one series is drawn: `fry::SeriesStyle::new().kind("line").right_axis().dash("dashed")`, given to a chart with
+/// `.series("Margin", style)` (by the name the data gives it) or `.style(style)` for a series without a name.
+#[derive(Default, Clone)]
+pub struct SeriesStyle {
+    fields: Vec<(&'static str, String)>,
+}
+
+impl SeriesStyle {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    fn with(mut self, key: &'static str, json: String) -> Self {
+        self.fields.retain(|(k, _)| *k != key);
+        self.fields.push((key, json));
+        self
+    }
+
+    fn numbers(values: &[f64]) -> String {
+        format!("[{}]", values.iter().map(|v| v.to_string()).collect::<Vec<_>>().join(","))
+    }
+
+    /// Draws this series as another kind than the chart's: line, area, bar or scatter.
+    pub fn kind(self, kind: &str) -> Self { self.with("kind", json_string(kind)) }
+    /// Measures this series on the second value axis, up the right side.
+    pub fn right_axis(self) -> Self { self.with("axis", json_string("right")) }
+    pub fn color(self, color: &str) -> Self { self.with("color", json_string(color)) }
+    /// A colour for each value (a bar, point or slice).
+    pub fn colors(self, colors: &[&str]) -> Self {
+        self.with("colors", format!("[{}]", colors.iter().map(|c| json_string(c)).collect::<Vec<_>>().join(",")))
+    }
+    pub fn line_width(self, pixels: f64) -> Self { self.with("lineWidth", pixels.to_string()) }
+    /// "dashed" or "dotted".
+    pub fn dash(self, dash: &str) -> Self { self.with("dash", json_string(dash)) }
+    /// A curve through the values; tension is from 0 to 1.
+    pub fn smooth(self, tension: f64) -> Self {
+        self.with("interpolation", json_string("smooth")).with("tension", tension.to_string())
+    }
+    pub fn monotone(self) -> Self { self.with("interpolation", json_string("monotone")) }
+    /// "before", "after" or "middle".
+    pub fn step(self, step: &str) -> Self { self.with("step", json_string(step)) }
+    pub fn fill(self, on: bool) -> Self { self.with("fill", on.to_string()) }
+    /// Fills the space between this series and the series at that index.
+    pub fn fill_to(self, series: usize) -> Self { self.with("fillTo", series.to_string()) }
+    /// "circle", "triangle", "square", "diamond", "cross" or "star", and the marker radius.
+    pub fn point_style(self, shape: &str, radius: f64) -> Self {
+        self.with("pointStyle", json_string(shape)).with("pointRadius", radius.to_string())
+    }
+    pub fn color_segments(self) -> Self { self.with("colorSegments", "true".to_string()) }
+    /// The pile this series stacks in.
+    pub fn stack(self, name: &str) -> Self { self.with("stack", json_string(name)) }
+    /// A bubble chart's radius for each value.
+    pub fn sizes(self, sizes: &[f64]) -> Self { self.with("sizes", Self::numbers(sizes)) }
+    /// Floating bars: where each bar starts.
+    pub fn from(self, from: &[f64]) -> Self { self.with("from", Self::numbers(from)) }
+    pub fn corner_radius(self, pixels: f64) -> Self { self.with("cornerRadius", pixels.to_string()) }
+}
+
+#[derive(Default)]
+struct ChartExtras {
+    labels: Option<Vec<String>>,
+    styles: Vec<(String, SeriesStyle)>,
+    top: Vec<(&'static str, String)>,
+    axes: Vec<(&'static str, &'static str, String)>,
+}
+
 pub struct ChartBuilder {
     kind: &'static str,
     data_debug: String,
     title: Option<String>,
     bins: Option<usize>,
+    extras: ChartExtras,
+}
+
+fn new_chart(kind: &'static str, data_debug: String) -> ChartBuilder {
+    ChartBuilder { kind, data_debug, title: None, bins: None, extras: ChartExtras::default() }
 }
 
 impl ChartBuilder {
@@ -337,6 +408,61 @@ impl ChartBuilder {
         self
     }
 
+    /// Names the places of the values: x positions, a radar's spokes, a pie's slices.
+    pub fn labels(mut self, labels: &[&str]) -> Self {
+        self.extras.labels = Some(labels.iter().map(|l| l.to_string()).collect());
+        self
+    }
+
+    /// How the series called `name` is drawn.
+    pub fn series(mut self, name: &str, style: SeriesStyle) -> Self {
+        self.extras.styles.push((name.to_string(), style));
+        self
+    }
+
+    /// How a series without a name (the only one) is drawn.
+    pub fn style(self, style: SeriesStyle) -> Self {
+        self.series("", style)
+    }
+
+    fn top(mut self, key: &'static str, json: String) -> Self {
+        self.extras.top.retain(|(k, _)| *k != key);
+        self.extras.top.push((key, json));
+        self
+    }
+
+    fn axis(mut self, axis: &'static str, field: &'static str, json: String) -> Self {
+        self.extras.axes.retain(|(a, f, _)| !(*a == axis && *f == field));
+        self.extras.axes.push((axis, field, json));
+        self
+    }
+
+    /// Piles series up (bars, lines, areas); `percent` scales every place to 100%.
+    pub fn stacked(self) -> Self { self.top("stack", json_string("stacked")) }
+    pub fn percent_stacked(self) -> Self { self.top("stack", json_string("percent")) }
+    /// Lays bars along the y axis.
+    pub fn horizontal(self) -> Self { self.top("orientation", json_string("horizontal")) }
+    /// A donut as a half circle.
+    pub fn gauge(self) -> Self { self.top("startAngle", "-90".to_string()).top("sweep", "180".to_string()) }
+    /// Where a pie, donut or polar area starts (degrees clockwise from the top) and how far round it goes.
+    pub fn angles(self, start: f64, sweep: f64) -> Self { self.top("startAngle", start.to_string()).top("sweep", sweep.to_string()) }
+    pub fn cutout(self, share: f64) -> Self { self.top("cutout", share.to_string()) }
+    /// "top", "bottom", "left" or "right".
+    pub fn legend_at(self, position: &str) -> Self { self.top("legend", format!("{{\"position\":{}}}", json_string(position))) }
+    /// A second value axis, up the right side, for the series set `.right_axis()`.
+    pub fn y2_axis(self, title: &str, min: f64, max: f64) -> Self {
+        self.axis("y2Axis", "title", json_string(title)).axis("y2Axis", "min", min.to_string()).axis("y2Axis", "max", max.to_string())
+    }
+    /// "linear", "log", "time" (x only) or "category" (x only).
+    pub fn x_scale(self, scale: &str) -> Self { self.axis("xAxis", "scale", json_string(scale)) }
+    pub fn y_scale(self, scale: &str) -> Self { self.axis("yAxis", "scale", json_string(scale)) }
+    /// The value axis reaches at least min..max when the data doesn't.
+    pub fn suggested_y(self, min: f64, max: f64) -> Self {
+        self.axis("yAxis", "suggestedMin", min.to_string()).axis("yAxis", "suggestedMax", max.to_string())
+    }
+    pub fn reverse_x(self) -> Self { self.axis("xAxis", "reverse", "true".to_string()) }
+    pub fn reverse_y(self) -> Self { self.axis("yAxis", "reverse", "true".to_string()) }
+
     pub fn show(self) -> DisplayHandle {
         let node = parse(&self.data_debug);
         let spec = build_chart_spec(
@@ -344,6 +470,7 @@ impl ChartBuilder {
             node.as_ref(),
             self.title.as_deref(),
             self.bins,
+            &self.extras,
         );
         emit_display(CHART_MIME, &spec)
     }
@@ -397,57 +524,37 @@ impl VisualizerBuilder {
 // ── Top-level API ─────────────────────────────────────────────────────────
 
 pub fn line_chart<T: Debug + ?Sized>(data: &T) -> ChartBuilder {
-    ChartBuilder {
-        kind: "line",
-        data_debug: format!("{:#?}", data),
-        title: None,
-        bins: None,
-    }
+    new_chart("line", format!("{:#?}", data))
 }
 
 pub fn scatter_chart<T: Debug + ?Sized>(data: &T) -> ChartBuilder {
-    ChartBuilder {
-        kind: "scatter",
-        data_debug: format!("{:#?}", data),
-        title: None,
-        bins: None,
-    }
+    new_chart("scatter", format!("{:#?}", data))
 }
 
 pub fn bar_chart<T: Debug + ?Sized>(data: &T) -> ChartBuilder {
-    ChartBuilder {
-        kind: "bar",
-        data_debug: format!("{:#?}", data),
-        title: None,
-        bins: None,
-    }
+    new_chart("bar", format!("{:#?}", data))
 }
 
 pub fn pie_chart<T: Debug + ?Sized>(data: &T) -> ChartBuilder {
-    ChartBuilder {
-        kind: "pie",
-        data_debug: format!("{:#?}", data),
-        title: None,
-        bins: None,
-    }
+    new_chart("pie", format!("{:#?}", data))
 }
 
 pub fn chart<T: Debug + ?Sized>(data: &T) -> ChartBuilder {
-    ChartBuilder {
-        kind: "line",
-        data_debug: format!("{:#?}", data),
-        title: None,
-        bins: None,
-    }
+    new_chart("line", format!("{:#?}", data))
 }
 
+pub fn area_chart<T: Debug + ?Sized>(data: &T) -> ChartBuilder { new_chart("area", format!("{:#?}", data)) }
+pub fn donut_chart<T: Debug + ?Sized>(data: &T) -> ChartBuilder { new_chart("donut", format!("{:#?}", data)) }
+/// (x, y, size) items; the size is a radius in pixels.
+pub fn bubble_chart<T: Debug + ?Sized>(data: &T) -> ChartBuilder { new_chart("bubble", format!("{:#?}", data)) }
+/// A polygon for each series over a spoke for each value (name the spokes with `.labels(...)`).
+pub fn radar_chart<T: Debug + ?Sized>(data: &T) -> ChartBuilder { new_chart("radar", format!("{:#?}", data)) }
+pub fn polar_area_chart<T: Debug + ?Sized>(data: &T) -> ChartBuilder { new_chart("polarArea", format!("{:#?}", data)) }
+pub fn stacked_bar_chart<T: Debug + ?Sized>(data: &T) -> ChartBuilder { new_chart("bar", format!("{:#?}", data)).stacked() }
+pub fn horizontal_bar_chart<T: Debug + ?Sized>(data: &T) -> ChartBuilder { new_chart("bar", format!("{:#?}", data)).horizontal() }
+
 pub fn histogram<T: Debug + ?Sized>(data: &T) -> ChartBuilder {
-    ChartBuilder {
-        kind: "histogram",
-        data_debug: format!("{:#?}", data),
-        title: None,
-        bins: None,
-    }
+    new_chart("histogram", format!("{:#?}", data))
 }
 
 pub fn scatter3d<T: Debug + ?Sized>(data: &T) -> Plot3DBuilder {
@@ -721,6 +828,7 @@ fn build_chart_spec(
     node: Option<&Node>,
     title: Option<&str>,
     bins: Option<usize>,
+    extras: &ChartExtras,
 ) -> String {
     let mut out = String::new();
     out.push_str("{\"kind\":");
@@ -738,16 +846,126 @@ fn build_chart_spec(
         }
         out.push_str("}]");
     } else {
+        let series = if kind == "bubble" { build_bubble_series(node) } else { build_chart_series(node) };
         out.push_str(",\"series\":");
-        out.push_str(&build_chart_series(node));
+        out.push_str(&style_series(&series, extras));
     }
 
     if let Some(t) = title {
         out.push_str(",\"title\":");
         out.push_str(&json_string(t));
     }
+    for (key, json) in &extras.top {
+        out.push_str(&format!(",\"{}\":{}", key, json));
+    }
+    for axis in ["xAxis", "yAxis", "y2Axis"] {
+        let fields: Vec<String> = extras.axes.iter().filter(|(a, _, _)| *a == axis).map(|(_, f, v)| format!("\"{}\":{}", f, v)).collect();
+        if !fields.is_empty() {
+            out.push_str(&format!(",\"{}\":{{{}}}", axis, fields.join(",")));
+        }
+    }
     out.push('}');
     out
+}
+
+// Bubble items: (x, y, size) tuples or arrays, or a list of (name, items) for a series each.
+fn build_bubble_series(node: Option<&Node>) -> String {
+    let one = |items: &[Node], name: Option<&str>| -> String {
+        let (mut xs, mut ys, mut sizes) = (Vec::new(), Vec::new(), Vec::new());
+        for item in items {
+            match as_pair_or_slice(item) {
+                Some(p) if p.len() >= 3 => {
+                    xs.push(node_number_or_null(&p[0]));
+                    ys.push(node_number_or_null(&p[1]));
+                    sizes.push(node_number_or_null(&p[2]));
+                }
+                _ => {
+                    xs.push("null".to_string());
+                    ys.push("null".to_string());
+                    sizes.push("null".to_string());
+                }
+            }
+        }
+        let name = name.map(|n| format!("\"name\":{},", json_string(n))).unwrap_or_default();
+        format!("{{{}\"x\":[{}],\"y\":[{}],\"sizes\":[{}]}}", name, xs.join(","), ys.join(","), sizes.join(","))
+    };
+    let Some(node) = node else { return "[]".to_string() };
+    if let Node::Map(entries) = node {
+        let all: Vec<String> = entries
+            .iter()
+            .filter_map(|(k, v)| match v {
+                Node::List(items) | Node::Tuple(None, items) => Some(one(items, Some(&k.render_plain()))),
+                _ => None,
+            })
+            .collect();
+        return format!("[{}]", all.join(","));
+    }
+    match node {
+        Node::List(items) | Node::Tuple(None, items) => format!("[{}]", one(items, None)),
+        _ => "[]".to_string(),
+    }
+}
+
+// Puts labels and styles into the series objects of a JSON array (flat objects: no object inside another).
+fn style_series(series_json: &str, extras: &ChartExtras) -> String {
+    if extras.labels.is_none() && extras.styles.is_empty() {
+        return series_json.to_string();
+    }
+    let mut objects: Vec<String> = Vec::new();
+    let (mut depth, mut in_string, mut escaped, mut start) = (0i32, false, false, 0usize);
+    for (i, c) in series_json.char_indices() {
+        if in_string {
+            if escaped { escaped = false } else if c == '\\' { escaped = true } else if c == '"' { in_string = false }
+            continue;
+        }
+        match c {
+            '"' => in_string = true,
+            '{' => {
+                if depth == 0 { start = i }
+                depth += 1;
+            }
+            '}' => {
+                depth -= 1;
+                if depth == 0 { objects.push(series_json[start..=i].to_string()) }
+            }
+            _ => {}
+        }
+    }
+
+    let labels_json = extras.labels.as_ref().map(|l| format!("[{}]", l.iter().map(|x| json_string(x)).collect::<Vec<_>>().join(",")));
+    let count_of = |object: &str| -> usize {
+        // The number of values: the commas of the "y" array (numbers and nulls only) plus one.
+        let Some(at) = object.find("\"y\":[") else { return 0 };
+        let rest = &object[at + 5..];
+        let end = rest.find(']').unwrap_or(rest.len());
+        let inside = &rest[1..end];
+        if inside.trim().is_empty() { 0 } else { inside.matches(',').count() + 1 }
+    };
+    let styled: Vec<String> = objects
+        .iter()
+        .map(|object| {
+            let name = object.strip_prefix("{\"name\":").and_then(|rest| {
+                let end = rest.find("\",").or_else(|| rest.find("\"}"))?;
+                Some(rest[1..end].to_string())
+            });
+            let mut body = object[..object.len() - 1].to_string();
+            if let (Some(labels), Some(count)) = (&labels_json, Some(count_of(object))) {
+                if count == extras.labels.as_ref().map(|l| l.len()).unwrap_or(usize::MAX) && !object.contains("\"labels\":") {
+                    body.push_str(&format!(",\"labels\":{}", labels));
+                }
+            }
+            for (target, style) in &extras.styles {
+                if Some(target.as_str()) == name.as_deref() || (target.is_empty() && name.is_none()) {
+                    for (key, json) in &style.fields {
+                        body.push_str(&format!(",\"{}\":{}", key, json));
+                    }
+                }
+            }
+            body.push('}');
+            body
+        })
+        .collect();
+    format!("[{}]", styled.join(","))
 }
 
 fn build_chart_series(node: Option<&Node>) -> String {

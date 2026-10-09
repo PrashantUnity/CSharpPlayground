@@ -14,4 +14,12 @@ public sealed record WorkspaceListing(
     IReadOnlyList<string> FolderPaths,
     IReadOnlyList<WorkspaceItemSummary> Items,
     bool IsPartial,
-    bool IsTruncated = false);
+    bool IsTruncated = false,
+    IReadOnlyList<string>? ClosedFolderPaths = null)
+{
+    /// <summary>
+    /// Folders shown but not listed yet (node_modules, bin, .venv, a linked folder): their contents are listed when they
+    /// are opened, as VS Code does. Paths from the workspace root.
+    /// </summary>
+    public IReadOnlyList<string> ClosedFolders => ClosedFolderPaths ?? [];
+}

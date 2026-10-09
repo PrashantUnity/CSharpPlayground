@@ -86,11 +86,12 @@ public partial class CSharpNotebookStudioViewModel
             ? fileName.Substring(0, fileName.Length - 6)
             : fileName;
 
-        var existingTab = Tabs.FirstOrDefault(t =>
-            (!string.IsNullOrEmpty(item.DocumentId) && string.Equals(t.Notebook.Id, item.DocumentId, StringComparison.OrdinalIgnoreCase)) ||
-            string.Equals(t.Title, fileName, StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(t.Notebook.Title, docTitle, StringComparison.OrdinalIgnoreCase) ||
-            (!string.IsNullOrEmpty(filePath) && string.Equals(t.FilePath, filePath, StringComparison.OrdinalIgnoreCase)));
+        // The same file: by id when it has one (copies of a notebook keep its title, so a title match opened another copy).
+        var existingTab = Tabs.FirstOrDefault(t => !string.IsNullOrEmpty(item.DocumentId)
+            ? string.Equals(t.Notebook.Id, item.DocumentId, StringComparison.OrdinalIgnoreCase)
+            : string.Equals(t.Title, fileName, StringComparison.OrdinalIgnoreCase) ||
+              string.Equals(t.Notebook.Title, docTitle, StringComparison.OrdinalIgnoreCase) ||
+              (!string.IsNullOrEmpty(filePath) && string.Equals(t.FilePath, filePath, StringComparison.OrdinalIgnoreCase)));
 
         if (existingTab != null)
         {

@@ -42,6 +42,7 @@ try
         case "ai-window": AppSnapshots.AiWindow(options); break;
         case "templates": TemplateSnapshots.Run(options); break;
         case "snake": AppSnapshots.Snake(options); break;
+        case "layout-tokens": AppSnapshots.WriteLayoutTokens(); break;
         default: throw new ArgumentException($"Unknown command '{options.Command}'.");
     }
     return 0;

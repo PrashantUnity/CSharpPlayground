@@ -1,4 +1,8 @@
 #pragma once
+// The header is staged as <fry/display.hpp>, "display.hpp" and <fry_display.hpp>: #pragma once knows files, not copies,
+// so a guard keeps a program that includes two of them from defining everything twice.
+#ifndef FRY_DISPLAY_HPP_INCLUDED
+#define FRY_DISPLAY_HPP_INCLUDED
 
 #include <iostream>
 #include <string>
@@ -24,6 +28,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <tuple>
+#include <locale>
+#include <iterator>
 #include <queue>
 
 #ifdef _WIN32
@@ -882,6 +888,273 @@ inline DisplayHandle histogram(const T& data, std::string_view title = "", int b
     return detail::emit_display(CHART_MIME, ss.str());
 }
 
+// ── Newer chart features: combos, stacks, scales, line styles, bubbles, radial kinds ───────────────────────────
+
+/// How one series is drawn: fry::SeriesStyle().kind("line").right_axis().dash("dashed").
+class SeriesStyle {
+public:
+    SeriesStyle& kind(std::string_view k) { return set("kind", detail::escape_json(k)); }
+    SeriesStyle& right_axis() { return set("axis", "\"right\""); }
+    SeriesStyle& color(std::string_view c) { return set("color", detail::escape_json(c)); }
+    SeriesStyle& line_width(double pixels) { return set("lineWidth", num(pixels)); }
+    SeriesStyle& dash(std::string_view d) { return set("dash", detail::escape_json(d)); }
+    SeriesStyle& smooth(double tension = 0.4) { set("interpolation", "\"smooth\""); return set("tension", num(tension)); }
+    SeriesStyle& monotone() { return set("interpolation", "\"monotone\""); }
+    SeriesStyle& step(std::string_view s = "after") { return set("step", detail::escape_json(s)); }
+    SeriesStyle& fill(bool on = true) { return set("fill", on ? "true" : "false"); }
+    SeriesStyle& fill_to(int series) { return set("fillTo", std::to_string(series)); }
+    SeriesStyle& point_style(std::string_view shape, double radius) { set("pointStyle", detail::escape_json(shape)); return set("pointRadius", num(radius)); }
+    SeriesStyle& color_segments() { return set("colorSegments", "true"); }
+    SeriesStyle& stack(std::string_view name) { return set("stack", detail::escape_json(name)); }
+    SeriesStyle& corner_radius(double pixels) { return set("cornerRadius", num(pixels)); }
+    SeriesStyle& sizes(const std::vector<double>& values) { return set("sizes", array(values)); }
+    SeriesStyle& from(const std::vector<double>& values) { return set("from", array(values)); }
+
+    const std::vector<std::pair<std::string, std::string>>& fields() const { return fields_; }
+
+    static std::string num(double v) {
+        std::ostringstream ss;
+        ss.imbue(std::locale::classic());
+        ss << v;
+        return ss.str();
+    }
+
+private:
+    static std::string array(const std::vector<double>& values) {
+        std::string out = "[";
+        for (size_t i = 0; i < values.size(); ++i) out += (i ? "," : "") + num(values[i]);
+        return out + "]";
+    }
+
+    SeriesStyle& set(std::string key, std::string json) {
+        for (auto& f : fields_) if (f.first == key) { f.second = std::move(json); return *this; }
+        fields_.emplace_back(std::move(key), std::move(json));
+        return *this;
+    }
+
+    std::vector<std::pair<std::string, std::string>> fields_;
+};
+
+/// What a chart is told besides its data: fry::ChartStyle().title("Sales").labels({...}).stacked().y2_axis("%", 0, 100).
+class ChartStyle {
+public:
+    ChartStyle& title(std::string_view t) { title_ = std::string(t); return *this; }
+    /// Names the places of the values: x positions, a radar's spokes, a pie's slices.
+    ChartStyle& labels(std::vector<std::string> names) { labels_ = std::move(names); has_labels_ = true; return *this; }
+    /// How the series called name is drawn (an empty name: the only, unnamed series).
+    ChartStyle& series(std::string_view name, SeriesStyle style) { styles_.emplace_back(std::string(name), std::move(style)); return *this; }
+    ChartStyle& style(SeriesStyle style) { return series("", std::move(style)); }
+    ChartStyle& stacked() { return top("stack", "\"stacked\""); }
+    ChartStyle& percent_stacked() { return top("stack", "\"percent\""); }
+    ChartStyle& horizontal() { return top("orientation", "\"horizontal\""); }
+    ChartStyle& gauge() { top("startAngle", "-90"); return top("sweep", "180"); }
+    ChartStyle& angles(double start, double sweep) { top("startAngle", SeriesStyle::num(start)); return top("sweep", SeriesStyle::num(sweep)); }
+    ChartStyle& cutout(double share) { return top("cutout", SeriesStyle::num(share)); }
+    ChartStyle& legend_at(std::string_view position) { return top("legend", "{\"position\":" + detail::escape_json(position) + "}"); }
+    ChartStyle& y2_axis(std::string_view title, double min, double max) {
+        axis("y2Axis", "title", detail::escape_json(title));
+        axis("y2Axis", "min", SeriesStyle::num(min));
+        return axis("y2Axis", "max", SeriesStyle::num(max));
+    }
+    ChartStyle& x_scale(std::string_view scale) { return axis("xAxis", "scale", detail::escape_json(scale)); }
+    ChartStyle& y_scale(std::string_view scale) { return axis("yAxis", "scale", detail::escape_json(scale)); }
+    ChartStyle& suggested_y(double min, double max) {
+        axis("yAxis", "suggestedMin", SeriesStyle::num(min));
+        return axis("yAxis", "suggestedMax", SeriesStyle::num(max));
+    }
+    ChartStyle& reverse_x() { return axis("xAxis", "reverse", "true"); }
+    ChartStyle& reverse_y() { return axis("yAxis", "reverse", "true"); }
+
+    const std::string& title() const { return title_; }
+    bool has_labels() const { return has_labels_; }
+    const std::vector<std::string>& label_names() const { return labels_; }
+    const std::vector<std::pair<std::string, SeriesStyle>>& styles() const { return styles_; }
+    const std::vector<std::pair<std::string, std::string>>& top_fields() const { return top_; }
+    const std::vector<std::tuple<std::string, std::string, std::string>>& axes() const { return axes_; }
+
+private:
+    ChartStyle& top(std::string key, std::string json) {
+        for (auto& f : top_) if (f.first == key) { f.second = std::move(json); return *this; }
+        top_.emplace_back(std::move(key), std::move(json));
+        return *this;
+    }
+    ChartStyle& axis(std::string axis_name, std::string field, std::string json) {
+        for (auto& a : axes_) if (std::get<0>(a) == axis_name && std::get<1>(a) == field) { std::get<2>(a) = std::move(json); return *this; }
+        axes_.emplace_back(std::move(axis_name), std::move(field), std::move(json));
+        return *this;
+    }
+
+    std::string title_;
+    std::vector<std::string> labels_;
+    bool has_labels_ = false;
+    std::vector<std::pair<std::string, SeriesStyle>> styles_;
+    std::vector<std::pair<std::string, std::string>> top_;
+    std::vector<std::tuple<std::string, std::string, std::string>> axes_;
+};
+
+namespace detail {
+
+struct SeriesJson {
+    bool named = false;
+    std::string name, x, y, labels, sizes;
+    size_t count = 0;
+};
+
+// (x, y, size) items: each an iterable of three numbers.
+template <typename Items>
+inline void fill_bubble(SeriesJson& one, const Items& items) {
+    std::string xs = "[", ys = "[", sizes = "[";
+    size_t i = 0;
+    for (const auto& item : items) {
+        if (i++ > 0) { xs += ","; ys += ","; sizes += ","; }
+        if constexpr (Iterable<std::decay_t<decltype(item)>>) {
+            auto at = [&](size_t k) {
+                auto it = std::begin(item);
+                std::advance(it, k);
+                return to_json_val(*it);
+            };
+            xs += at(0); ys += at(1); sizes += at(2);
+        } else {
+            // Not an (x, y, size) item: a gap.
+            xs += "null"; ys += "null"; sizes += "null";
+        }
+    }
+    one.x = xs + "]"; one.y = ys + "]"; one.sizes = sizes + "]"; one.count = i;
+}
+
+template <typename T>
+inline std::string chart_json(std::string_view kind, const T& data, const ChartStyle& style) {
+    std::vector<SeriesJson> series;
+    if constexpr (Iterable<T>) {
+        using Elem = std::decay_t<decltype(*std::begin(data))>;
+        if constexpr (PairLike<Elem>) {
+            using Val = std::decay_t<decltype(std::begin(data)->second)>;
+            if constexpr (Iterable<Val>) {
+                // A series for each name: name -> values (or, for a bubble chart, name -> items).
+                for (const auto& entry : data) {
+                    SeriesJson one;
+                    one.named = true;
+                    one.name = std::string(entry.first);
+                    if (kind == "bubble") fill_bubble(one, entry.second);
+                    else { one.y = to_json_array(entry.second); one.count = std::distance(std::begin(entry.second), std::end(entry.second)); }
+                    series.push_back(std::move(one));
+                }
+            } else {
+                // label -> value
+                SeriesJson one;
+                std::string ys = "[", ls = "[";
+                size_t i = 0;
+                for (const auto& entry : data) {
+                    if (i++ > 0) { ys += ","; ls += ","; }
+                    ys += to_json_val(entry.second);
+                    ls += escape_json(std::string_view(entry.first));
+                }
+                one.y = ys + "]"; one.labels = ls + "]"; one.count = i;
+                series.push_back(std::move(one));
+            }
+        } else if constexpr (HasNameAndValue<Elem>) {
+            SeriesJson one;
+            std::string ys = "[", ls = "[";
+            size_t i = 0;
+            for (const auto& item : data) {
+                if (i++ > 0) { ys += ","; ls += ","; }
+                ys += to_json_val(item.value);
+                ls += escape_json(std::string_view(item.name));
+            }
+            one.y = ys + "]"; one.labels = ls + "]"; one.count = i;
+            series.push_back(std::move(one));
+        } else if constexpr (Iterable<Elem>) {
+            SeriesJson one;
+            if (kind == "bubble") fill_bubble(one, data);
+            else {
+                // [x, y] pairs
+                std::string xs = "[", ys = "[";
+                size_t i = 0;
+                for (const auto& pt : data) {
+                    if (i++ > 0) { xs += ","; ys += ","; }
+                    auto it = std::begin(pt);
+                    xs += to_json_val(*it);
+                    ++it;
+                    ys += to_json_val(*it);
+                }
+                one.x = xs + "]"; one.y = ys + "]"; one.count = i;
+            }
+            series.push_back(std::move(one));
+        } else {
+            SeriesJson one;
+            one.y = to_json_array(data);
+            one.count = std::distance(std::begin(data), std::end(data));
+            series.push_back(std::move(one));
+        }
+    }
+
+    std::ostringstream ss;
+    ss << "{\"kind\":" << escape_json(kind) << ",\"series\":[";
+    for (size_t i = 0; i < series.size(); ++i) {
+        const auto& one = series[i];
+        if (i > 0) ss << ",";
+        ss << "{";
+        bool first = true;
+        auto field = [&](const std::string& key, const std::string& json) {
+            ss << (first ? "" : ",") << "\"" << key << "\":" << json;
+            first = false;
+        };
+        if (one.named) field("name", escape_json(std::string_view(one.name)));
+        if (!one.x.empty()) field("x", one.x);
+        field("y", one.y);
+        if (!one.labels.empty()) field("labels", one.labels);
+        else if (style.has_labels() && style.label_names().size() == one.count) {
+            std::string ls = "[";
+            for (size_t k = 0; k < style.label_names().size(); ++k) ls += (k ? "," : "") + escape_json(std::string_view(style.label_names()[k]));
+            field("labels", ls + "]");
+        }
+        if (!one.sizes.empty()) field("sizes", one.sizes);
+        for (const auto& [target, series_style] : style.styles()) {
+            if ((one.named && target == one.name) || (!one.named && target.empty())) {
+                for (const auto& [key, json] : series_style.fields()) field(key, json);
+            }
+        }
+        ss << "}";
+    }
+    ss << "]";
+    if (!style.title().empty()) ss << ",\"title\":" << escape_json(std::string_view(style.title()));
+    for (const auto& [key, json] : style.top_fields()) ss << ",\"" << key << "\":" << json;
+    for (const char* axis_name : {"xAxis", "yAxis", "y2Axis"}) {
+        bool any = false;
+        for (const auto& [name, field_name, json] : style.axes()) {
+            if (name != axis_name) continue;
+            ss << (any ? "," : std::string(",\"") + axis_name + "\":{") << "\"" << field_name << "\":" << json;
+            any = true;
+        }
+        if (any) ss << "}";
+    }
+    ss << "}";
+    return ss.str();
+}
+
+} // namespace detail
+
+template <typename T> inline DisplayHandle line_chart(const T& data, const ChartStyle& style) { return detail::emit_display(CHART_MIME, detail::chart_json("line", data, style)); }
+template <typename T> inline DisplayHandle area_chart(const T& data, const ChartStyle& style) { return detail::emit_display(CHART_MIME, detail::chart_json("area", data, style)); }
+template <typename T> inline DisplayHandle area_chart(const T& data, std::string_view title = "") { return area_chart(data, ChartStyle().title(title)); }
+template <typename T> inline DisplayHandle scatter_chart(const T& data, const ChartStyle& style) { return detail::emit_display(CHART_MIME, detail::chart_json("scatter", data, style)); }
+template <typename T> inline DisplayHandle bar_chart(const T& data, const ChartStyle& style) { return detail::emit_display(CHART_MIME, detail::chart_json("bar", data, style)); }
+template <typename T> inline DisplayHandle pie_chart(const T& data, const ChartStyle& style) { return detail::emit_display(CHART_MIME, detail::chart_json("pie", data, style)); }
+template <typename T> inline DisplayHandle donut_chart(const T& data, const ChartStyle& style) { return detail::emit_display(CHART_MIME, detail::chart_json("donut", data, style)); }
+template <typename T> inline DisplayHandle donut_chart(const T& data, std::string_view title = "") { return donut_chart(data, ChartStyle().title(title)); }
+/// (x, y, size) items; the size is a radius in pixels.
+template <typename T> inline DisplayHandle bubble_chart(const T& data, const ChartStyle& style) { return detail::emit_display(CHART_MIME, detail::chart_json("bubble", data, style)); }
+template <typename T> inline DisplayHandle bubble_chart(const T& data, std::string_view title = "") { return bubble_chart(data, ChartStyle().title(title)); }
+/// A polygon for each series over a spoke for each value (name the spokes with ChartStyle::labels).
+template <typename T> inline DisplayHandle radar_chart(const T& data, const ChartStyle& style) { return detail::emit_display(CHART_MIME, detail::chart_json("radar", data, style)); }
+template <typename T> inline DisplayHandle radar_chart(const T& data, std::string_view title = "") { return radar_chart(data, ChartStyle().title(title)); }
+template <typename T> inline DisplayHandle polar_area_chart(const T& data, const ChartStyle& style) { return detail::emit_display(CHART_MIME, detail::chart_json("polarArea", data, style)); }
+template <typename T> inline DisplayHandle polar_area_chart(const T& data, std::string_view title = "") { return polar_area_chart(data, ChartStyle().title(title)); }
+template <typename T> inline DisplayHandle stacked_bar_chart(const T& data, ChartStyle style) { return bar_chart(data, style.stacked()); }
+template <typename T> inline DisplayHandle stacked_bar_chart(const T& data, std::string_view title = "") { return stacked_bar_chart(data, ChartStyle().title(title)); }
+template <typename T> inline DisplayHandle horizontal_bar_chart(const T& data, ChartStyle style) { return bar_chart(data, style.horizontal()); }
+template <typename T> inline DisplayHandle horizontal_bar_chart(const T& data, std::string_view title = "") { return horizontal_bar_chart(data, ChartStyle().title(title)); }
+
 // 7. Scatter 3D
 template <typename T>
 inline DisplayHandle scatter3d(const T& data, std::string_view title = "") {
@@ -1641,6 +1914,24 @@ public:
     static fry::DisplayHandle pie_chart(const T& data, std::string_view title = "") {
         return fry::pie_chart(data, title);
     }
+    template <typename T, typename S>
+    static fry::DisplayHandle line_chart(const T& data, const S& style) { return fry::line_chart(data, style); }
+    template <typename T, typename S>
+    static fry::DisplayHandle bar_chart(const T& data, const S& style) { return fry::bar_chart(data, style); }
+    template <typename T>
+    static fry::DisplayHandle area_chart(const T& data, std::string_view title = "") { return fry::area_chart(data, title); }
+    template <typename T>
+    static fry::DisplayHandle donut_chart(const T& data, std::string_view title = "") { return fry::donut_chart(data, title); }
+    template <typename T>
+    static fry::DisplayHandle bubble_chart(const T& data, std::string_view title = "") { return fry::bubble_chart(data, title); }
+    template <typename T>
+    static fry::DisplayHandle radar_chart(const T& data, std::string_view title = "") { return fry::radar_chart(data, title); }
+    template <typename T>
+    static fry::DisplayHandle polar_area_chart(const T& data, std::string_view title = "") { return fry::polar_area_chart(data, title); }
+    template <typename T>
+    static fry::DisplayHandle stacked_bar_chart(const T& data, std::string_view title = "") { return fry::stacked_bar_chart(data, title); }
+    template <typename T>
+    static fry::DisplayHandle horizontal_bar_chart(const T& data, std::string_view title = "") { return fry::horizontal_bar_chart(data, title); }
     template <typename T>
     static fry::DisplayHandle scatter3d(const T& data, std::string_view title = "") {
         return fry::scatter3d(data, title);
@@ -1696,3 +1987,5 @@ public:
 namespace fry {
     using Display = ::Display;
 }
+
+#endif // FRY_DISPLAY_HPP_INCLUDED

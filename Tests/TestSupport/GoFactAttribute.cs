@@ -12,6 +12,12 @@ public sealed class GoFactAttribute : FactAttribute
 {
     public GoFactAttribute()
     {
+        if (!TimeGate.IsEnabled && !TestGo.Required)
+        {
+            Skip = TimeGate.SkipReason;
+            return;
+        }
+
         if (TestGo.Toolchain == null && !TestGo.Required)
         {
             Skip = "Needs a Go compiler (go). Install it, or set FRY_TEST_GO to an executable.";

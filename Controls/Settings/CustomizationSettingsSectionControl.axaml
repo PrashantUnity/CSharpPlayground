@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -17,19 +17,19 @@
             <!-- ══════════════════════════════════════════════════════════ -->
             <!-- LEFT MAIN COLUMN: SCRIPTING, THEMES & DENSITY              -->
             <!-- ══════════════════════════════════════════════════════════ -->
-            <StackPanel Grid.Column="0" Spacing="16">
+            <StackPanel Grid.Column="0" lt:Tokens.Spacing="DsSpace16">
 
                 <!-- 1. HERO HEADER CARD -->
                 <Border Background="{DynamicResource DsSurfaceBrush}"
                         BorderBrush="{DynamicResource DsBorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="10"
-                        Padding="18,16">
+                        lt:Tokens.BorderThickness="DsCardBorder"
+                        lt:Tokens.CornerRadius="DsRadiusCard"
+                        lt:Tokens.Padding="DsCardPadding" lt:Tokens.BoxShadow="DsCardShadow">
                     <Grid ColumnDefinitions="Auto,*,Auto">
-                        <Border Grid.Column="0" Width="44" Height="44" CornerRadius="8"
+                        <Border Grid.Column="0" Width="44" Height="44" lt:Tokens.CornerRadius="DsRadiusLG"
                                 Background="{DynamicResource DsSurfaceHighBrush}"
                                 BorderBrush="{DynamicResource DsBorderBrush}"
-                                BorderThickness="1"
+                                lt:Tokens.BorderThickness="DsBorderThin"
                                 VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="PuzzleOutline" Width="24" Height="24"
                                                         Foreground="{DynamicResource DsPrimaryBrush}"
@@ -37,16 +37,16 @@
                         </Border>
 
                         <StackPanel Grid.Column="1" Margin="14,0,16,0" VerticalAlignment="Center" Spacing="3">
-                            <TextBlock Text="Customization &amp; Extensions" FontSize="17" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" />
-                            <TextBlock Text="In-app C# scripting, dynamic theme engine, layout density, execution hooks &amp; workspace plugins" FontSize="12" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                            <TextBlock Text="Customization &amp; Extensions" lt:Tokens.FontSize="DsFontSize600" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                            <TextBlock Text="In-app C# scripting, dynamic theme engine, layout density, execution hooks &amp; workspace plugins" lt:Tokens.FontSize="DsFontSize300" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
                         </StackPanel>
 
                         <Border Grid.Column="2" Background="{DynamicResource DsSurfaceHighBrush}"
                                 BorderBrush="{DynamicResource DsBorderBrush}"
-                                BorderThickness="1" CornerRadius="16" Padding="12,5" VerticalAlignment="Center">
+                                lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadius3XL" Padding="12,5" VerticalAlignment="Center">
                             <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
                                 <Ellipse Width="8" Height="8" Fill="{DynamicResource DsGreenBrush}" />
-                                <TextBlock Text="Hot Reload Ready" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource DsTextBrush}" />
+                                <TextBlock Text="Hot Reload Ready" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsTextBrush}" />
                             </StackPanel>
                         </Border>
                     </Grid>
@@ -55,14 +55,14 @@
                 <!-- 2. GLOBAL CUSTOMIZATION SCRIPT CARD -->
                 <Border Background="{DynamicResource DsSurfaceBrush}"
                         BorderBrush="{DynamicResource DsBorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="10"
-                        Padding="18,16">
-                    <StackPanel Spacing="14">
+                        lt:Tokens.BorderThickness="DsCardBorder"
+                        lt:Tokens.CornerRadius="DsRadiusCard"
+                        lt:Tokens.Padding="DsCardPadding" lt:Tokens.BoxShadow="DsCardShadow">
+                    <StackPanel lt:Tokens.Spacing="DsSpace14">
                         <Grid ColumnDefinitions="Auto,*,Auto">
                             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                 <materialIcons:MaterialIcon Kind="FileDocumentEditOutline" Width="18" Height="18" Foreground="{DynamicResource DsPrimaryBrush}" />
-                                <TextBlock Text="GLOBAL SCRIPT (INIT.CSX)" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                                <TextBlock Text="GLOBAL SCRIPT (INIT.CSX)" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" lt:Tokens.LetterSpacing="DsTracking080" VerticalAlignment="Center" />
                             </StackPanel>
 
                             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
@@ -71,7 +71,7 @@
                                         ToolTip.Tip="Recompile and re-apply init.csx now (Ctrl+Shift+R)">
                                     <StackPanel Orientation="Horizontal" Spacing="5">
                                         <materialIcons:MaterialIcon Kind="Refresh" Width="14" Height="14" />
-                                        <TextBlock Text="Reload" FontSize="11.5" VerticalAlignment="Center" />
+                                        <TextBlock Text="Reload" lt:Tokens.FontSize="DsFontSize250" VerticalAlignment="Center" />
                                     </StackPanel>
                                 </Button>
                                 <Button Command="{Binding OpenGlobalScriptCommand}"
@@ -79,27 +79,27 @@
                                         ToolTip.Tip="Open init.csx directly in FrySharp">
                                     <StackPanel Orientation="Horizontal" Spacing="5">
                                         <materialIcons:MaterialIcon Kind="OpenInApp" Width="14" Height="14" />
-                                        <TextBlock Text="Edit Script" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                        <TextBlock Text="Edit Script" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                                     </StackPanel>
                                 </Button>
                             </StackPanel>
                         </Grid>
 
                         <TextBlock Text="Author C# code with ambient 'App' and 'Studio' globals. Changes compile into an isolated collectible context and apply live without restarting."
-                                   FontSize="12" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                                   lt:Tokens.FontSize="DsFontSize300" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
 
                         <!-- Path Display Box -->
                         <Border Background="{DynamicResource DsBgBrush}"
                                 BorderBrush="{DynamicResource DsBorderBrush}"
-                                BorderThickness="1"
-                                CornerRadius="6"
+                                lt:Tokens.BorderThickness="DsBorderThin"
+                                lt:Tokens.CornerRadius="DsRadiusMD"
                                 Padding="12,8">
                             <Grid ColumnDefinitions="Auto,*,Auto">
                                 <materialIcons:MaterialIcon Grid.Column="0" Kind="FolderFileOutline" Width="16" Height="16" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                                <TextBlock Grid.Column="1" Text="{Binding CustomizationScriptPath}" FontSize="12" FontFamily="Consolas, Menlo, monospace"
+                                <TextBlock Grid.Column="1" Text="{Binding CustomizationScriptPath}" lt:Tokens.FontSize="DsFontSize300" lt:Tokens.FontFamily="DsCodeFontFamily"
                                            Foreground="{DynamicResource DsTextBrush}" Margin="8,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                                <Border Grid.Column="2" Background="{DynamicResource DsSurfaceHighBrush}" CornerRadius="4" Padding="6,2">
-                                    <TextBlock Text="C# Script" FontSize="10.5" Foreground="{DynamicResource DsPrimaryBrush}" FontWeight="SemiBold" />
+                                <Border Grid.Column="2" Background="{DynamicResource DsSurfaceHighBrush}" lt:Tokens.CornerRadius="DsRadiusSM" Padding="6,2">
+                                    <TextBlock Text="C# Script" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsPrimaryBrush}" lt:Tokens.FontWeight="DsWeightEmphasis" />
                                 </Border>
                             </Grid>
                         </Border>
@@ -109,14 +109,14 @@
                 <!-- 3. THEME PRESETS & COLOR PALETTES -->
                 <Border Background="{DynamicResource DsSurfaceBrush}"
                         BorderBrush="{DynamicResource DsBorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="10"
-                        Padding="18,16">
-                    <StackPanel Spacing="14">
+                        lt:Tokens.BorderThickness="DsCardBorder"
+                        lt:Tokens.CornerRadius="DsRadiusCard"
+                        lt:Tokens.Padding="DsCardPadding" lt:Tokens.BoxShadow="DsCardShadow">
+                    <StackPanel lt:Tokens.Spacing="DsSpace14">
                         <Grid ColumnDefinitions="Auto,*,Auto">
                             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                 <materialIcons:MaterialIcon Kind="PaletteOutline" Width="18" Height="18" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
-                                <TextBlock Text="DYNAMIC THEME PRESETS" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                                <TextBlock Text="DYNAMIC THEME PRESETS" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" lt:Tokens.LetterSpacing="DsTracking080" VerticalAlignment="Center" />
                             </StackPanel>
 
                             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
@@ -126,21 +126,21 @@
                                         ToolTip.Tip="Generate a randomized, mathematically coherent color palette using color wheel harmonies (Analogous, Triadic, Split-Complementary, etc.)">
                                     <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                         <materialIcons:MaterialIcon Kind="DiceMultipleOutline" Width="14" Height="14" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
-                                        <TextBlock Text="Random Harmonic Palette" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                        <TextBlock Text="Random Harmonic Palette" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                                     </StackPanel>
                                 </Button>
 
-                                <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="10,3">
+                                <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadius2XL" Padding="10,3">
                                     <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                        <TextBlock Text="Active:" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                                        <TextBlock Text="{Binding ActiveThemeName}" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Text="Active:" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding ActiveThemeName}" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
                         </Grid>
 
                         <TextBlock Text="Select a curated theme preset. Color brush tokens are updated dynamically across the entire application runtime."
-                                   FontSize="12" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                                   lt:Tokens.FontSize="DsFontSize300" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
 
                         <!-- Theme Grid -->
                         <ItemsControl ItemsSource="{Binding ThemePresets}">
@@ -155,26 +155,26 @@
                                             CommandParameter="{Binding Id}"
                                             Background="{DynamicResource DsBgBrush}"
                                             BorderBrush="{DynamicResource DsBorderBrush}"
-                                            BorderThickness="1"
-                                            CornerRadius="8"
+                                            lt:Tokens.BorderThickness="DsBorderThin"
+                                            lt:Tokens.CornerRadius="DsRadiusLG"
                                             Padding="12,10"
                                             Margin="4"
                                             HorizontalContentAlignment="Stretch"
                                             Cursor="Hand">
                                         <Grid ColumnDefinitions="Auto,*,Auto">
                                             <!-- Color Swatch Preview -->
-                                            <Border Grid.Column="0" Width="32" Height="32" CornerRadius="6"
-                                                    BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" Margin="0,0,10,0">
+                                            <Border Grid.Column="0" Width="32" Height="32" lt:Tokens.CornerRadius="DsRadiusMD"
+                                                    BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin" Margin="0,0,10,0">
                                                 <Grid ColumnDefinitions="*,*">
-                                                    <Border Grid.Column="0" Background="{Binding BgHex}" CornerRadius="5,0,0,5" />
-                                                    <Border Grid.Column="1" Background="{Binding AccentHex}" CornerRadius="0,5,5,0" />
+                                                    <Border Grid.Column="0" Background="{Binding BgHex}" lt:Tokens.CornerRadius="DsRadiusSMLeft" />
+                                                    <Border Grid.Column="1" Background="{Binding AccentHex}" lt:Tokens.CornerRadius="DsRadiusSMRight" />
                                                 </Grid>
                                             </Border>
 
                                             <!-- Theme Details -->
                                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                                                <TextBlock Text="{Binding Name}" FontSize="12.5" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" />
-                                                <TextBlock Text="{Binding Description}" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Text="{Binding Name}" lt:Tokens.FontSize="DsFontSize350" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                                <TextBlock Text="{Binding Description}" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsMutedBrush}" TextTrimming="CharacterEllipsis" />
                                             </StackPanel>
 
                                             <!-- Active Check Indicator -->
@@ -192,25 +192,25 @@
                 <!-- 4. LAYOUT DENSITY SELECTOR -->
                 <Border Background="{DynamicResource DsSurfaceBrush}"
                         BorderBrush="{DynamicResource DsBorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="10"
-                        Padding="18,16">
-                    <StackPanel Spacing="14">
+                        lt:Tokens.BorderThickness="DsCardBorder"
+                        lt:Tokens.CornerRadius="DsRadiusCard"
+                        lt:Tokens.Padding="DsCardPadding" lt:Tokens.BoxShadow="DsCardShadow">
+                    <StackPanel lt:Tokens.Spacing="DsSpace14">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <materialIcons:MaterialIcon Kind="ArrowExpandVertical" Width="18" Height="18" Foreground="{DynamicResource DsPrimaryBrush}" />
-                            <TextBlock Text="LAYOUT DENSITY &amp; CHROME SCALING" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                            <TextBlock Text="LAYOUT DENSITY &amp; CHROME SCALING" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" lt:Tokens.LetterSpacing="DsTracking080" VerticalAlignment="Center" />
                         </StackPanel>
 
                         <TextBlock Text="Adjust chrome element heights, tab padding, and activity bar rail width to suit your display size and ergonomics preference."
-                                   FontSize="12" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                                   lt:Tokens.FontSize="DsFontSize300" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
 
                         <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
                             <!-- Compact -->
                             <Button Grid.Column="0" Command="{Binding SetDensityCommand}" CommandParameter="Compact"
                                     Classes="cs-toolbar-outlined" Height="48" HorizontalContentAlignment="Center">
                                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="2">
-                                    <TextBlock Text="Compact" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center" />
-                                    <TextBlock Text="30px tabs, 42px rail" FontSize="10" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
+                                    <TextBlock Text="Compact" lt:Tokens.FontSize="DsFontSize300" lt:Tokens.FontWeight="DsWeightEmphasis" HorizontalAlignment="Center" />
+                                    <TextBlock Text="30px tabs, 42px rail" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
                                 </StackPanel>
                             </Button>
 
@@ -218,8 +218,8 @@
                             <Button Grid.Column="1" Command="{Binding SetDensityCommand}" CommandParameter="Comfortable"
                                     Classes="cs-toolbar-filled" Height="48" HorizontalContentAlignment="Center">
                                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="2">
-                                    <TextBlock Text="Comfortable" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center" />
-                                    <TextBlock Text="35px tabs, 48px rail (VS Code)" FontSize="10" HorizontalAlignment="Center" />
+                                    <TextBlock Text="Comfortable" lt:Tokens.FontSize="DsFontSize300" lt:Tokens.FontWeight="DsWeightEmphasis" HorizontalAlignment="Center" />
+                                    <TextBlock Text="35px tabs, 48px rail (VS Code)" lt:Tokens.FontSize="DsFontSize100" HorizontalAlignment="Center" />
                                 </StackPanel>
                             </Button>
 
@@ -227,8 +227,8 @@
                             <Button Grid.Column="2" Command="{Binding SetDensityCommand}" CommandParameter="Spacious"
                                     Classes="cs-toolbar-outlined" Height="48" HorizontalContentAlignment="Center">
                                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="2">
-                                    <TextBlock Text="Spacious" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center" />
-                                    <TextBlock Text="42px tabs, 54px rail" FontSize="10" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
+                                    <TextBlock Text="Spacious" lt:Tokens.FontSize="DsFontSize300" lt:Tokens.FontWeight="DsWeightEmphasis" HorizontalAlignment="Center" />
+                                    <TextBlock Text="42px tabs, 54px rail" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
                                 </StackPanel>
                             </Button>
                         </Grid>
@@ -239,42 +239,42 @@
             <!-- ══════════════════════════════════════════════════════════ -->
             <!-- RIGHT ASIDE COLUMN: TELEMETRY, EXTENSIONS & CHEATSHEET     -->
             <!-- ══════════════════════════════════════════════════════════ -->
-            <StackPanel Grid.Column="1" Spacing="16">
+            <StackPanel Grid.Column="1" lt:Tokens.Spacing="DsSpace16">
 
                 <!-- 1. LIVE TELEMETRY STATS -->
                 <Border Background="{DynamicResource DsSurfaceBrush}"
                         BorderBrush="{DynamicResource DsBorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="10"
-                        Padding="18,16">
-                    <StackPanel Spacing="14">
+                        lt:Tokens.BorderThickness="DsCardBorder"
+                        lt:Tokens.CornerRadius="DsRadiusCard"
+                        lt:Tokens.Padding="DsCardPadding" lt:Tokens.BoxShadow="DsCardShadow">
+                    <StackPanel lt:Tokens.Spacing="DsSpace14">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <materialIcons:MaterialIcon Kind="ChartTimelineVariant" Width="18" Height="18" Foreground="{DynamicResource DsPrimaryBrush}" />
-                            <TextBlock Text="RUNTIME EXTENSIBILITY STATS" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                            <TextBlock Text="RUNTIME EXTENSIBILITY STATS" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" lt:Tokens.LetterSpacing="DsTracking080" VerticalAlignment="Center" />
                         </StackPanel>
 
                         <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
                             <!-- Commands Count -->
-                            <Border Grid.Column="0" Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="8,10">
+                            <Border Grid.Column="0" Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusLG" Padding="8,10">
                                 <StackPanel HorizontalAlignment="Center" Spacing="4">
-                                    <TextBlock Text="{Binding RegisteredCommandsCount}" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" />
-                                    <TextBlock Text="Commands" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
+                                    <TextBlock Text="{Binding RegisteredCommandsCount}" lt:Tokens.FontSize="DsFontSize700" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" />
+                                    <TextBlock Text="Commands" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
                                 </StackPanel>
                             </Border>
 
                             <!-- Hooks Count -->
-                            <Border Grid.Column="1" Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="8,10">
+                            <Border Grid.Column="1" Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusLG" Padding="8,10">
                                 <StackPanel HorizontalAlignment="Center" Spacing="4">
-                                    <TextBlock Text="{Binding ActiveHooksCount}" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource DsGreenBrush}" HorizontalAlignment="Center" />
-                                    <TextBlock Text="Hooks" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
+                                    <TextBlock Text="{Binding ActiveHooksCount}" lt:Tokens.FontSize="DsFontSize700" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsGreenBrush}" HorizontalAlignment="Center" />
+                                    <TextBlock Text="Hooks" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
                                 </StackPanel>
                             </Border>
 
                             <!-- Extensions Count -->
-                            <Border Grid.Column="2" Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="8,10">
+                            <Border Grid.Column="2" Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusLG" Padding="8,10">
                                 <StackPanel HorizontalAlignment="Center" Spacing="4">
-                                    <TextBlock Text="{Binding LoadedExtensionsCount}" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" HorizontalAlignment="Center" />
-                                    <TextBlock Text="Extensions" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
+                                    <TextBlock Text="{Binding LoadedExtensionsCount}" lt:Tokens.FontSize="DsFontSize700" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsPrimaryBrush}" HorizontalAlignment="Center" />
+                                    <TextBlock Text="Extensions" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
                                 </StackPanel>
                             </Border>
                         </Grid>
@@ -284,17 +284,17 @@
                 <!-- 2. WORKSPACE EXTENSIONS CARD -->
                 <Border Background="{DynamicResource DsSurfaceBrush}"
                         BorderBrush="{DynamicResource DsBorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="10"
-                        Padding="18,16">
-                    <StackPanel Spacing="14">
+                        lt:Tokens.BorderThickness="DsCardBorder"
+                        lt:Tokens.CornerRadius="DsRadiusCard"
+                        lt:Tokens.Padding="DsCardPadding" lt:Tokens.BoxShadow="DsCardShadow">
+                    <StackPanel lt:Tokens.Spacing="DsSpace14">
                         <!-- Header with Action Button -->
                         <Grid ColumnDefinitions="*,Auto">
                             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                 <materialIcons:MaterialIcon Kind="PackageVariantClosed" Width="18" Height="18" Foreground="{DynamicResource DsPrimaryBrush}" />
-                                <TextBlock Text="WORKSPACE EXTENSIONS" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
-                                <Border Background="{DynamicResource DsPrimarySubtleBrush}" CornerRadius="10" Padding="6,1" VerticalAlignment="Center" Margin="2,0,0,0">
-                                    <TextBlock Text="{Binding LoadedExtensionsCount}" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                <TextBlock Text="WORKSPACE EXTENSIONS" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" lt:Tokens.LetterSpacing="DsTracking080" VerticalAlignment="Center" />
+                                <Border Background="{DynamicResource DsPrimarySubtleBrush}" lt:Tokens.CornerRadius="DsRadiusXL" Padding="6,1" VerticalAlignment="Center" Margin="2,0,0,0">
+                                    <TextBlock Text="{Binding LoadedExtensionsCount}" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsPrimaryBrush}" />
                                 </Border>
                             </StackPanel>
 
@@ -302,12 +302,12 @@
                                     Command="{Binding ToggleImportPackageFormCommand}"
                                     ToolTip.Tip="Import package directly from Git URL"
                                     Padding="10,4"
-                                    CornerRadius="6"
+                                    lt:Tokens.CornerRadius="DsRadiusMD"
                                     Background="{DynamicResource DsPrimaryBrush}"
                                     Foreground="White">
                                 <StackPanel Orientation="Horizontal" Spacing="5">
                                     <materialIcons:MaterialIcon Kind="Git" Width="14" Height="14" />
-                                    <TextBlock Text="+ Git Package" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                    <TextBlock Text="+ Git Package" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
                         </Grid>
@@ -316,14 +316,14 @@
                         <Border IsVisible="{Binding IsImportPackageFormVisible}"
                                 Background="{DynamicResource DsBgBrush}"
                                 BorderBrush="{DynamicResource DsPrimaryBrush}"
-                                BorderThickness="1"
-                                CornerRadius="8"
+                                lt:Tokens.BorderThickness="DsBorderThin"
+                                lt:Tokens.CornerRadius="DsRadiusLG"
                                 Padding="14,12">
-                            <StackPanel Spacing="10">
+                            <StackPanel lt:Tokens.Spacing="DsSpace10">
                                 <Grid ColumnDefinitions="*,Auto">
                                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                         <materialIcons:MaterialIcon Kind="CloudDownloadOutline" Width="16" Height="16" Foreground="{DynamicResource DsPrimaryBrush}" />
-                                        <TextBlock Text="IMPORT PACKAGE FROM GIT URL" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" LetterSpacing="0.5" />
+                                        <TextBlock Text="IMPORT PACKAGE FROM GIT URL" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsTextWhiteBrush}" lt:Tokens.LetterSpacing="DsTracking050" />
                                     </StackPanel>
                                     <Button Grid.Column="1" Command="{Binding ToggleImportPackageFormCommand}" Background="Transparent" BorderThickness="0" Padding="4" ToolTip.Tip="Close">
                                         <materialIcons:MaterialIcon Kind="Close" Width="14" Height="14" Foreground="{DynamicResource DsMutedBrush}" />
@@ -331,18 +331,18 @@
                                 </Grid>
 
                                 <TextBlock Text="Enter a Git repository URL (e.g. https://github.com/owner/repo.git#v1.0.0 or owner/repo). FrySharp will resolve, download, cache, and activate the extension dynamically."
-                                           FontSize="11" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                                           lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
 
                                 <!-- URL Input & Install Button Row -->
                                 <Grid ColumnDefinitions="*,Auto">
                                     <TextBox Grid.Column="0"
                                              Text="{Binding PackageGitUrl, Mode=TwoWay}"
                                              PlaceholderText="https://github.com/owner/repo.git#v1.0.0"
-                                             FontSize="11"
-                                             FontFamily="Consolas, Menlo, monospace"
-                                             Height="32"
+                                             lt:Tokens.FontSize="DsFontSize200"
+                                             lt:Tokens.FontFamily="DsCodeFontFamily"
+                                             lt:Tokens.Height="DsControlHeight300"
                                              Padding="8,6"
-                                             CornerRadius="6,0,0,6"
+                                             lt:Tokens.CornerRadius="DsRadiusMDLeft"
                                              BorderBrush="{DynamicResource DsBorderBrush}" />
 
                                     <Button Grid.Column="1"
@@ -350,29 +350,29 @@
                                             IsEnabled="{Binding !IsImportingPackage}"
                                             Background="{DynamicResource DsPrimaryBrush}"
                                             Foreground="White"
-                                            Height="32"
+                                            lt:Tokens.Height="DsControlHeight300"
                                             Padding="12,0"
-                                            CornerRadius="0,6,6,0">
+                                            lt:Tokens.CornerRadius="DsRadiusMDRight">
                                         <StackPanel Orientation="Horizontal" Spacing="5">
                                             <materialIcons:MaterialIcon Kind="DownloadOutline" Width="14" Height="14" />
-                                            <TextBlock Text="{Binding ImportButtonText}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                            <TextBlock Text="{Binding ImportButtonText}" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                                         </StackPanel>
                                     </Button>
                                 </Grid>
 
                                 <!-- Quick Try Sample Button -->
                                 <StackPanel Orientation="Horizontal" Spacing="6">
-                                    <TextBlock Text="Quick Try:" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="Quick Try:" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                     <Button Command="{Binding UseSampleGitPackageCommand}"
                                             CommandParameter="https://github.com/PrashantUnity/FrySharp.Zig.git#v1.0.0"
                                             Background="{DynamicResource DsPrimarySubtleBrush}"
                                             BorderThickness="0"
                                             Padding="6,2"
-                                            CornerRadius="4"
+                                            lt:Tokens.CornerRadius="DsRadiusSM"
                                             ToolTip.Tip="Fill with Zig Support Extension from GitHub">
                                         <StackPanel Orientation="Horizontal" Spacing="4">
                                             <materialIcons:MaterialIcon Kind="LightningBolt" Width="12" Height="12" Foreground="{DynamicResource DsPrimaryBrush}" />
-                                            <TextBlock Text="PrashantUnity/FrySharp.Zig (v1.0.0)" FontSize="10" Foreground="{DynamicResource DsPrimaryBrush}" FontWeight="SemiBold" />
+                                            <TextBlock Text="PrashantUnity/FrySharp.Zig (v1.0.0)" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsPrimaryBrush}" lt:Tokens.FontWeight="DsWeightEmphasis" />
                                         </StackPanel>
                                     </Button>
                                 </StackPanel>
@@ -381,14 +381,14 @@
                                 <Border IsVisible="{Binding HasPackageImportStatus}"
                                         Background="{DynamicResource DsSurfaceBrush}"
                                         BorderBrush="{DynamicResource DsBorderBrush}"
-                                        BorderThickness="1"
-                                        CornerRadius="6"
+                                        lt:Tokens.BorderThickness="DsBorderThin"
+                                        lt:Tokens.CornerRadius="DsRadiusMD"
                                         Padding="10,6">
                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                         <ProgressBar IsIndeterminate="True" Width="14" Height="14" IsVisible="{Binding IsImportingPackage}" />
                                         <materialIcons:MaterialIcon Kind="CheckCircleOutline" Width="14" Height="14" Foreground="{DynamicResource DsGreenBrush}" IsVisible="{Binding PackageImportSuccess}" />
                                         <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="14" Height="14" Foreground="{DynamicResource DsErrorBrush}" IsVisible="{Binding PackageImportHasError}" />
-                                        <TextBlock Text="{Binding PackageImportStatus}" FontSize="11" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                                        <TextBlock Text="{Binding PackageImportStatus}" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" TextWrapping="Wrap" />
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
@@ -398,21 +398,21 @@
                         <ItemsControl ItemsSource="{Binding InstalledExtensions}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="settings:ExtensionSettingItemViewModel">
-                                    <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,3">
+                                    <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="10,8" Margin="0,3">
                                         <Grid ColumnDefinitions="*,Auto">
                                             <StackPanel Grid.Column="0" Spacing="2">
                                                 <StackPanel Orientation="Horizontal" Spacing="6">
-                                                    <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" />
-                                                    <Border Background="{DynamicResource DsPrimarySubtleBrush}" BorderBrush="{DynamicResource DsPrimaryBorderSubtleBrush}" BorderThickness="1" CornerRadius="3" Padding="4,1" IsVisible="{Binding IsGitPackage}">
-                                                        <TextBlock Text="git" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" FontFamily="{DynamicResource DsCodeFontFamily}" />
+                                                    <TextBlock Text="{Binding Name}" lt:Tokens.FontSize="DsFontSize300" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                                    <Border Background="{DynamicResource DsPrimarySubtleBrush}" BorderBrush="{DynamicResource DsPrimaryBorderSubtleBrush}" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusXS" Padding="4,1" IsVisible="{Binding IsGitPackage}">
+                                                        <TextBlock Text="git" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsPrimaryBrush}" lt:Tokens.FontFamily="DsCodeFontFamily" />
                                                     </Border>
                                                 </StackPanel>
-                                                <TextBlock Text="{Binding Description}" FontSize="11" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
-                                                <TextBlock Text="{Binding Author, StringFormat='by {0}'}" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" />
+                                                <TextBlock Text="{Binding Description}" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" />
+                                                <TextBlock Text="{Binding Author, StringFormat='by {0}'}" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" />
                                             </StackPanel>
                                             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                                <Border Background="{DynamicResource DsPrimarySubtleBrush}" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding Version, StringFormat='v{0}'}" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                                <Border Background="{DynamicResource DsPrimarySubtleBrush}" lt:Tokens.CornerRadius="DsRadiusSM" Padding="6,2" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Version, StringFormat='v{0}'}" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsPrimaryBrush}" />
                                                 </Border>
                                                 <Button Command="{Binding $parent[ItemsControl].((settings:CSharpSettingsViewModel)DataContext).RemoveExtensionCommand}"
                                                         CommandParameter="{Binding}"
@@ -430,22 +430,22 @@
                         </ItemsControl>
 
                         <!-- Empty state when no extensions loaded -->
-                        <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="14,16"
+                        <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="14,16"
                                 IsVisible="{Binding !LoadedExtensionsCount}">
                             <StackPanel HorizontalAlignment="Center" Spacing="6">
                                 <materialIcons:MaterialIcon Kind="PackageVariant" Width="26" Height="26" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
-                                <TextBlock Text="No workspace extensions loaded" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" />
-                                <TextBlock Text="Install extensions from Git repositories or create them in extensions/ with extension.json." FontSize="11" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="320" />
+                                <TextBlock Text="No workspace extensions loaded" lt:Tokens.FontSize="DsFontSize300" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" />
+                                <TextBlock Text="Install extensions from Git repositories or create them in extensions/ with extension.json." lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="320" />
                                 <Button Command="{Binding ToggleImportPackageFormCommand}"
                                         HorizontalAlignment="Center"
                                         Background="{DynamicResource DsPrimaryBrush}"
                                         Foreground="White"
-                                        CornerRadius="6"
+                                        lt:Tokens.CornerRadius="DsRadiusMD"
                                         Padding="12,5"
                                         Margin="0,4,0,0">
                                     <StackPanel Orientation="Horizontal" Spacing="6">
                                         <materialIcons:MaterialIcon Kind="Git" Width="14" Height="14" />
-                                        <TextBlock Text="Import Git Package..." FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                        <TextBlock Text="Import Git Package..." lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                                     </StackPanel>
                                 </Button>
                             </StackPanel>
@@ -456,25 +456,25 @@
                 <!-- 3. EXTENSIBILITY API CHEATSHEET -->
                 <Border Background="{DynamicResource DsSurfaceBrush}"
                         BorderBrush="{DynamicResource DsBorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="10"
-                        Padding="18,16">
-                    <StackPanel Spacing="10">
+                        lt:Tokens.BorderThickness="DsCardBorder"
+                        lt:Tokens.CornerRadius="DsRadiusCard"
+                        lt:Tokens.Padding="DsCardPadding" lt:Tokens.BoxShadow="DsCardShadow">
+                    <StackPanel lt:Tokens.Spacing="DsSpace10">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <materialIcons:MaterialIcon Kind="CodeTags" Width="18" Height="18" Foreground="{DynamicResource DsPrimaryBrush}" />
-                            <TextBlock Text="SCRIPTING QUICK REFERENCE" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                            <TextBlock Text="SCRIPTING QUICK REFERENCE" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" lt:Tokens.LetterSpacing="DsTracking080" VerticalAlignment="Center" />
                         </StackPanel>
 
-                        <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10,8">
+                        <Border Background="{DynamicResource DsBgBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="10,8">
                             <StackPanel Spacing="6">
-                                <TextBlock Text="// 1. Live Color Token" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" FontFamily="{DynamicResource DsCodeFontFamily}" />
-                                <TextBlock Text="App.Themes.SetColor(&quot;DsPrimaryBrush&quot;, &quot;#FF5722&quot;);" FontSize="11" Foreground="{DynamicResource DsTextBrush}" FontFamily="{DynamicResource DsCodeFontFamily}" />
+                                <TextBlock Text="// 1. Live Color Token" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" lt:Tokens.FontFamily="DsCodeFontFamily" />
+                                <TextBlock Text="App.Themes.SetColor(&quot;DsPrimaryBrush&quot;, &quot;#FF5722&quot;);" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsTextBrush}" lt:Tokens.FontFamily="DsCodeFontFamily" />
 
-                                <TextBlock Text="// 2. Register Studio Command" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" FontFamily="{DynamicResource DsCodeFontFamily}" Margin="0,4,0,0" />
-                                <TextBlock Text="App.Commands.Register(&quot;run.clean&quot;, &quot;Clean Output&quot;, () =&gt; App.UI.ShowSuccess(&quot;Cleaned&quot;), &quot;Ctrl+Alt+C&quot;);" FontSize="11" Foreground="{DynamicResource DsTextBrush}" FontFamily="{DynamicResource DsCodeFontFamily}" TextWrapping="Wrap" />
+                                <TextBlock Text="// 2. Register Studio Command" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" lt:Tokens.FontFamily="DsCodeFontFamily" Margin="0,4,0,0" />
+                                <TextBlock Text="App.Commands.Register(&quot;run.clean&quot;, &quot;Clean Output&quot;, () =&gt; App.UI.ShowSuccess(&quot;Cleaned&quot;), &quot;Ctrl+Alt+C&quot;);" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsTextBrush}" lt:Tokens.FontFamily="DsCodeFontFamily" TextWrapping="Wrap" />
 
-                                <TextBlock Text="// 3. Execution Interceptor Hook" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" FontFamily="{DynamicResource DsCodeFontFamily}" Margin="0,4,0,0" />
-                                <TextBlock Text="App.Hooks.BeforeScriptRun(ctx =&gt; { if (ctx.Code.Contains(&quot;unsafe&quot;)) ctx.Cancel(&quot;Unsafe blocked&quot;); });" FontSize="11" Foreground="{DynamicResource DsTextBrush}" FontFamily="{DynamicResource DsCodeFontFamily}" TextWrapping="Wrap" />
+                                <TextBlock Text="// 3. Execution Interceptor Hook" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" lt:Tokens.FontFamily="DsCodeFontFamily" Margin="0,4,0,0" />
+                                <TextBlock Text="App.Hooks.BeforeScriptRun(ctx =&gt; { if (ctx.Code.Contains(&quot;unsafe&quot;)) ctx.Cancel(&quot;Unsafe blocked&quot;); });" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsTextBrush}" lt:Tokens.FontFamily="DsCodeFontFamily" TextWrapping="Wrap" />
                             </StackPanel>
                         </Border>
                     </StackPanel>

@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -12,7 +12,7 @@
 
     <Border Background="{DynamicResource DsSurfaceBrush}"
             BorderBrush="{DynamicResource DsBorderBrush}"
-            BorderThickness="0,0,1,0">
+            lt:Tokens.BorderThickness="DsBorderRight">
         <Grid RowDefinitions="*,Auto">
             <!-- Scrollable Categories Rail -->
             <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
@@ -21,9 +21,9 @@
                     <!-- Search Results View (shown when search box has text) -->
                     <StackPanel IsVisible="{Binding HasSearchQuery}" Spacing="4">
                         <TextBlock Text="{Binding FilteredArticles.Count, StringFormat='SEARCH RESULTS ({0})'}"
-                                   FontSize="10"
-                                   FontWeight="Bold"
-                                   LetterSpacing="1.2"
+                                   lt:Tokens.FontSize="DsFontSize100"
+                                   lt:Tokens.FontWeight="DsWeightStrong"
+                                   lt:Tokens.LetterSpacing="DsTracking120"
                                    Foreground="{DynamicResource DsMutedBrush}"
                                    Margin="10,4,10,8" />
 
@@ -35,7 +35,7 @@
                                             Classes="doc-article-item"
                                             Classes.active="{Binding IsSelected}">
                                         <Grid ColumnDefinitions="Auto,*,Auto">
-                                            <Border Grid.Column="0" Width="24" Height="24" CornerRadius="6"
+                                            <Border Grid.Column="0" Width="24" Height="24" lt:Tokens.CornerRadius="DsRadiusMD"
                                                     Background="{DynamicResource DsPrimarySubtleBrush}"
                                                     Margin="0,0,8,0" VerticalAlignment="Center">
                                                 <materialIcons:MaterialIcon Kind="FileDocumentOutline" Width="14" Height="14"
@@ -43,12 +43,12 @@
                                                                             HorizontalAlignment="Center" VerticalAlignment="Center" />
                                             </Border>
                                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
-                                                <TextBlock Text="{Binding Title}" FontSize="12.5" FontWeight="Medium"
+                                                <TextBlock Text="{Binding Title}" lt:Tokens.FontSize="DsFontSize350" lt:Tokens.FontWeight="DsWeightLabel"
                                                            Foreground="{DynamicResource DsTextWhiteBrush}" TextTrimming="CharacterEllipsis" />
-                                                <TextBlock Text="{Binding Subtitle}" FontSize="10.5"
+                                                <TextBlock Text="{Binding Subtitle}" lt:Tokens.FontSize="DsFontSize150"
                                                            Foreground="{DynamicResource DsMutedBrush}" TextTrimming="CharacterEllipsis" />
                                             </StackPanel>
-                                            <TextBlock Grid.Column="2" Text="{Binding ReadingTime}" FontSize="10"
+                                            <TextBlock Grid.Column="2" Text="{Binding ReadingTime}" lt:Tokens.FontSize="DsFontSize100"
                                                        Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" Margin="6,0,2,0" />
                                         </Grid>
                                     </Button>
@@ -59,15 +59,15 @@
                         <Border IsVisible="{Binding !FilteredArticles.Count}"
                                 Background="{DynamicResource DsSurfaceHighBrush}"
                                 BorderBrush="{DynamicResource DsBorderBrush}"
-                                BorderThickness="1"
-                                CornerRadius="8"
-                                Padding="16" Margin="4,8">
+                                lt:Tokens.BorderThickness="DsCardBorder"
+                                lt:Tokens.CornerRadius="DsRadiusLG"
+                                Padding="16" Margin="4,8" lt:Tokens.BoxShadow="DsCardShadow">
                             <StackPanel Spacing="6" HorizontalAlignment="Center">
                                 <materialIcons:MaterialIcon Kind="FileSearchOutline" Width="26" Height="26"
                                                             Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
-                                <TextBlock Text="No matching topics" FontSize="12" FontWeight="SemiBold"
+                                <TextBlock Text="No matching topics" lt:Tokens.FontSize="DsFontSize300" lt:Tokens.FontWeight="DsWeightEmphasis"
                                            Foreground="{DynamicResource DsTextBrush}" HorizontalAlignment="Center" />
-                                <TextBlock Text="Try a different search query" FontSize="10.5"
+                                <TextBlock Text="Try a different search query" lt:Tokens.FontSize="DsFontSize150"
                                            Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
                             </StackPanel>
                         </Border>
@@ -77,9 +77,9 @@
                     <StackPanel IsVisible="{Binding !HasSearchQuery}" Spacing="2">
                         <!-- Section Label: DOCUMENTATION TOPICS (Matches MENU in Manager Sidebar) -->
                         <TextBlock Text="DOCUMENTATION TOPICS"
-                                   FontSize="10"
-                                   FontWeight="Bold"
-                                   LetterSpacing="1.2"
+                                   lt:Tokens.FontSize="DsFontSize100"
+                                   lt:Tokens.FontWeight="DsWeightStrong"
+                                   lt:Tokens.LetterSpacing="DsTracking120"
                                    Foreground="{DynamicResource DsMutedBrush}"
                                    Margin="10,4,10,8" />
 
@@ -96,7 +96,7 @@
                                             <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                                                 <!-- Icon Box: 28x28, CornerRadius 7, translucent colored bg, vibrant icon -->
                                                 <Border Grid.Column="0" Classes="nav-icon-box"
-                                                        Width="28" Height="28" CornerRadius="7"
+                                                        Width="28" Height="28" lt:Tokens.CornerRadius="DsRadiusMD"
                                                         Background="{Binding AccentBgColor}">
                                                     <materialIcons:MaterialIcon Kind="{Binding IconKind}" Width="16" Height="16"
                                                                                 Foreground="{Binding AccentColor}"
@@ -107,8 +107,8 @@
                                                 <TextBlock Grid.Column="1" Text="{Binding Title}"
                                                            Margin="8,0,4,0"
                                                            VerticalAlignment="Center"
-                                                           FontSize="12"
-                                                           FontWeight="Medium"
+                                                           lt:Tokens.FontSize="DsFontSize300"
+                                                           lt:Tokens.FontWeight="DsWeightLabel"
                                                            Foreground="{DynamicResource DsTextWhiteBrush}"
                                                            TextTrimming="CharacterEllipsis" />
 
@@ -116,7 +116,7 @@
                                                 <Border Grid.Column="2" Classes="nexus-badge-pill"
                                                         Background="{Binding AccentBgColor}"
                                                         BorderBrush="{Binding AccentColor}"
-                                                        BorderThickness="1">
+                                                        lt:Tokens.BorderThickness="DsBorderThin">
                                                     <TextBlock Text="{Binding Badge}" Foreground="{Binding AccentColor}" />
                                                 </Border>
 
@@ -135,7 +135,7 @@
                                         <!-- Collapsible Articles under Category with elegant tree guideline -->
                                         <Border IsVisible="{Binding IsExpanded}"
                                                 BorderBrush="{DynamicResource DsBorderBrush}"
-                                                BorderThickness="1,0,0,0"
+                                                lt:Tokens.BorderThickness="DsBorderLeft"
                                                 Margin="22,2,0,6"
                                                 Padding="4,2,0,2">
                                             <ItemsControl ItemsSource="{Binding Articles}">
@@ -149,10 +149,10 @@
                                                                 <materialIcons:MaterialIcon Grid.Column="0" Kind="FileDocumentOutline" Width="14" Height="14"
                                                                                             Foreground="{DynamicResource DsMutedBrush}"
                                                                                             Margin="2,0,8,0" VerticalAlignment="Center" />
-                                                                <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="12"
+                                                                <TextBlock Grid.Column="1" Text="{Binding Title}" lt:Tokens.FontSize="DsFontSize300"
                                                                            VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                                                                 <!-- Active indicator pill on right -->
-                                                                <Border Grid.Column="2" Width="6" Height="6" CornerRadius="3"
+                                                                <Border Grid.Column="2" Width="6" Height="6" lt:Tokens.CornerRadius="DsRadiusXS"
                                                                         Background="{DynamicResource DsPrimaryBrush}"
                                                                         IsVisible="{Binding IsSelected}"
                                                                         VerticalAlignment="Center" Margin="6,0,4,0" />
@@ -174,7 +174,7 @@
             <!-- Bottom Actions Footer (Matches Hub Sidebar Footer) -->
             <Border Grid.Row="1"
                     BorderBrush="{DynamicResource DsBorderBrush}"
-                    BorderThickness="0,1,0,0"
+                    lt:Tokens.BorderThickness="DsBorderTop"
                     Padding="12,12">
                 <StackPanel Spacing="8">
                     <!-- Back to Hub Button -->
@@ -182,7 +182,7 @@
                             Classes="nexus-nav-item"
                             ToolTip.Tip="Return to FrySharp Hub (Esc)">
                         <Grid ColumnDefinitions="Auto,*,Auto">
-                            <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" CornerRadius="7" Background="{DynamicResource NavFrySharpBgBrush}">
+                            <Border Grid.Column="0" Classes="nav-icon-box" Width="28" Height="28" lt:Tokens.CornerRadius="DsRadiusMD" Background="{DynamicResource NavFrySharpBgBrush}">
                                 <materialIcons:MaterialIcon Kind="ArrowLeft" Width="16" Height="16" Foreground="{DynamicResource NavFrySharpFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Border>
                             <TextBlock Grid.Column="1" Text="Return to Hub" Margin="10,0,0,0" VerticalAlignment="Center" />
@@ -192,18 +192,18 @@
                     <!-- Info Card -->
                     <Border Background="{DynamicResource DsSurfaceHighBrush}"
                             BorderBrush="{DynamicResource DsBorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="8"
-                            Padding="10,8">
+                            lt:Tokens.BorderThickness="DsCardBorder"
+                            lt:Tokens.CornerRadius="DsRadiusLG"
+                            Padding="10,8" lt:Tokens.BoxShadow="DsCardShadow">
                         <Grid ColumnDefinitions="Auto,*,Auto">
-                            <Border Grid.Column="0" Width="24" Height="24" CornerRadius="6" Background="{DynamicResource NavDocsBgBrush}">
+                            <Border Grid.Column="0" Width="24" Height="24" lt:Tokens.CornerRadius="DsRadiusMD" Background="{DynamicResource NavDocsBgBrush}">
                                 <materialIcons:MaterialIcon Kind="BookOpenVariantOutline" Width="14" Height="14" Foreground="{DynamicResource NavDocsFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Border>
                             <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" Spacing="1">
-                                <TextBlock Text="Interactive Docs" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
-                                <TextBlock Text=".NET 10 • Roslyn" FontSize="10" Foreground="{DynamicResource DsMutedBrush}" />
+                                <TextBlock Text="Interactive Docs" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                <TextBlock Text=".NET 10 • Roslyn" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsMutedBrush}" />
                             </StackPanel>
-                            <Border Grid.Column="2" Width="7" Height="7" CornerRadius="3.5"
+                            <Border Grid.Column="2" Width="7" Height="7" lt:Tokens.CornerRadius="DsRadiusXS"
                                     Background="{DynamicResource DsGreenBrush}" VerticalAlignment="Center"
                                     ToolTip.Tip="Documentation runtime ready" />
                         </Grid>

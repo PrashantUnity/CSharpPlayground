@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -16,33 +16,33 @@
             <Border Width="460"
                     Background="{DynamicResource DsSurfaceBrush}"
                     BorderBrush="{DynamicResource DsBorderBrush}"
-                    BorderThickness="1"
-                    CornerRadius="14"
-                    BoxShadow="{DynamicResource DsModalShadow}"
+                    lt:Tokens.BorderThickness="DsCardBorder"
+                    lt:Tokens.CornerRadius="DsRadius2XL"
+                    lt:Tokens.BoxShadow="DsModalShadow"
                     Padding="24,22"
                     HorizontalAlignment="Center" VerticalAlignment="Center">
-                <StackPanel Spacing="18">
+                <StackPanel lt:Tokens.Spacing="DsSpace18">
 
                     <!-- Modal Header -->
                     <Grid ColumnDefinitions="Auto,*,Auto">
                         <!-- Type Icon Badge -->
-                        <Border Grid.Column="0" Width="36" Height="36" CornerRadius="8" Margin="0,0,12,0" VerticalAlignment="Center">
+                        <Border Grid.Column="0" Width="36" Height="36" lt:Tokens.CornerRadius="DsRadiusLG" Margin="0,0,12,0" VerticalAlignment="Center">
                             <Panel>
                                 <!-- Notebook Badge -->
-                                <Border Background="{DynamicResource DsJupyterSubtleBrush}" CornerRadius="8"
+                                <Border Background="{DynamicResource DsJupyterSubtleBrush}" lt:Tokens.CornerRadius="DsRadiusLG"
                                         IsVisible="{Binding IsCreatingNotebook}">
                                     <materialIcons:MaterialIcon Kind="NotebookOutline" Width="19" Height="19"
                                                                 Foreground="{DynamicResource DsJupyterBrush}"
                                                                 HorizontalAlignment="Center" VerticalAlignment="Center" />
                                 </Border>
                                 <!-- Script Badge -->
-                                <Border Background="{DynamicResource DsLinqSubtleBrush}" CornerRadius="8"
+                                <Border Background="{DynamicResource DsLinqSubtleBrush}" lt:Tokens.CornerRadius="DsRadiusLG"
                                         IsVisible="{Binding IsCreatingScript}">
-                                    <TextBlock Text="{Binding SelectedCreateLanguage.ShortName, FallbackValue='CS'}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource DsGreenBrush}"
+                                    <TextBlock Text="{Binding SelectedCreateLanguage.ShortName, FallbackValue='CS'}" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsGreenBrush}"
                                                HorizontalAlignment="Center" VerticalAlignment="Center" />
                                 </Border>
                                 <!-- Server Badge -->
-                                <Border Background="{DynamicResource NavServersBgBrush}" CornerRadius="8"
+                                <Border Background="{DynamicResource NavServersBgBrush}" lt:Tokens.CornerRadius="DsRadiusLG"
                                         IsVisible="{Binding IsCreatingServer}">
                                     <materialIcons:MaterialIcon Kind="ServerNetwork" Width="19" Height="19"
                                                                 Foreground="{DynamicResource NavServersFgBrush}"
@@ -53,13 +53,13 @@
 
                         <!-- Title & Subtitle -->
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                            <TextBlock Text="{Binding CreatePromptTitle}" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" />
-                            <TextBlock Text="Set a document title and select workspace folder." FontSize="11" Foreground="{DynamicResource DsMutedBrush}" />
+                            <TextBlock Text="{Binding CreatePromptTitle}" lt:Tokens.FontSize="DsFontSize600" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                            <TextBlock Text="Set a document title and select workspace folder." lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsMutedBrush}" />
                         </StackPanel>
 
                         <!-- Close (X) Button -->
                         <Button Grid.Column="2" Command="{Binding CancelCreatePromptCommand}"
-                                Classes="nexus-btn-ghost" Width="30" Height="30" Padding="0"
+                                Classes="nexus-btn-ghost" Width="30" lt:Tokens.Height="DsControlHeight200" Padding="0"
                                 VerticalAlignment="Center" ToolTip.Tip="Cancel and close">
                             <materialIcons:MaterialIcon Kind="Close" Width="16" Height="16" Foreground="{DynamicResource DsMutedBrush}" />
                         </Button>
@@ -70,7 +70,7 @@
 
                     <!-- Field 1: Document Name -->
                     <StackPanel Spacing="6">
-                        <TextBlock Text="DOCUMENT NAME" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" />
+                        <TextBlock Text="DOCUMENT NAME" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" />
                         <TextBox Text="{Binding NewItemName, Mode=TwoWay}"
                                  Classes="nexus-input">
                             <TextBox.KeyBindings>
@@ -81,7 +81,7 @@
 
                     <!-- Field 2: Script Language (Visible only when creating a script) -->
                     <StackPanel Spacing="6" IsVisible="{Binding IsCreatingScript}">
-                        <TextBlock Text="SCRIPT LANGUAGE &amp; RUNTIME" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" />
+                        <TextBlock Text="SCRIPT LANGUAGE &amp; RUNTIME" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" />
                         <ComboBox ItemsSource="{Binding AvailableCreateLanguages}"
                                   SelectedItem="{Binding SelectedCreateLanguage, Mode=TwoWay}"
                                   HorizontalAlignment="Stretch">
@@ -89,8 +89,8 @@
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                         <materialIcons:MaterialIcon Kind="{Binding IconKind}" Width="15" Height="15" Foreground="{Binding AccentHex}" VerticalAlignment="Center" />
-                                        <TextBlock Text="{Binding DisplayName}" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center" />
-                                        <TextBlock Text="{Binding RuntimeDescription, StringFormat='({0})'}" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding DisplayName}" lt:Tokens.FontSize="DsFontSize350" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding RuntimeDescription, StringFormat='({0})'}" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                     </StackPanel>
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
@@ -99,20 +99,20 @@
 
                     <!-- Field 2: Workspace Location -->
                     <StackPanel Spacing="6">
-                        <TextBlock Text="WORKSPACE LOCATION" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" />
+                        <TextBlock Text="WORKSPACE LOCATION" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" />
                         <Grid ColumnDefinitions="*,Auto">
                             <!-- Location Path Display -->
                             <Border Grid.Column="0"
                                     Background="{DynamicResource DsBgBrush}"
                                     BorderBrush="{DynamicResource DsBorderBrush}"
-                                    BorderThickness="1"
-                                    CornerRadius="8"
+                                    lt:Tokens.BorderThickness="DsBorderThin"
+                                    lt:Tokens.CornerRadius="DsRadiusLG"
                                     Height="38" Padding="12,0" Margin="0,0,8,0">
                                 <Grid ColumnDefinitions="Auto,*">
                                     <materialIcons:MaterialIcon Grid.Column="0" Kind="FolderOutline" Width="16" Height="16"
                                                                 Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
                                     <TextBlock Grid.Column="1" Text="{Binding SelectedFolderDisplay}"
-                                               FontSize="12.5" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center"
+                                               lt:Tokens.FontSize="DsFontSize350" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center"
                                                TextTrimming="CharacterEllipsis"
                                                ToolTip.Tip="{Binding SelectedFolderDisplay}" />
                                 </Grid>
@@ -130,11 +130,11 @@
                         </Grid>
 
                         <!-- Location Warning Callout (if picked outside library root) -->
-                        <Border Background="{DynamicResource DsWarningSubtleBrush}" BorderBrush="{DynamicResource DsWarningBrush}" BorderThickness="1" CornerRadius="8" Padding="10,8" Margin="0,4,0,0"
+                        <Border Background="{DynamicResource DsWarningSubtleBrush}" BorderBrush="{DynamicResource DsWarningBrush}" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusLG" Padding="10,8" Margin="0,4,0,0"
                                 IsVisible="{Binding LocationWarning, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                             <Grid ColumnDefinitions="Auto,*">
                                 <materialIcons:MaterialIcon Grid.Column="0" Kind="AlertCircleOutline" Width="16" Height="16" Foreground="{DynamicResource DsWarningBrush}" VerticalAlignment="Top" Margin="0,1,8,0" />
-                                <TextBlock Grid.Column="1" Text="{Binding LocationWarning}" FontSize="11" Foreground="{DynamicResource DsWarningBrush}" TextWrapping="Wrap" />
+                                <TextBlock Grid.Column="1" Text="{Binding LocationWarning}" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsWarningBrush}" TextWrapping="Wrap" />
                             </Grid>
                         </Border>
                     </StackPanel>

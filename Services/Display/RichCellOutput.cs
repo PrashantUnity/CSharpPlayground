@@ -44,6 +44,7 @@ public class RichCellOutput
     /// <summary>A live control from Display.Control or Display.Animate (charts and visualizers are visuals, not controls).</summary>
     public bool IsControlKind => Kind == CellOutputKind.Control;
     public bool IsInspectorKind => Kind == CellOutputKind.ObjectInspector;
+    public bool IsTableKind => Kind == CellOutputKind.Table && TableResult != null;
     public bool IsVisualKind => Visual != null;
     public bool IsChartKind => Kind == CellOutputKind.Chart;
     public bool IsVisualizerKind => Kind == CellOutputKind.Visualizer;

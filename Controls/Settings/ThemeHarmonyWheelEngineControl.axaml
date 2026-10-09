@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -24,16 +24,16 @@
             <Setter Property="HorizontalContentAlignment" Value="Center" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="Padding" Value="0" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="=0" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="=0" />
             <Setter Property="Cursor" Value="Hand" />
         </Style>
 
         <Style Selector="Button.preset-seed-chip">
             <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadius2XL" />
             <Setter Property="Padding" Value="8,3" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="MinHeight" Value="0" />
@@ -48,20 +48,20 @@
 
     <Border Background="{DynamicResource DsSurfaceBrush}"
             BorderBrush="{DynamicResource DsBorderBrush}"
-            BorderThickness="1"
-            CornerRadius="10"
-            Padding="18,16">
-        <StackPanel Spacing="14">
+            lt:Tokens.BorderThickness="DsCardBorder"
+            lt:Tokens.CornerRadius="DsRadiusCard"
+            lt:Tokens.Padding="DsCardPadding" lt:Tokens.BoxShadow="DsCardShadow">
+        <StackPanel lt:Tokens.Spacing="DsSpace14">
             <!-- Header Bar -->
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <materialIcons:MaterialIcon Kind="CircleSlice8" Width="17" Height="17" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
-                    <TextBlock Text="CLASSICAL COLOR HARMONY &amp; TONAL SYNTHESIS" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                    <TextBlock Text="CLASSICAL COLOR HARMONY &amp; TONAL SYNTHESIS" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" lt:Tokens.LetterSpacing="DsTracking080" VerticalAlignment="Center" />
                 </StackPanel>
-                <Border Grid.Column="2" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="8,3">
+                <Border Grid.Column="2" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusLG" Padding="8,3">
                     <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                        <Border Width="10" Height="10" CornerRadius="5" BorderBrush="{DynamicResource DsBorderSubtleBrush}" BorderThickness="1" Background="{Binding CurrentHueHex, Converter={x:Static common:HexToBrushConverter.Instance}}" VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding SelectedHueDescriptor}" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                        <Border Width="10" Height="10" lt:Tokens.CornerRadius="DsRadiusSM" BorderBrush="{DynamicResource DsBorderSubtleBrush}" lt:Tokens.BorderThickness="DsBorderThin" Background="{Binding CurrentHueHex, Converter={x:Static common:HexToBrushConverter.Instance}}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding SelectedHueDescriptor}" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                     </StackPanel>
                 </Border>
             </Grid>
@@ -69,13 +69,13 @@
             <!-- Configuration Dropdowns & Actions -->
             <Grid ColumnDefinitions="*,180,Auto,Auto">
                 <StackPanel Grid.Column="0" Spacing="5" Margin="0,0,12,0">
-                    <TextBlock Text="Harmony Relationship" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource DsMutedBrush}" />
-                    <ComboBox ItemsSource="{Binding AvailableHarmonyOptions}" SelectedItem="{Binding SelectedHarmonyOption, Mode=TwoWay}" HorizontalAlignment="Stretch" Height="32">
+                    <TextBlock Text="Harmony Relationship" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsMutedBrush}" />
+                    <ComboBox ItemsSource="{Binding AvailableHarmonyOptions}" SelectedItem="{Binding SelectedHarmonyOption, Mode=TwoWay}" HorizontalAlignment="Stretch" lt:Tokens.Height="DsControlHeight300">
                         <ComboBox.ItemTemplate>
                             <DataTemplate x:DataType="settings:HarmonyModeOption">
                                 <Grid ColumnDefinitions="*,Auto">
-                                    <TextBlock Grid.Column="0" Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
-                                    <TextBlock Grid.Column="1" Text="{Binding OffsetLabel}" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" Margin="10,0,0,0" />
+                                    <TextBlock Grid.Column="0" Text="{Binding Title}" lt:Tokens.FontSize="DsFontSize300" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1" Text="{Binding OffsetLabel}" lt:Tokens.FontSize="DsFontSize150" Classes="combo-secondary-text" VerticalAlignment="Center" Margin="10,0,0,0" />
                                 </Grid>
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
@@ -83,31 +83,31 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Spacing="5" Margin="0,0,10,0">
-                    <TextBlock Text="Vision Deficiency Simulation" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource DsMutedBrush}" />
-                    <ComboBox ItemsSource="{Binding AvailableVisionDeficiencyOptions}" SelectedItem="{Binding SelectedVisionDeficiencyOption, Mode=TwoWay}" HorizontalAlignment="Stretch" Height="32">
+                    <TextBlock Text="Vision Deficiency Simulation" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsMutedBrush}" />
+                    <ComboBox ItemsSource="{Binding AvailableVisionDeficiencyOptions}" SelectedItem="{Binding SelectedVisionDeficiencyOption, Mode=TwoWay}" HorizontalAlignment="Stretch" lt:Tokens.Height="DsControlHeight300">
                         <ComboBox.ItemTemplate>
                             <DataTemplate x:DataType="settings:VisionDeficiencyOption">
-                                <TextBlock Text="{Binding Name}" FontSize="11.5" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding Name}" lt:Tokens.FontSize="DsFontSize250" VerticalAlignment="Center" />
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
                     </ComboBox>
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Spacing="5" Margin="0,0,10,0">
-                    <TextBlock Text="Variant" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource DsMutedBrush}" />
-                    <ToggleButton IsChecked="{Binding IsThemeDarkMode, Mode=TwoWay}" Classes="cs-toolbar-outlined" Height="32" Padding="10,0">
+                    <TextBlock Text="Variant" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsMutedBrush}" />
+                    <ToggleButton IsChecked="{Binding IsThemeDarkMode, Mode=TwoWay}" Classes="cs-toolbar-outlined" lt:Tokens.Height="DsControlHeight300" Padding="10,0">
                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="WeatherNight" Width="14" Height="14" VerticalAlignment="Center" />
-                            <TextBlock Text="Dark Mode" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <TextBlock Text="Dark Mode" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                         </StackPanel>
                     </ToggleButton>
                 </StackPanel>
 
                 <StackPanel Grid.Column="3" Spacing="5" VerticalAlignment="Bottom">
-                    <Button Command="{Binding ApplyHarmonicConfigurationCommand}" Classes="cs-toolbar-filled" Height="32" Padding="14,0" ToolTip.Tip="Generate and apply all 120+ dynamic runtime tokens">
+                    <Button Command="{Binding ApplyHarmonicConfigurationCommand}" Classes="cs-toolbar-filled" lt:Tokens.Height="DsControlHeight300" Padding="14,0" ToolTip.Tip="Generate and apply all 120+ dynamic runtime tokens">
                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="Check" Width="14" Height="14" VerticalAlignment="Center" />
-                            <TextBlock Text="Apply Harmony" FontSize="11.5" FontWeight="Bold" VerticalAlignment="Center" />
+                            <TextBlock Text="Apply Harmony" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightStrong" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
                 </StackPanel>
@@ -119,7 +119,7 @@
                     <settingsControls:ColorHarmonyWheelControl HueDegrees="{Binding SelectedHueDegrees, Mode=TwoWay}"
                                                               HarmonyMode="{Binding SelectedHarmonyMode}"
                                                               WheelDiameter="125" HorizontalAlignment="Center" />
-                    <TextBlock Text="Drag wheel or handle" FontSize="9" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
+                    <TextBlock Text="Drag wheel or handle" lt:Tokens.FontSize="DsFontSize075" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Spacing="9" VerticalAlignment="Center">
@@ -128,13 +128,13 @@
                         <Grid ColumnDefinitions="Auto,*,Auto">
                             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                 <materialIcons:MaterialIcon Kind="Eyedropper" Width="14" Height="14" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
-                                <TextBlock Text="Base Hue Angle Spectrum (0° to 360°)" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="Base Hue Angle Spectrum (0° to 360°)" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                             </StackPanel>
-                            <TextBlock Grid.Column="2" Text="{Binding SelectedHueDegrees, StringFormat='{}{0:0}°'}" FontSize="11.5" FontFamily="Cascadia Code, Consolas, monospace" Foreground="{DynamicResource DsPrimaryBrush}" FontWeight="Bold" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="2" Text="{Binding SelectedHueDegrees, StringFormat='{}{0:0}°'}" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource DsPrimaryBrush}" lt:Tokens.FontWeight="DsWeightStrong" VerticalAlignment="Center" />
                         </Grid>
 
                         <Grid Margin="0,2">
-                            <Border Height="10" CornerRadius="5" VerticalAlignment="Center" Margin="6,0" Opacity="0.95">
+                            <Border Height="10" lt:Tokens.CornerRadius="DsRadiusSM" VerticalAlignment="Center" Margin="6,0" Opacity="0.95">
                                 <Border.Background>
                                     <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
                                         <GradientStop Offset="0.000" Color="#FF0000" /><GradientStop Offset="0.166" Color="#FFFF00" /><GradientStop Offset="0.333" Color="#00FF00" />
@@ -150,14 +150,14 @@
                     <Grid ColumnDefinitions="Auto,*,Auto">
                         <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="Pound" Width="14" Height="14" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
-                            <TextBlock Text="Paste Brand Seed Hex:" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="Paste Brand Seed Hex:" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                         </StackPanel>
-                        <TextBox Grid.Column="2" Text="{Binding SeedHexInput, Mode=TwoWay}" PlaceholderText="#RRGGBB" Width="110" Height="26" FontSize="11" FontFamily="Cascadia Code, Consolas, monospace" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Classes="nexus-search-input" />
+                        <TextBox Grid.Column="2" Text="{Binding SeedHexInput, Mode=TwoWay}" PlaceholderText="#RRGGBB" Width="110" lt:Tokens.Height="DsControlHeight100" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontFamily="DsCodeFontFamily" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Classes="nexus-search-input" />
                     </Grid>
 
                     <!-- Quick Pick Harmonic Seed Presets -->
                     <StackPanel Spacing="4">
-                        <TextBlock Text="QUICK INSPIRATION SEEDS" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.5" />
+                        <TextBlock Text="QUICK INSPIRATION SEEDS" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" lt:Tokens.LetterSpacing="DsTracking050" />
                         <ItemsControl ItemsSource="{Binding CuratedSeedPresets}">
                             <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
@@ -166,9 +166,9 @@
                                             CommandParameter="{Binding}" Classes="preset-seed-chip" Margin="0,0,6,6"
                                             ToolTip.Tip="{Binding Description}">
                                         <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-                                            <Border Width="8" Height="8" CornerRadius="4" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1"
+                                            <Border Width="8" Height="8" lt:Tokens.CornerRadius="DsRadiusSM" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin"
                                                     Background="{Binding SeedHex, Converter={x:Static common:HexToBrushConverter.Instance}}" VerticalAlignment="Center" />
-                                            <TextBlock Text="{Binding Name}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
+                                            <TextBlock Text="{Binding Name}" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsTextBrush}" VerticalAlignment="Center" />
                                         </StackPanel>
                                     </Button>
                                 </DataTemplate>
@@ -180,37 +180,37 @@
 
             <!-- Derived Harmony Chords -->
             <StackPanel Spacing="6">
-                <TextBlock Text="DERIVED HARMONY CHORDS" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.6" />
+                <TextBlock Text="DERIVED HARMONY CHORDS" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" lt:Tokens.LetterSpacing="DsTracking060" />
                 <Grid ColumnDefinitions="*,8,*,8,*,8,*">
-                    <Border Grid.Column="0" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="7" Padding="8,6">
+                    <Border Grid.Column="0" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="8,6">
                         <StackPanel Spacing="4">
-                            <Border Height="28" CornerRadius="4" BorderBrush="{DynamicResource DsBorderSubtleBrush}" BorderThickness="1" Background="{Binding ChordCanvasHex, Converter={x:Static common:HexToBrushConverter.Instance}}" />
-                            <TextBlock Text="CANVAS" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
-                            <TextBlock Text="{Binding ChordCanvasHex}" FontSize="10.5" FontFamily="Cascadia Code, Consolas, monospace" Foreground="{DynamicResource DsTextBrush}" HorizontalAlignment="Center" />
+                            <Border Height="28" lt:Tokens.CornerRadius="DsRadiusSM" BorderBrush="{DynamicResource DsBorderSubtleBrush}" lt:Tokens.BorderThickness="DsBorderThin" Background="{Binding ChordCanvasHex, Converter={x:Static common:HexToBrushConverter.Instance}}" />
+                            <TextBlock Text="CANVAS" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
+                            <TextBlock Text="{Binding ChordCanvasHex}" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource DsTextBrush}" HorizontalAlignment="Center" />
                         </StackPanel>
                     </Border>
 
-                    <Border Grid.Column="2" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="7" Padding="8,6">
+                    <Border Grid.Column="2" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="8,6">
                         <StackPanel Spacing="4">
-                            <Border Height="28" CornerRadius="4" BorderBrush="{DynamicResource DsBorderSubtleBrush}" BorderThickness="1" Background="{Binding ChordSurfaceHex, Converter={x:Static common:HexToBrushConverter.Instance}}" />
-                            <TextBlock Text="SURFACE" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
-                            <TextBlock Text="{Binding ChordSurfaceHex}" FontSize="10.5" FontFamily="Cascadia Code, Consolas, monospace" Foreground="{DynamicResource DsTextBrush}" HorizontalAlignment="Center" />
+                            <Border Height="28" lt:Tokens.CornerRadius="DsRadiusSM" BorderBrush="{DynamicResource DsBorderSubtleBrush}" lt:Tokens.BorderThickness="DsBorderThin" Background="{Binding ChordSurfaceHex, Converter={x:Static common:HexToBrushConverter.Instance}}" />
+                            <TextBlock Text="SURFACE" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
+                            <TextBlock Text="{Binding ChordSurfaceHex}" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource DsTextBrush}" HorizontalAlignment="Center" />
                         </StackPanel>
                     </Border>
 
-                    <Border Grid.Column="4" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsPrimaryBorderSubtleBrush}" BorderThickness="1" CornerRadius="7" Padding="8,6">
+                    <Border Grid.Column="4" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsPrimaryBorderSubtleBrush}" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="8,6">
                         <StackPanel Spacing="4">
-                            <Border Height="28" CornerRadius="4" BorderBrush="{DynamicResource DsBorderSubtleBrush}" BorderThickness="1" Background="{Binding ChordPrimaryHex, Converter={x:Static common:HexToBrushConverter.Instance}}" />
-                            <TextBlock Text="PRIMARY" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" HorizontalAlignment="Center" />
-                            <TextBlock Text="{Binding ChordPrimaryHex}" FontSize="10.5" FontFamily="Cascadia Code, Consolas, monospace" Foreground="{DynamicResource DsPrimaryBrush}" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                            <Border Height="28" lt:Tokens.CornerRadius="DsRadiusSM" BorderBrush="{DynamicResource DsBorderSubtleBrush}" lt:Tokens.BorderThickness="DsBorderThin" Background="{Binding ChordPrimaryHex, Converter={x:Static common:HexToBrushConverter.Instance}}" />
+                            <TextBlock Text="PRIMARY" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsPrimaryBrush}" HorizontalAlignment="Center" />
+                            <TextBlock Text="{Binding ChordPrimaryHex}" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource DsPrimaryBrush}" lt:Tokens.FontWeight="DsWeightEmphasis" HorizontalAlignment="Center" />
                         </StackPanel>
                     </Border>
 
-                    <Border Grid.Column="6" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" CornerRadius="7" Padding="8,6">
+                    <Border Grid.Column="6" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="8,6">
                         <StackPanel Spacing="4">
-                            <Border Height="28" CornerRadius="4" BorderBrush="{DynamicResource DsBorderSubtleBrush}" BorderThickness="1" Background="{Binding ChordSecondaryHex, Converter={x:Static common:HexToBrushConverter.Instance}}" />
-                            <TextBlock Text="HARMONY" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
-                            <TextBlock Text="{Binding ChordSecondaryHex}" FontSize="10.5" FontFamily="Cascadia Code, Consolas, monospace" Foreground="{DynamicResource DsTextBrush}" HorizontalAlignment="Center" />
+                            <Border Height="28" lt:Tokens.CornerRadius="DsRadiusSM" BorderBrush="{DynamicResource DsBorderSubtleBrush}" lt:Tokens.BorderThickness="DsBorderThin" Background="{Binding ChordSecondaryHex, Converter={x:Static common:HexToBrushConverter.Instance}}" />
+                            <TextBlock Text="HARMONY" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
+                            <TextBlock Text="{Binding ChordSecondaryHex}" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource DsTextBrush}" HorizontalAlignment="Center" />
                         </StackPanel>
                     </Border>
                 </Grid>
@@ -221,32 +221,32 @@
                 <Grid ColumnDefinitions="Auto,*,Auto">
                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                         <materialIcons:MaterialIcon Kind="Tune" Width="14" Height="14" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
-                        <TextBlock Text="PROCEDURAL HARMONIC TUNING" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.6" VerticalAlignment="Center" />
+                        <TextBlock Text="PROCEDURAL HARMONIC TUNING" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" lt:Tokens.LetterSpacing="DsTracking060" VerticalAlignment="Center" />
                     </StackPanel>
-                    <TextBlock Grid.Column="2" Text="{Binding ContrastStatusSummary}" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="2" Text="{Binding ContrastStatusSummary}" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
                 </Grid>
 
                 <Grid ColumnDefinitions="*,12,*,12,*" Margin="0,2">
                     <StackPanel Grid.Column="0" Spacing="3">
                         <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Grid.Column="0" Text="Saturation Boost" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                            <TextBlock Grid.Column="1" Text="{Binding SaturationBoost, StringFormat='{}{0:0.0}×'}" FontSize="10.5" FontFamily="Cascadia Code, Consolas, monospace" Foreground="{DynamicResource DsTextBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="0" Text="Saturation Boost" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Text="{Binding SaturationBoost, StringFormat='{}{0:0.0}×'}" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource DsTextBrush}" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                         </Grid>
                         <Slider Minimum="0.6" Maximum="1.4" Value="{Binding SaturationBoost, Mode=TwoWay}" Height="22" SmallChange="0.05" />
                     </StackPanel>
 
                     <StackPanel Grid.Column="2" Spacing="3">
                         <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Grid.Column="0" Text="Neutral Tint" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                            <TextBlock Grid.Column="1" Text="{Binding NeutralTint, StringFormat='{}{0:0}%'}" FontSize="10.5" FontFamily="Cascadia Code, Consolas, monospace" Foreground="{DynamicResource DsTextBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="0" Text="Neutral Tint" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Text="{Binding NeutralTint, StringFormat='{}{0:0}%'}" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource DsTextBrush}" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                         </Grid>
                         <Slider Minimum="0" Maximum="30" Value="{Binding NeutralTint, Mode=TwoWay}" Height="22" />
                     </StackPanel>
 
                     <StackPanel Grid.Column="4" Spacing="3">
                         <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Grid.Column="0" Text="Status Pull" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                            <TextBlock Grid.Column="1" Text="{Binding SemanticPull, StringFormat='{}{0:0}%'}" FontSize="10.5" FontFamily="Cascadia Code, Consolas, monospace" Foreground="{DynamicResource DsTextBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="0" Text="Status Pull" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Text="{Binding SemanticPull, StringFormat='{}{0:0}%'}" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource DsTextBrush}" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                         </Grid>
                         <Slider Minimum="0" Maximum="50" Value="{Binding SemanticPull, Mode=TwoWay}" Height="22" />
                     </StackPanel>
@@ -256,12 +256,12 @@
             <!-- 11-Stop Tonal Scales -->
             <StackPanel Spacing="6" Margin="0,4,0,0">
                 <Grid ColumnDefinitions="Auto,*,Auto">
-                    <TextBlock Grid.Column="0" Text="11-STOP TONAL HARMONY SCALES (50 TO 950)" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.6" VerticalAlignment="Center" />
-                    <TextBlock Grid.Column="2" Text="Click swatch to copy" FontSize="10" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="0" Text="11-STOP TONAL HARMONY SCALES (50 TO 950)" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" lt:Tokens.LetterSpacing="DsTracking060" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="2" Text="Click swatch to copy" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                 </Grid>
 
                 <StackPanel Spacing="5">
-                    <Border CornerRadius="6" ClipToBounds="True" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1">
+                    <Border lt:Tokens.CornerRadius="DsRadiusMD" ClipToBounds="True" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin">
                         <ItemsControl ItemsSource="{Binding PrimaryTonalSwatches}">
                             <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
@@ -270,14 +270,14 @@
                                             CommandParameter="{Binding}" Classes="tonal-swatch-btn"
                                             Background="{Binding Hex, Converter={x:Static common:HexToBrushConverter.Instance}}"
                                             ToolTip.Tip="{Binding Hex, StringFormat='Primary {0}'}">
-                                        <TextBlock Text="{Binding Stop}" FontSize="8.5" FontWeight="Bold" Foreground="{Binding ForegroundHex, Converter={x:Static common:HexToBrushConverter.Instance}}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding Stop}" lt:Tokens.FontSize="DsFontSize050" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{Binding ForegroundHex, Converter={x:Static common:HexToBrushConverter.Instance}}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Button>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </Border>
 
-                    <Border CornerRadius="6" ClipToBounds="True" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1">
+                    <Border lt:Tokens.CornerRadius="DsRadiusMD" ClipToBounds="True" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin">
                         <ItemsControl ItemsSource="{Binding NeutralTonalSwatches}">
                             <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
@@ -286,7 +286,7 @@
                                             CommandParameter="{Binding}" Classes="tonal-swatch-btn"
                                             Background="{Binding Hex, Converter={x:Static common:HexToBrushConverter.Instance}}"
                                             ToolTip.Tip="{Binding Hex, StringFormat='Neutral {0}'}">
-                                        <TextBlock Text="{Binding Stop}" FontSize="8.5" FontWeight="Bold" Foreground="{Binding ForegroundHex, Converter={x:Static common:HexToBrushConverter.Instance}}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding Stop}" lt:Tokens.FontSize="DsFontSize050" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{Binding ForegroundHex, Converter={x:Static common:HexToBrushConverter.Instance}}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Button>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
@@ -299,50 +299,50 @@
             <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,6,0,0">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                     <materialIcons:MaterialIcon Kind="ExportVariant" Width="14" Height="14" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
-                    <TextBlock Text="EXPORT / IMPORT DESIGN TOKENS" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" LetterSpacing="0.6" VerticalAlignment="Center" />
+                    <TextBlock Text="EXPORT / IMPORT DESIGN TOKENS" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" lt:Tokens.LetterSpacing="DsTracking060" VerticalAlignment="Center" />
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                    <Button Command="{Binding CopyAvaloniaXamlCommand}" Classes="cs-toolbar-ghost" Height="26" Padding="8,0" ToolTip.Tip="Copy theme as Avalonia ResourceDictionary XAML">
+                    <Button Command="{Binding CopyAvaloniaXamlCommand}" Classes="cs-toolbar-ghost" lt:Tokens.Height="DsControlHeight100" Padding="8,0" ToolTip.Tip="Copy theme as Avalonia ResourceDictionary XAML">
                         <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="Xml" Width="13" Height="13" VerticalAlignment="Center" />
-                            <TextBlock Text="XAML" FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <TextBlock Text="XAML" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
-                    <Button Command="{Binding CopyCssVariablesCommand}" Classes="cs-toolbar-ghost" Height="26" Padding="8,0" ToolTip.Tip="Copy theme as CSS Custom Properties">
+                    <Button Command="{Binding CopyCssVariablesCommand}" Classes="cs-toolbar-ghost" lt:Tokens.Height="DsControlHeight100" Padding="8,0" ToolTip.Tip="Copy theme as CSS Custom Properties">
                         <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="LanguageCss3" Width="13" Height="13" VerticalAlignment="Center" />
-                            <TextBlock Text="CSS" FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <TextBlock Text="CSS" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
-                    <Button Command="{Binding CopyTailwindCommand}" Classes="cs-toolbar-ghost" Height="26" Padding="8,0" ToolTip.Tip="Copy theme as Tailwind CSS v4 @theme directive">
+                    <Button Command="{Binding CopyTailwindCommand}" Classes="cs-toolbar-ghost" lt:Tokens.Height="DsControlHeight100" Padding="8,0" ToolTip.Tip="Copy theme as Tailwind CSS v4 @theme directive">
                         <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="Tailwind" Width="13" Height="13" VerticalAlignment="Center" />
-                            <TextBlock Text="Tailwind" FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <TextBlock Text="Tailwind" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
-                    <Button Command="{Binding CopyDtcgJsonCommand}" Classes="cs-toolbar-ghost" Height="26" Padding="8,0" ToolTip.Tip="Copy theme as W3C DTCG / Figma JSON tokens">
+                    <Button Command="{Binding CopyDtcgJsonCommand}" Classes="cs-toolbar-ghost" lt:Tokens.Height="DsControlHeight100" Padding="8,0" ToolTip.Tip="Copy theme as W3C DTCG / Figma JSON tokens">
                         <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="CodeJson" Width="13" Height="13" VerticalAlignment="Center" />
-                            <TextBlock Text="JSON" FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <TextBlock Text="JSON" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
-                    <Button Command="{Binding CopySwiftUiCommand}" Classes="cs-toolbar-ghost" Height="26" Padding="8,0" ToolTip.Tip="Copy theme as SwiftUI Color extension">
+                    <Button Command="{Binding CopySwiftUiCommand}" Classes="cs-toolbar-ghost" lt:Tokens.Height="DsControlHeight100" Padding="8,0" ToolTip.Tip="Copy theme as SwiftUI Color extension">
                         <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="Apple" Width="13" Height="13" VerticalAlignment="Center" />
-                            <TextBlock Text="SwiftUI" FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <TextBlock Text="SwiftUI" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
-                    <Button Command="{Binding CopyComposeCommand}" Classes="cs-toolbar-ghost" Height="26" Padding="8,0" ToolTip.Tip="Copy theme as Jetpack Compose Color tokens">
+                    <Button Command="{Binding CopyComposeCommand}" Classes="cs-toolbar-ghost" lt:Tokens.Height="DsControlHeight100" Padding="8,0" ToolTip.Tip="Copy theme as Jetpack Compose Color tokens">
                         <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="Android" Width="13" Height="13" VerticalAlignment="Center" />
-                            <TextBlock Text="Compose" FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <TextBlock Text="Compose" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
-                    <Button Command="{Binding ImportDtcgFromClipboardCommand}" Classes="cs-toolbar-outlined" Height="26" Padding="8,0" ToolTip.Tip="Paste and apply W3C DTCG JSON tokens from clipboard">
+                    <Button Command="{Binding ImportDtcgFromClipboardCommand}" Classes="cs-toolbar-outlined" lt:Tokens.Height="DsControlHeight100" Padding="8,0" ToolTip.Tip="Paste and apply W3C DTCG JSON tokens from clipboard">
                         <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="ContentPaste" Width="13" Height="13" VerticalAlignment="Center" />
-                            <TextBlock Text="Import JSON" FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <TextBlock Text="Import JSON" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
                 </StackPanel>

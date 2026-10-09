@@ -211,9 +211,15 @@ public class FryServerViewModelTests
         }
         finally
         {
-            if (System.IO.Directory.Exists(tempDir))
+            try
             {
-                System.IO.Directory.Delete(tempDir, recursive: true);
+                if (System.IO.Directory.Exists(tempDir))
+                {
+                    System.IO.Directory.Delete(tempDir, recursive: true);
+                }
+            }
+            catch (System.IO.IOException)
+            {
             }
         }
     }
@@ -241,9 +247,15 @@ public class FryServerViewModelTests
         }
         finally
         {
-            if (System.IO.Directory.Exists(tempDir))
+            try
             {
-                System.IO.Directory.Delete(tempDir, recursive: true);
+                if (System.IO.Directory.Exists(tempDir))
+                {
+                    System.IO.Directory.Delete(tempDir, recursive: true);
+                }
+            }
+            catch (System.IO.IOException)
+            {
             }
         }
     }

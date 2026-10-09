@@ -7,6 +7,8 @@ using Xunit;
 
 namespace CSharpEditorPlugin.Tests;
 
+// Reads the shared highlighting definitions, which the theme tests recolour: never at the same time as them.
+[Collection("SettingsTests")]
 public class FSharpLanguageTests : IDisposable
 {
     private readonly string _tempDir;

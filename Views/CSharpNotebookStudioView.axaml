@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -26,7 +26,6 @@
             <CornerRadius x:Key="M3ShapeCornerMedium">12</CornerRadius>
             <CornerRadius x:Key="M3ShapeCornerSmall">8</CornerRadius>
             <CornerRadius x:Key="M3ShapeCornerExtraSmall">4</CornerRadius>
-            <CornerRadius x:Key="NotebookTabTopRadius">4,4,0,0</CornerRadius>
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -54,7 +53,7 @@
                     Width="48"
                     Background="{DynamicResource DsSurfaceBrush}"
                     BorderBrush="{DynamicResource DsBorderBrush}"
-                    BorderThickness="0,0,1,0">
+                    lt:Tokens.BorderThickness="DsBorderRight">
                 <Grid RowDefinitions="*,Auto">
                     <!-- Top Activity Tool Buttons -->
                     <StackPanel Grid.Row="0" Spacing="0">
@@ -81,11 +80,11 @@
                                 ToolTip.Tip="Live Variables">
                             <Grid>
                                 <materialIcons:MaterialIcon Kind="CodeBraces" Width="20" Height="20" />
-                                <Border Background="{DynamicResource DsPrimaryBrush}" CornerRadius="7"
+                                <Border Background="{DynamicResource DsPrimaryBrush}" lt:Tokens.CornerRadius="DsRadiusMD"
                                         Height="14" MinHeight="14" MinWidth="14" Padding="3,0"
                                         HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-6,0"
                                         IsVisible="{Binding Variables.Count}">
-                                    <TextBlock Text="{Binding Variables.Count}" FontSize="8.5" FontWeight="Bold"
+                                    <TextBlock Text="{Binding Variables.Count}" lt:Tokens.FontSize="DsFontSize050" lt:Tokens.FontWeight="DsWeightStrong"
                                                HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
                                                Margin="0,1,0,0"
                                                Foreground="{DynamicResource DsTextWhiteBrush}" />
@@ -124,16 +123,16 @@
                     VerticalAlignment="Stretch"
                     Background="{DynamicResource DsSurfaceBrush}"
                     BorderBrush="{DynamicResource DsBorderBrush}"
-                    BorderThickness="0,0,1,0">
+                    lt:Tokens.BorderThickness="DsBorderRight">
                 <Grid RowDefinitions="Auto,*">
                     <!-- SideBar Header -->
                     <Border Grid.Row="0" Height="36"
                             BorderBrush="{DynamicResource DsBorderBrush}"
-                            BorderThickness="0,0,0,1"
+                            lt:Tokens.BorderThickness="DsBorderBottom"
                             Padding="12,0,8,0">
                         <Grid ColumnDefinitions="*,Auto">
                             <TextBlock Grid.Column="0" Text="{Binding SideBarTitle}"
-                                       FontSize="11" FontWeight="SemiBold"
+                                       lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightEmphasis"
                                        Foreground="{DynamicResource DsTextWhiteBrush}"
                                        VerticalAlignment="Center" />
 
@@ -177,7 +176,7 @@
                         <Grid IsVisible="{Binding IsOutlineActive}" RowDefinitions="Auto,*">
                             <Border Grid.Row="0" Background="{DynamicResource DsSurfaceHighBrush}" Height="28" Padding="12,0">
                                 <TextBlock Text="{Binding Cells.Count, StringFormat='{}CELLS ({0})'}"
-                                           FontSize="10.5" FontWeight="SemiBold"
+                                           lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis"
                                            Foreground="{DynamicResource DsMutedBrush}"
                                            VerticalAlignment="Center" />
                             </Border>
@@ -199,11 +198,11 @@
                                             <Button Command="{Binding $parent[UserControl].((notebooks:CSharpNotebookStudioViewModel)DataContext).SelectCellFromOutlineCommand}"
                                                     CommandParameter="{Binding}"
                                                     Background="Transparent"
-                                                    BorderThickness="2,0,0,0"
+                                                    lt:Tokens.BorderThickness="DsBorderAccentLeft"
                                                     BorderBrush="Transparent"
                                                     Classes.selected="{Binding IsSelected}"
                                                     HorizontalAlignment="Stretch"
-                                                    Height="28"
+                                                    lt:Tokens.Height="DsControlHeight150"
                                                     Padding="6,0"
                                                     Cursor="Hand">
                                                 <Grid ColumnDefinitions="Auto,Auto,*">
@@ -223,22 +222,22 @@
                                                                                 Margin="0,0,6,0" />
                                                     <TextBlock Grid.Column="1"
                                                                Text="{Binding ExecutionBadgeText}"
-                                                               FontSize="10.5" FontWeight="Bold"
+                                                               lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightStrong"
                                                                Foreground="{DynamicResource DsPrimaryBrush}"
                                                                VerticalAlignment="Center"
                                                                Margin="0,0,6,0"
                                                                IsVisible="{Binding IsCodeCell}" />
                                                     <TextBlock Grid.Column="2"
                                                                Text="{Binding MarkdownTitle}"
-                                                               FontSize="11"
+                                                               lt:Tokens.FontSize="DsFontSize200"
                                                                Foreground="{DynamicResource DsTextWhiteBrush}"
                                                                TextTrimming="CharacterEllipsis"
                                                                VerticalAlignment="Center"
                                                                IsVisible="{Binding IsMarkdownCell}" />
                                                     <TextBlock Grid.Column="2"
                                                                Text="{Binding Source}"
-                                                               FontSize="11"
-                                                               FontFamily="Consolas, monospace"
+                                                               lt:Tokens.FontSize="DsFontSize200"
+                                                               lt:Tokens.FontFamily="DsCodeFontFamily"
                                                                Foreground="{DynamicResource DsMutedBrush}"
                                                                TextTrimming="CharacterEllipsis"
                                                                VerticalAlignment="Center"
@@ -255,13 +254,13 @@
                             <!-- The side bar title already says LIVE VARIABLES; this line is the count. -->
                             <Border Grid.Row="0" Background="{DynamicResource DsSurfaceHighBrush}" Height="28" Padding="12,0">
                                 <TextBlock Text="{Binding Variables.Count, StringFormat='{}{0} in scope'}"
-                                           FontSize="10.5" FontWeight="SemiBold"
+                                           lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis"
                                            Foreground="{DynamicResource DsMutedBrush}"
                                            VerticalAlignment="Center" />
                             </Border>
                             <TextBlock Grid.Row="1" IsVisible="{Binding !Variables.Count}"
                                        Text="Run a code cell and the variables it defines show up here."
-                                       FontSize="11.5" TextWrapping="Wrap" Margin="12,10"
+                                       lt:Tokens.FontSize="DsFontSize250" TextWrapping="Wrap" Margin="12,10"
                                        Foreground="{DynamicResource DsMutedBrush}" />
                             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                                 <ItemsControl ItemsSource="{Binding Variables}" Margin="8">
@@ -269,18 +268,18 @@
                                         <DataTemplate x:DataType="models:NotebookVariableInfo">
                                             <Border Background="{DynamicResource DsSurfaceHighBrush}"
                                                     BorderBrush="{DynamicResource DsBorderBrush}"
-                                                    BorderThickness="1"
-                                                    CornerRadius="6"
+                                                    lt:Tokens.BorderThickness="DsBorderThin"
+                                                    lt:Tokens.CornerRadius="DsRadiusMD"
                                                     Padding="8,6"
                                                     Margin="0,0,0,6">
                                                 <Grid ColumnDefinitions="Auto,*,Auto">
                                                     <StackPanel Grid.Column="0" Spacing="2">
-                                                        <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="11.5" Foreground="{DynamicResource DsTextWhiteBrush}" />
-                                                        <TextBlock Text="{Binding TypeName}" FontSize="10" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                                        <TextBlock Text="{Binding Name}" lt:Tokens.FontWeight="DsWeightStrong" lt:Tokens.FontSize="DsFontSize250" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                                        <TextBlock Text="{Binding TypeName}" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsPrimaryBrush}" />
                                                     </StackPanel>
                                                     <TextBlock Grid.Column="1"
                                                                Text="{Binding ValueDisplay}"
-                                                               FontSize="11"
+                                                               lt:Tokens.FontSize="DsFontSize200"
                                                                Foreground="{DynamicResource DsMutedBrush}"
                                                                HorizontalAlignment="Right"
                                                                VerticalAlignment="Center"
@@ -303,7 +302,7 @@
                             </Border>
                             <Border Grid.Row="1" Padding="12,2,12,6">
                                 <TextBlock Text="{Binding SearchResultsCount, StringFormat='{}{0} matching cells'}"
-                                           FontSize="10.5"
+                                           lt:Tokens.FontSize="DsFontSize150"
                                            Foreground="{DynamicResource DsMutedBrush}" />
                             </Border>
                             <ItemsControl Grid.Row="2" ItemsSource="{Binding SearchPanelCells}">
@@ -332,10 +331,10 @@
                                                     <StackPanel Orientation="Horizontal" Spacing="6">
                                                         <materialIcons:MaterialIcon Kind="CodeBraces" Width="12" Height="12" Foreground="{DynamicResource DsPrimaryBrush}" IsVisible="{Binding IsCodeCell}" />
                                                         <materialIcons:MaterialIcon Kind="FormatHeaderPound" Width="12" Height="12" Foreground="{DynamicResource NavNotebooksFgBrush}" IsVisible="{Binding IsMarkdownCell}" />
-                                                        <TextBlock Text="{Binding ExecutionBadgeText}" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource DsPrimaryBrush}" IsVisible="{Binding IsCodeCell}" />
-                                                        <TextBlock Text="{Binding LanguageTag}" FontSize="10" Foreground="{DynamicResource DsMutedBrush}" />
+                                                        <TextBlock Text="{Binding ExecutionBadgeText}" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsPrimaryBrush}" IsVisible="{Binding IsCodeCell}" />
+                                                        <TextBlock Text="{Binding LanguageTag}" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsMutedBrush}" />
                                                     </StackPanel>
-                                                    <TextBlock Text="{Binding Source}" FontSize="11" FontFamily="{DynamicResource DsCodeFontFamily}" Foreground="{DynamicResource DsTextWhiteBrush}" TextTrimming="CharacterEllipsis" MaxLines="2" />
+                                                    <TextBlock Text="{Binding Source}" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontFamily="DsCodeFontFamily" Foreground="{DynamicResource DsTextWhiteBrush}" TextTrimming="CharacterEllipsis" MaxLines="2" />
                                                 </StackPanel>
                                             </Button>
                                         </DataTemplate>
@@ -370,7 +369,7 @@
                 <Border Grid.Row="0"
                         Background="{DynamicResource DsSurfaceBrush}"
                         BorderBrush="{DynamicResource DsBorderBrush}"
-                        BorderThickness="0,0,0,1"
+                        lt:Tokens.BorderThickness="DsBorderBottom"
                         Height="36"
                         Padding="6,0,10,0">
                     <Grid>
@@ -435,7 +434,7 @@
                                                             Height="2"
                                                             Background="{DynamicResource NavNotebooksFgBrush}"
                                                             IsVisible="{Binding IsActive}"
-                                                            CornerRadius="2,2,0,0" />
+                                                            lt:Tokens.CornerRadius="DsRadiusXSTop" />
                                                     <Button Grid.Row="1"
                                                             Command="{Binding SelectTabCommand}"
                                                             Background="Transparent"
@@ -449,10 +448,10 @@
                                                             <!-- Tab Title -->
                                                             <TextBlock Classes="tab-title"
                                                                        Text="{Binding Title}"
-                                                                       FontSize="12"
+                                                                       lt:Tokens.FontSize="DsFontSize300"
                                                                        VerticalAlignment="Center" />
                                                             <!-- Unsaved Dot Indicator -->
-                                                            <Border Width="6" Height="6" CornerRadius="3" Background="{DynamicResource DsPrimaryBrush}" IsVisible="{Binding IsModified}" VerticalAlignment="Center" />
+                                                            <Border Width="6" Height="6" lt:Tokens.CornerRadius="DsRadiusXS" Background="{DynamicResource DsPrimaryBrush}" IsVisible="{Binding IsModified}" VerticalAlignment="Center" />
                                                             <!-- Close Tab Button -->
                                                             <Button Command="{Binding CloseTabCommand}"
                                                                     Classes="cell-tool-btn"
@@ -490,14 +489,14 @@
                 <Border Grid.Row="1"
                         Background="{DynamicResource DsSurfaceBrush}"
                         BorderBrush="{DynamicResource DsBorderBrush}"
-                        BorderThickness="0,0,0,1"
+                        lt:Tokens.BorderThickness="DsBorderBottom"
                         Height="26"
                         Padding="16,0">
                     <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*" VerticalAlignment="Center">
                         <!-- Segment 1: Folder -->
                         <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="FolderOutline" Width="13" Height="13" Foreground="{DynamicResource NavNotebooksFgBrush}" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding BreadcrumbFolder}" FontSize="11.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding BreadcrumbFolder}" lt:Tokens.FontSize="DsFontSize250" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                         </StackPanel>
 
                         <!-- Chevron 1 -->
@@ -506,7 +505,7 @@
                         <!-- Segment 2: Document -->
                         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="{Binding ActiveTab.IconKind}" Width="13" Height="13" Foreground="{Binding ActiveTab.IconColor}" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding BreadcrumbDocument}" FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding BreadcrumbDocument}" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightLabel" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                         </StackPanel>
 
                         <!-- Chevron 2 -->
@@ -516,14 +515,14 @@
                         <Border Grid.Column="4"
                                 Background="{DynamicResource DsSurfaceHighBrush}"
                                 BorderBrush="{DynamicResource DsBorderBrush}"
-                                BorderThickness="1"
-                                CornerRadius="4"
+                                lt:Tokens.BorderThickness="DsBorderThin"
+                                lt:Tokens.CornerRadius="DsRadiusSM"
                                 Padding="6,1"
                                 VerticalAlignment="Center">
                             <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-                                <materialIcons:MaterialIcon Kind="{Binding ActiveCellTypeIcon}" Width="11" Height="11" Foreground="{Binding ActiveCellTypeColor}" VerticalAlignment="Center" />
+                                <materialIcons:MaterialIcon Kind="{Binding ActiveCellTypeIcon}" Width="11" Height="11" common:ThemeBrush.Foreground="{Binding ActiveCellTypeColorKey}" VerticalAlignment="Center" />
                                 <TextBlock Text="{Binding ActiveCellBadgeText}"
-                                           FontSize="11"
+                                           lt:Tokens.FontSize="DsFontSize200"
                                            Foreground="{DynamicResource DsTextWhiteBrush}"
                                            VerticalAlignment="Center"
                                            TextTrimming="CharacterEllipsis"
@@ -540,7 +539,7 @@
                         common:CompactWhenCrowded.IsEnabled="True"
                         Background="{DynamicResource DsSurfaceBrush}"
                         BorderBrush="{DynamicResource DsBorderBrush}"
-                        BorderThickness="0,0,0,1"
+                        lt:Tokens.BorderThickness="DsBorderBottom"
                         Height="38"
                         Padding="14,0">
                     <Grid ColumnDefinitions="Auto,*,Auto">
@@ -549,24 +548,24 @@
                             <!-- Segmented Pill for Cell Creation (+ Code & + Markdown) -->
                             <Border Background="{DynamicResource DsSurfaceHighBrush}"
                                     BorderBrush="{DynamicResource DsBorderBrush}"
-                                    BorderThickness="1"
-                                    CornerRadius="6"
+                                    lt:Tokens.BorderThickness="DsBorderThin"
+                                    lt:Tokens.CornerRadius="DsRadiusMD"
                                     Padding="2"
                                     VerticalAlignment="Center">
                                 <StackPanel Orientation="Horizontal" Spacing="2">
                                     <!-- + Code -->
-                                    <Button Command="{Binding AddCodeCellCommand}" Classes="nb-action-btn" Height="26" Padding="8,0" ToolTip.Tip="Add Code Cell (Ctrl+Shift+Enter)">
+                                    <Button Command="{Binding AddCodeCellCommand}" Classes="nb-action-btn" lt:Tokens.Height="DsControlHeight100" Padding="8,0" ToolTip.Tip="Add Code Cell (Ctrl+Shift+Enter)">
                                         <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                                             <materialIcons:MaterialIcon Kind="Plus" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" />
-                                            <TextBlock Text="Code" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                            <TextBlock Text="Code" lt:Tokens.FontSize="DsFontSize300" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                                         </StackPanel>
                                     </Button>
 
                                     <!-- + Markdown -->
-                                    <Button Command="{Binding AddMarkdownCellCommand}" Classes="nb-action-btn" Height="26" Padding="8,0" ToolTip.Tip="Add Markdown Cell">
+                                    <Button Command="{Binding AddMarkdownCellCommand}" Classes="nb-action-btn" lt:Tokens.Height="DsControlHeight100" Padding="8,0" ToolTip.Tip="Add Markdown Cell">
                                         <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                                             <materialIcons:MaterialIcon Kind="Plus" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" />
-                                            <TextBlock Text="Markdown" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                            <TextBlock Text="Markdown" lt:Tokens.FontSize="DsFontSize300" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                                         </StackPanel>
                                     </Button>
                                 </StackPanel>
@@ -578,7 +577,7 @@
                             <Button Command="{Binding RunAllCellsCommand}" IsVisible="{Binding !IsExecuting}" Classes="nb-action-btn" ToolTip.Tip="Run All Cells (Linear Sequence)">
                                 <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="Play" Width="13" Height="13" Foreground="{DynamicResource DsGreenBrush}" />
-                                    <TextBlock Text="Run All" Classes="toolbar-label" FontSize="12" FontWeight="Medium" VerticalAlignment="Center" />
+                                    <TextBlock Text="Run All" Classes="toolbar-label" lt:Tokens.FontSize="DsFontSize300" lt:Tokens.FontWeight="DsWeightLabel" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
 
@@ -586,7 +585,7 @@
                             <Button Command="{Binding InterruptExecutionCommand}" IsVisible="{Binding IsExecuting}" Classes="nb-action-btn" ToolTip.Tip="Stop / Interrupt Execution (Shift+F5)">
                                 <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="Stop" Width="13" Height="13" Foreground="{DynamicResource DsErrorBrush}" />
-                                    <TextBlock Text="Stop" Classes="toolbar-label" FontSize="12" FontWeight="Medium" Foreground="{DynamicResource DsErrorBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="Stop" Classes="toolbar-label" lt:Tokens.FontSize="DsFontSize300" lt:Tokens.FontWeight="DsWeightLabel" Foreground="{DynamicResource DsErrorBrush}" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
 
@@ -594,7 +593,7 @@
                             <Button Command="{Binding RestartKernelCommand}" Classes="nb-action-btn" ToolTip.Tip="Restart Kernel &amp; Reset Variables">
                                 <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="Restart" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" />
-                                    <TextBlock Text="Restart" Classes="toolbar-label" FontSize="12" FontWeight="Medium" VerticalAlignment="Center" />
+                                    <TextBlock Text="Restart" Classes="toolbar-label" lt:Tokens.FontSize="DsFontSize300" lt:Tokens.FontWeight="DsWeightLabel" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
 
@@ -602,7 +601,7 @@
                             <Button Command="{Binding ClearAllOutputsCommand}" Classes="nb-action-btn" ToolTip.Tip="Clear All Cell Outputs">
                                 <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="CloseBoxOutline" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" />
-                                    <TextBlock Text="Clear Outputs" Classes="toolbar-label" FontSize="12" FontWeight="Medium" VerticalAlignment="Center" />
+                                    <TextBlock Text="Clear Outputs" Classes="toolbar-label" lt:Tokens.FontSize="DsFontSize300" lt:Tokens.FontWeight="DsWeightLabel" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
 
@@ -662,7 +661,7 @@
                                 </Button.Flyout>
                                 <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="ArrowCollapseVertical" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" />
-                                    <TextBlock Text="Collapse" Classes="toolbar-label" FontSize="12" FontWeight="Medium" VerticalAlignment="Center" />
+                                    <TextBlock Text="Collapse" Classes="toolbar-label" lt:Tokens.FontSize="DsFontSize300" lt:Tokens.FontWeight="DsWeightLabel" VerticalAlignment="Center" />
                                     <materialIcons:MaterialIcon Kind="MenuDown" Width="11" Height="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
@@ -673,7 +672,7 @@
                             <Button Command="{Binding ToggleOutlineCommand}" Classes="nb-action-btn" ToolTip.Tip="Toggle Notebook Outline">
                                 <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="FormatListBulleted" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" />
-                                    <TextBlock Text="Outline" Classes="toolbar-label" FontSize="12" FontWeight="Medium" VerticalAlignment="Center" />
+                                    <TextBlock Text="Outline" Classes="toolbar-label" lt:Tokens.FontSize="DsFontSize300" lt:Tokens.FontWeight="DsWeightLabel" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
 
@@ -681,9 +680,9 @@
                             <Button Command="{Binding ToggleVariableInspectorCommand}" Classes="nb-action-btn" ToolTip.Tip="Toggle Live Variable Inspector">
                                 <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="CodeBraces" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" />
-                                    <TextBlock Text="Variables" Classes="toolbar-label" FontSize="12" FontWeight="Medium" VerticalAlignment="Center" />
-                                    <Border Background="{DynamicResource DsPrimaryBrush}" CornerRadius="8" Height="16" MinHeight="16" MinWidth="16" Padding="4,0" VerticalAlignment="Center" Margin="2,0,0,0">
-                                        <TextBlock Text="{Binding Variables.Count}" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Margin="0,1,0,0" />
+                                    <TextBlock Text="Variables" Classes="toolbar-label" lt:Tokens.FontSize="DsFontSize300" lt:Tokens.FontWeight="DsWeightLabel" VerticalAlignment="Center" />
+                                    <Border Background="{DynamicResource DsPrimaryBrush}" lt:Tokens.CornerRadius="DsRadiusLG" Height="16" MinHeight="16" MinWidth="16" Padding="4,0" VerticalAlignment="Center" Margin="2,0,0,0">
+                                        <TextBlock Text="{Binding Variables.Count}" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Margin="0,1,0,0" />
                                     </Border>
                                 </StackPanel>
                             </Button>
@@ -692,7 +691,7 @@
                             <Button Command="{Binding SaveCommand}" Classes="nb-action-btn" ToolTip.Tip="Save Notebook (Ctrl+S)">
                                 <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="ContentSaveOutline" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" />
-                                    <TextBlock Text="Save" Classes="toolbar-label" FontSize="12" FontWeight="Medium" VerticalAlignment="Center" />
+                                    <TextBlock Text="Save" Classes="toolbar-label" lt:Tokens.FontSize="DsFontSize300" lt:Tokens.FontWeight="DsWeightLabel" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
                         </StackPanel>
@@ -702,9 +701,9 @@
                             <Button Classes="nb-action-btn"
                                     Background="{DynamicResource DsSurfaceHighBrush}"
                                     BorderBrush="{DynamicResource DsBorderBrush}"
-                                    BorderThickness="1"
-                                    CornerRadius="6"
-                                    Height="26"
+                                    lt:Tokens.BorderThickness="DsBorderThin"
+                                    lt:Tokens.CornerRadius="DsRadiusMD"
+                                    lt:Tokens.Height="DsControlHeight100"
                                     Padding="10,0"
                                     VerticalAlignment="Center"
                                     ToolTip.Tip="{Binding KernelName}">
@@ -712,22 +711,22 @@
                                     <Flyout Placement="BottomEdgeAlignedRight" FlyoutPresenterClasses="ide-menu-flyout">
                                         <StackPanel Spacing="3" MinWidth="270" MaxWidth="320">
                                             <!-- Section 1: Active Runtimes in this notebook -->
-                                            <TextBlock Text="ACTIVE RUNTIMES" FontSize="9.5" FontWeight="Bold" LetterSpacing="0.5"
+                                            <TextBlock Text="ACTIVE RUNTIMES" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" lt:Tokens.LetterSpacing="DsTracking050"
                                                        Margin="8,4,8,2" Foreground="{DynamicResource DsMutedBrush}" Opacity="0.75" />
                                             <ItemsControl ItemsSource="{Binding ActiveKernels}">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate x:DataType="notebooks:NotebookKernelStatusItem">
-                                                        <Border Padding="8,4" Margin="0,1" CornerRadius="4"
+                                                        <Border Padding="8,4" Margin="0,1" lt:Tokens.CornerRadius="DsRadiusSM"
                                                                 Background="{DynamicResource DsSurfaceHighBrush}">
                                                             <Grid ColumnDefinitions="22,*,Auto">
                                                                 <materialIcons:MaterialIcon Grid.Column="0" Kind="{Binding IconKind}" Width="14" Height="14"
                                                                                             Foreground="{Binding AccentHex}" VerticalAlignment="Center" />
-                                                                <TextBlock Grid.Column="1" Text="{Binding DisplayName}" FontSize="11.5" FontWeight="Medium"
+                                                                <TextBlock Grid.Column="1" Text="{Binding DisplayName}" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightLabel"
                                                                             Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" Margin="6,0,8,0" />
                                                                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                                                    <Border Width="6" Height="6" CornerRadius="3"
+                                                                    <Border Width="6" Height="6" lt:Tokens.CornerRadius="DsRadiusXS"
                                                                             Background="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
-                                                                    <TextBlock Text="{Binding StatusText}" FontSize="10"
+                                                                    <TextBlock Text="{Binding StatusText}" lt:Tokens.FontSize="DsFontSize100"
                                                                                Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                                                 </StackPanel>
                                                             </Grid>
@@ -739,7 +738,7 @@
                                             <Separator Margin="4,3" Background="{DynamicResource DsBorderBrush}" Height="1" />
 
                                             <!-- Section 2: Default Language for new cells -->
-                                            <TextBlock Text="DEFAULT LANGUAGE FOR NEW CELLS" FontSize="9.5" FontWeight="Bold" LetterSpacing="0.5"
+                                            <TextBlock Text="DEFAULT LANGUAGE FOR NEW CELLS" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" lt:Tokens.LetterSpacing="DsTracking050"
                                                        Margin="8,2,8,2" Foreground="{DynamicResource DsMutedBrush}" Opacity="0.75" />
                                             <ItemsControl ItemsSource="{Binding ActiveTab.DefaultLanguageChoices}">
                                                 <ItemsControl.ItemTemplate>
@@ -751,18 +750,18 @@
                                                                 <materialIcons:MaterialIcon Grid.Column="0" Kind="{Binding IconKind}" Width="14" Height="14"
                                                                                             Foreground="{Binding AccentHex}" VerticalAlignment="Center" />
                                                                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="6,0,8,0" Spacing="1">
-                                                                    <TextBlock Text="{Binding Label}" FontSize="11.5" FontWeight="SemiBold"
+                                                                    <TextBlock Text="{Binding Label}" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightEmphasis"
                                                                                Foreground="{DynamicResource DsTextWhiteBrush}" />
-                                                                    <TextBlock Text="{Binding Detail}" FontSize="9.5"
+                                                                    <TextBlock Text="{Binding Detail}" lt:Tokens.FontSize="DsFontSize075"
                                                                                Foreground="{DynamicResource DsMutedBrush}"
                                                                                IsVisible="{Binding !!Detail}"
                                                                                TextTrimming="CharacterEllipsis" />
                                                                 </StackPanel>
                                                                 <Border Grid.Column="2" Background="{DynamicResource DsSurfaceHoverBrush}"
-                                                                        CornerRadius="3" Padding="4,1" VerticalAlignment="Center" Margin="0,0,4,0"
+                                                                        lt:Tokens.CornerRadius="DsRadiusXS" Padding="4,1" VerticalAlignment="Center" Margin="0,0,4,0"
                                                                         IsVisible="{Binding !!Directive}">
-                                                                    <TextBlock Text="{Binding Directive}" FontSize="9"
-                                                                               FontFamily="Consolas, Menlo, Monaco, Courier New, monospace"
+                                                                    <TextBlock Text="{Binding Directive}" lt:Tokens.FontSize="DsFontSize075"
+                                                                               lt:Tokens.FontFamily="DsCodeFontFamily"
                                                                                Foreground="{DynamicResource DsMutedBrush}" />
                                                                 </Border>
                                                                 <materialIcons:MaterialIcon Grid.Column="3" Kind="Check" Width="13" Height="13"
@@ -784,9 +783,9 @@
                                                     <materialIcons:MaterialIcon Grid.Column="0" Kind="Restart" Width="14" Height="14"
                                                                                 Foreground="{DynamicResource DsWarningBrush}" VerticalAlignment="Center" />
                                                     <StackPanel Grid.Column="1" Margin="6,0,0,0" VerticalAlignment="Center" Spacing="1">
-                                                        <TextBlock Text="Restart all notebook kernels" FontSize="11.5" FontWeight="SemiBold"
+                                                        <TextBlock Text="Restart all notebook kernels" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightEmphasis"
                                                                    Foreground="{DynamicResource DsWarningBrush}" />
-                                                        <TextBlock Text="Reset runtime state and clear variables" FontSize="9.5"
+                                                        <TextBlock Text="Reset runtime state and clear variables" lt:Tokens.FontSize="DsFontSize075"
                                                                    Foreground="{DynamicResource DsMutedBrush}" />
                                                     </StackPanel>
                                                 </Grid>
@@ -797,13 +796,13 @@
                                 <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                     <materialIcons:MaterialIcon Kind="FlaskOutline" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
                                     <TextBlock Text="{Binding KernelName}"
-                                               FontSize="11.5"
-                                               FontWeight="SemiBold"
+                                               lt:Tokens.FontSize="DsFontSize250"
+                                               lt:Tokens.FontWeight="DsWeightEmphasis"
                                                Foreground="{DynamicResource DsTextWhiteBrush}"
                                                VerticalAlignment="Center"
                                                MaxWidth="240"
                                                TextTrimming="CharacterEllipsis" />
-                                    <Border Width="6" Height="6" CornerRadius="3" Background="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" Margin="2,0,0,0" ToolTip.Tip="Kernel: Ready" />
+                                    <Border Width="6" Height="6" lt:Tokens.CornerRadius="DsRadiusXS" Background="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" Margin="2,0,0,0" ToolTip.Tip="Kernel: Ready" />
                                     <materialIcons:MaterialIcon Kind="MenuDown" Width="11" Height="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
@@ -829,7 +828,7 @@
                                                                      VerticalScrollBarVisibility="Auto">
                                     <!-- Side margins only: the top and bottom gaps are the header and footer rows. A vertical margin
                                          here would shrink the area the virtualizing panel fills. -->
-                                    <ItemsPresenter Margin="24,0,36,0" ItemsPanel="{TemplateBinding ItemsPanel}" />
+                                    <ItemsPresenter Margin="8,0,20,0" ItemsPanel="{TemplateBinding ItemsPanel}" />
                                 </controls1:NotebookCanvasScrollViewer>
                             </ControlTemplate>
                         </ItemsControl.Template>
@@ -842,7 +841,7 @@
 
                             <!-- Top Insert Divider (before first cell) -->
                             <DataTemplate DataType="notebooks:NotebookCanvasHeader" x:DataType="notebooks:NotebookCanvasHeader">
-                            <Border Classes="cell-insert-divider" Margin="56,16,0,8">
+                            <Border Classes="cell-insert-divider" Margin="36,8,0,6">
                                 <Grid HorizontalAlignment="Stretch" VerticalAlignment="Center">
                                     <Rectangle Classes="divider-line" Height="1" Fill="{DynamicResource DsBorderBrush}" VerticalAlignment="Center" HorizontalAlignment="Stretch" />
                                     <StackPanel Classes="insert-pill-group" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -850,14 +849,14 @@
                                                 Classes="insert-cell-pill" ToolTip.Tip="Insert Code Cell at Beginning">
                                             <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                                 <materialIcons:MaterialIcon Kind="Plus" Width="11" Height="11" Foreground="{DynamicResource DsPrimaryBrush}" />
-                                                <TextBlock Text="Code" FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                                <TextBlock Text="Code" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                                             </StackPanel>
                                         </Button>
                                         <Button Command="{Binding $parent[UserControl].((notebooks:CSharpNotebookStudioViewModel)DataContext).AddMarkdownCellCommand}"
                                                 Classes="insert-cell-pill" ToolTip.Tip="Insert Markdown Cell at Beginning">
                                             <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                                 <materialIcons:MaterialIcon Kind="Plus" Width="11" Height="11" Foreground="{DynamicResource DsPrimaryBrush}" />
-                                                <TextBlock Text="Markdown" FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                                <TextBlock Text="Markdown" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                                             </StackPanel>
                                         </Button>
                                     </StackPanel>
@@ -869,10 +868,10 @@
                                     <DataTemplate DataType="notebooks:NotebookCellViewModel" x:DataType="notebooks:NotebookCellViewModel">
                                         <StackPanel Spacing="0">
                                             <!-- 2-Column IDE Cell Layout: Col 0 = Gutter, Col 1 = Unified Cell Card -->
-                                            <Grid ColumnDefinitions="56,*" Margin="0,0,0,0">
+                                            <Grid ColumnDefinitions="36,*" Margin="0,0,0,0">
                                                 <!-- COLUMN 0: LEFT GUTTER (Aligned with Line 1) -->
-                                                <StackPanel Grid.Column="0" Spacing="2" HorizontalAlignment="Right" Margin="0,4,8,0" VerticalAlignment="Top"
-                                                             nb:StickyGutterBehavior.IsEnabled="True">
+                                                <StackPanel Grid.Column="0" Spacing="2" HorizontalAlignment="Right" Margin="0,4,4,0" VerticalAlignment="Top"
+                                                             nb:StickyGutterBehavior.IsEnabled="{Binding IsCodeCell}">
                                                     <!-- Row 1: Gutter Input Fold & Run Button -->
                                                     <StackPanel Orientation="Horizontal" Spacing="2" HorizontalAlignment="Right">
                                                         <Button Command="{Binding ToggleInputCollapseCommand}"
@@ -903,7 +902,7 @@
                                                         <!-- 3px Left Vertical Accent Focus Indicator -->
                                                         <Border Width="3"
                                                                 Background="{DynamicResource DsPrimaryBrush}"
-                                                                CornerRadius="4,0,0,4"
+                                                                lt:Tokens.CornerRadius="DsRadiusSMLeft"
                                                                 HorizontalAlignment="Left"
                                                                 VerticalAlignment="Stretch"
                                                                 IsVisible="{Binding IsSelected}" />
@@ -913,8 +912,8 @@
                                                             <Grid IsVisible="{Binding IsInputVisible}">
                                                                 <!-- Editor Content -->
                                                                 <Panel Margin="6,4,6,4">
-                                                                    <!-- C# Syntax Highlighted Code Editor -->
-                                                                    <editor:BindableTextEditor IsVisible="{Binding IsCodeCell}"
+                                                                    <!-- The source: code in its language, markdown while it is edited (Shift+Enter renders it) -->
+                                                                    <editor:BindableTextEditor IsVisible="{Binding IsSourceEditorVisible}"
                                                                                                  TextContent="{Binding Source, Mode=TwoWay}"
                                                                                                  ExecuteCommand="{Binding RunCellCommand}"
                                                                                                  ExecuteAndNextCommand="{Binding RunCellAndSelectNextCommand}"
@@ -926,18 +925,6 @@
                                                                                            Markdown="{Binding Source}"
                                                                                            FontSize="{Binding ((notebooks:CSharpNotebookStudioViewModel)DataContext).EditorFontSize, RelativeSource={RelativeSource AncestorType=UserControl}, FallbackValue=12.5}" Foreground="{DynamicResource DsTextWhiteBrush}" />
 
-                                                                    <!-- Markdown Edit Mode -->
-                                                                    <TextBox IsVisible="{Binding IsEditingMarkdown}"
-                                                                             Text="{Binding Source, Mode=TwoWay}"
-                                                                             AcceptsReturn="True"
-                                                                             AcceptsTab="True"
-                                                                             Background="Transparent"
-                                                                             BorderThickness="0"
-                                                                             MinHeight="24"
-                                                                             FontSize="{Binding ((notebooks:CSharpNotebookStudioViewModel)DataContext).EditorFontSize, RelativeSource={RelativeSource AncestorType=UserControl}, FallbackValue=13.0}"
-                                                                             Foreground="{DynamicResource DsTextWhiteBrush}"
-                                                                             PlaceholderText="Write markdown documentation (# Header, notes)..."
-                                                                             TextWrapping="Wrap" />
                                                                 </Panel>
 
                                                                 <!-- Floating Action Bar & Language Tag (Top Right Overlay) -->
@@ -950,8 +937,8 @@
                                                                         <!-- Language Tag Chip (C# / MD) -->
                                                                         <Border Background="{DynamicResource DsSurfaceBrush}"
                                                                                 BorderBrush="{DynamicResource DsBorderBrush}"
-                                                                                BorderThickness="1"
-                                                                                CornerRadius="4"
+                                                                                lt:Tokens.BorderThickness="DsBorderThin"
+                                                                                lt:Tokens.CornerRadius="DsRadiusSM"
                                                                                 Padding="6,1"
                                                                                 Height="22"
                                                                                 VerticalAlignment="Center"
@@ -962,8 +949,8 @@
                                                                                                             Foreground="{Binding EffectiveLanguageDefinition.AccentHex, FallbackValue=#8B949E}"
                                                                                                             VerticalAlignment="Center" />
                                                                                 <TextBlock Text="{Binding LanguageTag}"
-                                                                                           FontSize="10"
-                                                                                           FontWeight="SemiBold"
+                                                                                           lt:Tokens.FontSize="DsFontSize100"
+                                                                                           lt:Tokens.FontWeight="DsWeightEmphasis"
                                                                                            Foreground="{DynamicResource DsTextWhiteBrush}"
                                                                                            VerticalAlignment="Center" />
                                                                             </StackPanel>
@@ -973,8 +960,8 @@
                                                                         <Button Classes="cell-lang-chip"
                                                                                 Background="{DynamicResource DsSurfaceBrush}"
                                                                                 BorderBrush="{DynamicResource DsBorderBrush}"
-                                                                                BorderThickness="1"
-                                                                                CornerRadius="4"
+                                                                                lt:Tokens.BorderThickness="DsBorderThin"
+                                                                                lt:Tokens.CornerRadius="DsRadiusSM"
                                                                                 Padding="6,1"
                                                                                 Height="22"
                                                                                 IsVisible="{Binding HasLanguageChoices}"
@@ -982,7 +969,7 @@
                                                                             <Button.Flyout>
                                                                                 <Flyout Placement="BottomEdgeAlignedRight" FlyoutPresenterClasses="ide-menu-flyout">
                                                                                     <StackPanel Spacing="3" MinWidth="260" MaxWidth="300">
-                                                                                        <TextBlock Text="RUN THIS CELL AS" FontSize="9.5" FontWeight="Bold" LetterSpacing="0.5"
+                                                                                        <TextBlock Text="RUN THIS CELL AS" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" lt:Tokens.LetterSpacing="DsTracking050"
                                                                                                    Margin="8,4,8,2" Foreground="{DynamicResource DsMutedBrush}" Opacity="0.75" />
                                                                                         <ItemsControl ItemsSource="{Binding LanguageChoices}">
                                                                                             <ItemsControl.ItemTemplate>
@@ -994,18 +981,18 @@
                                                                                                             <materialIcons:MaterialIcon Grid.Column="0" Kind="{Binding IconKind}" Width="14" Height="14"
                                                                                                                                         Foreground="{Binding AccentHex}" VerticalAlignment="Center" />
                                                                                                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="6,0,8,0" Spacing="1">
-                                                                                                                <TextBlock Text="{Binding Label}" FontSize="11.5" FontWeight="SemiBold"
+                                                                                                                <TextBlock Text="{Binding Label}" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightEmphasis"
                                                                                                                            Foreground="{DynamicResource DsTextWhiteBrush}" />
-                                                                                                                <TextBlock Text="{Binding Detail}" FontSize="9.5"
+                                                                                                                <TextBlock Text="{Binding Detail}" lt:Tokens.FontSize="DsFontSize075"
                                                                                                                            Foreground="{DynamicResource DsMutedBrush}"
                                                                                                                            IsVisible="{Binding !!Detail}"
                                                                                                                            TextTrimming="CharacterEllipsis" />
                                                                                                             </StackPanel>
                                                                                                             <Border Grid.Column="2" Background="{DynamicResource DsSurfaceHoverBrush}"
-                                                                                                                    CornerRadius="3" Padding="4,1" VerticalAlignment="Center" Margin="0,0,4,0"
+                                                                                                                    lt:Tokens.CornerRadius="DsRadiusXS" Padding="4,1" VerticalAlignment="Center" Margin="0,0,4,0"
                                                                                                                     IsVisible="{Binding !!Directive}">
-                                                                                                                <TextBlock Text="{Binding Directive}" FontSize="9"
-                                                                                                                           FontFamily="Consolas, Menlo, Monaco, Courier New, monospace"
+                                                                                                                <TextBlock Text="{Binding Directive}" lt:Tokens.FontSize="DsFontSize075"
+                                                                                                                           lt:Tokens.FontFamily="DsCodeFontFamily"
                                                                                                                            Foreground="{DynamicResource DsMutedBrush}" />
                                                                                                             </Border>
                                                                                                             <materialIcons:MaterialIcon Grid.Column="3" Kind="Check" Width="13" Height="13"
@@ -1026,8 +1013,8 @@
                                                                                                             Foreground="{Binding EffectiveLanguageDefinition.AccentHex, FallbackValue=#58A6FF}"
                                                                                                             VerticalAlignment="Center" />
                                                                                 <TextBlock Text="{Binding EffectiveLanguageDefinition.DisplayName, FallbackValue=C#}"
-                                                                                            FontSize="10.5"
-                                                                                            FontWeight="SemiBold"
+                                                                                            lt:Tokens.FontSize="DsFontSize150"
+                                                                                            lt:Tokens.FontWeight="DsWeightEmphasis"
                                                                                             Foreground="{DynamicResource DsTextWhiteBrush}"
                                                                                             VerticalAlignment="Center" />
                                                                                 <materialIcons:MaterialIcon Kind="ChevronDown" Width="10" Height="10" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
@@ -1041,7 +1028,7 @@
                                                                                 Height="20"
                                                                                 Padding="5,0"
                                                                                 IsVisible="{Binding IsMarkdownCell}">
-                                                                            <TextBlock Text="{Binding MarkdownPreviewButtonText}" FontSize="10" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                                                            <TextBlock Text="{Binding MarkdownPreviewButtonText}" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsPrimaryBrush}" />
                                                                         </Button>
 
                                                                         <!-- Thin Separator -->
@@ -1171,7 +1158,7 @@
                                                                                     </MenuItem>
                                                                                 </MenuFlyout>
                                                                             </Button.Flyout>
-                                                                            <TextBlock Text="..." FontSize="10" FontWeight="Bold" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                                            <TextBlock Text="..." lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                                                         </Button>
                                                                     </StackPanel>
                                                                 </Border>
@@ -1193,20 +1180,20 @@
 
                                                                         <Border Grid.Column="1"
                                                                                 Background="{DynamicResource DsSurfaceHighBrush}"
-                                                                                CornerRadius="3"
+                                                                                lt:Tokens.CornerRadius="DsRadiusXS"
                                                                                 Padding="5,1"
                                                                                 VerticalAlignment="Center"
                                                                                 Margin="0,0,8,0">
                                                                             <TextBlock Text="{Binding LanguageTag}"
-                                                                                       FontSize="10"
-                                                                                       FontWeight="SemiBold"
+                                                                                       lt:Tokens.FontSize="DsFontSize100"
+                                                                                       lt:Tokens.FontWeight="DsWeightEmphasis"
                                                                                        Foreground="{DynamicResource DsMutedBrush}" />
                                                                         </Border>
 
                                                                         <TextBlock Grid.Column="2"
                                                                                    Text="{Binding InputCollapsedSummaryText}"
-                                                                                   FontSize="11.5"
-                                                                                   FontFamily="Consolas, Menlo, Monaco, Cascadia Code, monospace"
+                                                                                   lt:Tokens.FontSize="DsFontSize250"
+                                                                                   lt:Tokens.FontFamily="DsCodeFontFamily"
                                                                                    Foreground="{DynamicResource DsTextWhiteBrush}"
                                                                                    TextTrimming="CharacterEllipsis"
                                                                                    VerticalAlignment="Center" />
@@ -1214,13 +1201,13 @@
                                                                         <Border Grid.Column="3"
                                                                                 Background="{DynamicResource DsSurfaceHighBrush}"
                                                                                 BorderBrush="{DynamicResource DsBorderBrush}"
-                                                                                BorderThickness="1"
-                                                                                CornerRadius="3"
+                                                                                lt:Tokens.BorderThickness="DsBorderThin"
+                                                                                lt:Tokens.CornerRadius="DsRadiusXS"
                                                                                 Padding="6,2"
                                                                                 VerticalAlignment="Center">
                                                                             <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                                                                 <materialIcons:MaterialIcon Kind="UnfoldMoreHorizontal" Width="12" Height="12" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
-                                                                                <TextBlock Text="Expand Input" FontSize="10.5" FontWeight="Medium" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                                                                                <TextBlock Text="Expand Input" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightLabel" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
                                                                             </StackPanel>
                                                                         </Border>
                                                                     </Grid>
@@ -1231,13 +1218,13 @@
                                                             <Border IsVisible="{Binding IsAwaitingInput}"
                                                                     Margin="4,0,4,6"
                                                                     Padding="8,4"
-                                                                    CornerRadius="6"
+                                                                    lt:Tokens.CornerRadius="DsRadiusMD"
                                                                     Background="{DynamicResource DsBgBrush}"
                                                                     BorderBrush="{DynamicResource DsPrimaryBrush}"
-                                                                    BorderThickness="1">
+                                                                    lt:Tokens.BorderThickness="DsBorderThin">
                                                                 <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                                                                     <TextBlock Grid.Column="0" Text="{Binding InputPrompt}"
-                                                                               FontFamily="Consolas, Menlo, Monaco, Cascadia Code, monospace" FontSize="12"
+                                                                               lt:Tokens.FontFamily="DsCodeFontFamily" lt:Tokens.FontSize="DsFontSize300"
                                                                                Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" Margin="0,0,6,0"
                                                                                MaxWidth="360" TextTrimming="CharacterEllipsis" />
                                                                     <TextBox Grid.Column="1"
@@ -1245,7 +1232,7 @@
                                                                              Text="{Binding InputText, Mode=TwoWay}"
                                                                              PasswordChar="•"
                                                                              RevealPassword="{Binding !IsPasswordInput}"
-                                                                             FontFamily="Consolas, Menlo, Monaco, Cascadia Code, monospace" FontSize="12"
+                                                                             lt:Tokens.FontFamily="DsCodeFontFamily" lt:Tokens.FontSize="DsFontSize300"
                                                                              PlaceholderText="Type the input, then Enter"
                                                                              Background="Transparent" BorderThickness="0" MinHeight="22" VerticalContentAlignment="Center">
                                                                         <TextBox.KeyBindings>
@@ -1264,7 +1251,7 @@
                                                             <!-- VS Code Cell Footer Status Bar (Execution count, duration, language) -->
                                                             <Border Background="{DynamicResource DsSurfaceContainerLowestBrush}"
                                                                     BorderBrush="{DynamicResource DsBorderSubtleBrush}"
-                                                                    BorderThickness="0,1,0,0"
+                                                                    lt:Tokens.BorderThickness="DsBorderTop"
                                                                     Padding="8,4"
                                                                     Margin="-6,0,0,0"
                                                                     IsVisible="{Binding IsCodeCell}">
@@ -1272,9 +1259,9 @@
                                                                     <!-- Left: [1] ✓ 0.5s -->
                                                                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                                                         <TextBlock Text="{Binding ExecutionBadgeText}"
-                                                                                   FontFamily="Consolas, Menlo, Monaco, Cascadia Code, monospace"
-                                                                                   FontSize="10.5"
-                                                                                   FontWeight="SemiBold"
+                                                                                   lt:Tokens.FontFamily="DsCodeFontFamily"
+                                                                                   lt:Tokens.FontSize="DsFontSize150"
+                                                                                   lt:Tokens.FontWeight="DsWeightEmphasis"
                                                                                    Foreground="{Binding StatusBadgeForeground}"
                                                                                    VerticalAlignment="Center" />
                                                                         <StackPanel Orientation="Horizontal"
@@ -1284,7 +1271,7 @@
                                                                             <materialIcons:MaterialIcon Kind="Check" Width="10" Height="10" Foreground="{DynamicResource DsGreenBrush}" IsVisible="{Binding !HasError}" VerticalAlignment="Center" />
                                                                             <materialIcons:MaterialIcon Kind="Close" Width="10" Height="10" Foreground="{DynamicResource DsErrorBrush}" IsVisible="{Binding HasError}" VerticalAlignment="Center" />
                                                                             <TextBlock Text="{Binding ExecutionDurationShortText}"
-                                                                                       FontSize="9.5"
+                                                                                       lt:Tokens.FontSize="DsFontSize075"
                                                                                        Foreground="{DynamicResource DsMutedBrush}"
                                                                                        VerticalAlignment="Center" />
                                                                         </StackPanel>
@@ -1293,7 +1280,7 @@
                                                                     <!-- Right: Language name (Python, C#, etc.) -->
                                                                     <TextBlock Grid.Column="2"
                                                                                Text="{Binding EffectiveLanguageDefinition.DisplayName, FallbackValue=C#}"
-                                                                               FontSize="10"
+                                                                               lt:Tokens.FontSize="DsFontSize100"
                                                                                Foreground="{DynamicResource DsMutedBrush}"
                                                                                VerticalAlignment="Center" />
                                                                 </Grid>
@@ -1303,10 +1290,10 @@
                                                 </Border>
                                             </Grid>
 
-                                            <!-- 2. DEDICATED CELL OUTPUT BLOCK (Its own separate row, just like VS Code!) -->
-                                            <Grid ColumnDefinitions="56,*" IsVisible="{Binding HasOutput}" Margin="0,3,0,0">
+                                            <!-- 2-Column IDE Cell Layout: Output Block -->
+                                            <Grid ColumnDefinitions="36,*" IsVisible="{Binding HasOutput}" Margin="0,3,0,0">
                                                 <!-- COLUMN 0: OUTPUT GUTTER (Output options '...' and Output Fold) -->
-                                                <StackPanel Grid.Column="0" Spacing="2" HorizontalAlignment="Right" Margin="0,4,8,0">
+                                                <StackPanel Grid.Column="0" Spacing="2" HorizontalAlignment="Right" Margin="0,4,4,0">
                                                     <!-- Output Options Menu (...) Flyout -->
                                                     <Button Classes="gutter-fold-btn"
                                                             Width="16" Height="16"
@@ -1367,7 +1354,7 @@
                                                                 Classes="insert-cell-pill" ToolTip.Tip="Insert Code Cell Below">
                                                             <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                                                 <materialIcons:MaterialIcon Kind="Plus" Width="11" Height="11" Foreground="{DynamicResource DsPrimaryBrush}" />
-                                                                <TextBlock Text="Code" FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                                                <TextBlock Text="Code" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                                                             </StackPanel>
                                                         </Button>
                                                         <Button Command="{Binding $parent[UserControl].((notebooks:CSharpNotebookStudioViewModel)DataContext).InsertMarkdownCellAfterCommand}"
@@ -1375,7 +1362,7 @@
                                                                 Classes="insert-cell-pill" ToolTip.Tip="Insert Markdown Cell Below">
                                                             <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                                                 <materialIcons:MaterialIcon Kind="Plus" Width="11" Height="11" Foreground="{DynamicResource DsPrimaryBrush}" />
-                                                                <TextBlock Text="Markdown" FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                                                <TextBlock Text="Markdown" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" VerticalAlignment="Center" />
                                                             </StackPanel>
                                                         </Button>
                                                     </StackPanel>
@@ -1397,26 +1384,26 @@
                         Background="{DynamicResource DsBgBrush}"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch">
-                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16" MaxWidth="440">
-                        <Border Width="64" Height="64" CornerRadius="16" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" BorderThickness="1" HorizontalAlignment="Center">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" lt:Tokens.Spacing="DsSpace16" MaxWidth="440">
+                        <Border Width="64" Height="64" lt:Tokens.CornerRadius="DsRadius3XL" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin" HorizontalAlignment="Center">
                             <materialIcons:MaterialIcon Kind="NotebookOutline" Width="32" Height="32" Foreground="{DynamicResource NavNotebooksFgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <StackPanel Spacing="6" HorizontalAlignment="Center">
-                            <TextBlock Text="No Open Notebooks" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" />
+                            <TextBlock Text="No Open Notebooks" lt:Tokens.FontSize="DsFontSize700" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsTextWhiteBrush}" HorizontalAlignment="Center" />
                             <TextBlock Text="Open a notebook from the Explorer sidebar or click below to create a new notebook."
-                                       FontSize="12.5" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center" />
+                                       lt:Tokens.FontSize="DsFontSize350" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center" />
                         </StackPanel>
                         <Button Command="{Binding NewNotebookTabCommand}"
                                 Background="{DynamicResource DsPrimaryBrush}"
                                 Foreground="{DynamicResource DsTextWhiteBrush}"
-                                CornerRadius="6"
-                                Height="34"
+                                lt:Tokens.CornerRadius="DsRadiusMD"
+                                lt:Tokens.Height="DsControlHeight400"
                                 Padding="18,0"
                                 HorizontalAlignment="Center"
                                 Cursor="Hand">
                             <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                 <materialIcons:MaterialIcon Kind="Plus" Width="15" Height="15" Foreground="{DynamicResource DsTextWhiteBrush}" />
-                                <TextBlock Text="New Notebook" FontSize="12.5" FontWeight="SemiBold" />
+                                <TextBlock Text="New Notebook" lt:Tokens.FontSize="DsFontSize350" lt:Tokens.FontWeight="DsWeightEmphasis" />
                             </StackPanel>
                         </Button>
                     </StackPanel>
@@ -1431,15 +1418,15 @@
         <Border Grid.Row="1"
                 Background="{DynamicResource DsSurfaceBrush}"
                 BorderBrush="{DynamicResource DsBorderBrush}"
-                BorderThickness="0,1,0,0"
+                lt:Tokens.BorderThickness="DsBorderTop"
                 Height="24"
                 Padding="12,0">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <!-- Left: Kernel status -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" lt:Tokens.Spacing="DsSpace12" VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                        <Border Width="6" Height="6" CornerRadius="3" Background="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding CompilerStatusText}" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                        <Border Width="6" Height="6" lt:Tokens.CornerRadius="DsRadiusXS" Background="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding CompilerStatusText}" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                     </StackPanel>
 
                     <!-- Running work (opening a notebook, starting the engine) -->
@@ -1447,9 +1434,9 @@
                 </StackPanel>
 
                 <!-- Right: Metadata & Kernel Indicator -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding Cells.Count, StringFormat='{}Cell {0}'}" FontSize="10.5" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding KernelName}" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
+                <StackPanel Grid.Column="2" Orientation="Horizontal" lt:Tokens.Spacing="DsSpace12" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Cells.Count, StringFormat='{}Cell {0}'}" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding KernelName}" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
                 </StackPanel>
             </Grid>
         </Border>

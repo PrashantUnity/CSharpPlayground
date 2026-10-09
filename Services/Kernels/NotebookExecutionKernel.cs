@@ -210,7 +210,7 @@ public class NotebookExecutionKernel : INotebookKernel
             }
         }
 
-        var cleanCode = nugetResult.SanitizedCode;
+        var cleanCode = CellUsingDeclarations.Rewrite(nugetResult.SanitizedCode);
         if (!string.IsNullOrEmpty(sourceId))
         {
             // Keeps line numbers 1:1 with the editor while naming the submission for caller-info attributes
@@ -327,6 +327,13 @@ public class NotebookExecutionKernel : INotebookKernel
         // A handle is a visual the call that returned it has already shown.
         if (returnValue is DisplayHandle)
         {
+            return;
+        }
+
+        // An ECharts chart is shown, unless the cell already showed it (EChart.Line(x).Show() returns the chart).
+        if (returnValue is EChart echart)
+        {
+            if (!echart.IsShown) onRichOutput?.Invoke(echart.ToOutput());
             return;
         }
 

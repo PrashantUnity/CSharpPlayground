@@ -10,6 +10,7 @@ using Xunit;
 
 namespace CSharpEditorPlugin.Tests;
 
+[Collection(ExtensionTestsCollection.Name)]
 public class ExtensibilityCoreTests
 {
     [Fact]
@@ -180,10 +181,17 @@ public class ExtensibilityCoreTests
 
         // Verify Theme -> Hook forwarding
         string? notifiedTheme = null;
-        using (context.Hooks.OnThemeChanged(id => notifiedTheme = id))
+        try
         {
-            context.Theme.ApplyTheme("cyberpunk");
-            Assert.Equal("cyberpunk", notifiedTheme);
+            using (context.Hooks.OnThemeChanged(id => notifiedTheme = id))
+            {
+                context.Theme.ApplyTheme("cyberpunk");
+                Assert.Equal("cyberpunk", notifiedTheme);
+            }
+        }
+        finally
+        {
+            context.Theme.ApplyTheme(BuiltInThemes.DarkPlus.Id);
         }
     }
 

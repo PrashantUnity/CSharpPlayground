@@ -1,4 +1,4 @@
-<Styles xmlns="https://github.com/avaloniaui"
+<Styles xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia">
 
@@ -10,13 +10,13 @@
         <Setter Property="Background" Value="{DynamicResource DsSurfaceBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource DsTextBrush}" />
-        <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="14" />
+        <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
+        <Setter Property="lt:Tokens.CornerRadius" Value="DsRadius2XL" />
         <Setter Property="Height" Value="28" />
         <Setter Property="MinHeight" Value="0" />
         <Setter Property="Padding" Value="10,0,6,0" />
-        <Setter Property="FontSize" Value="11.5" />
-        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="lt:Tokens.FontSize" Value="DsFontSize250" />
+        <Setter Property="lt:Tokens.FontWeight" Value="DsWeightLabel" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Transitions">
@@ -37,7 +37,7 @@
         <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBorderSubtleBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
-        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="lt:Tokens.FontWeight" Value="DsWeightEmphasis" />
     </Style>
     <Style Selector="Button.filter-chip.selected:pointerover /template/ ContentPresenter#PART_ContentPresenter,
                      Button.filter-chip.selected:pressed /template/ ContentPresenter#PART_ContentPresenter">
@@ -50,14 +50,14 @@
         <Setter Property="Height" Value="16" />
         <Setter Property="MinHeight" Value="16" />
         <Setter Property="MinWidth" Value="16" />
-        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusLG" />
         <Setter Property="Padding" Value="5,0" />
         <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="HorizontalAlignment" Value="Center" />
     </Style>
     <Style Selector="Button.filter-chip Border.chip-count > TextBlock">
-        <Setter Property="FontSize" Value="9.5" />
-        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="lt:Tokens.FontSize" Value="DsFontSize075" />
+        <Setter Property="lt:Tokens.FontWeight" Value="DsWeightStrong" />
         <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
         <Setter Property="HorizontalAlignment" Value="Center" />
         <Setter Property="VerticalAlignment" Value="Center" />
@@ -75,42 +75,42 @@
     <Style Selector="Border.search-box">
         <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
-        <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
+        <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusLG" />
     </Style>
     <Style Selector="Border.search-box:pointerover">
         <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
     </Style>
     <Style Selector="Border.search-box:focus-within">
         <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
-        <Setter Property="BoxShadow" Value="0 0 0 1 #332F81F7" />
+        <Setter Property="lt:Tokens.BoxShadow" Value="=0 0 0 1 #332F81F7" />
     </Style>
     <Style Selector="Border.search-box TextBox /template/ Border#PART_BorderElement,
                      Border.search-box TextBox:pointerover /template/ Border#PART_BorderElement,
                      Border.search-box TextBox:focus /template/ Border#PART_BorderElement">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="lt:Tokens.BorderThickness" Value="=0" />
     </Style>
 
     <!-- ── Segmented filters (difficulty, solved status) ─────────────────────── -->
     <Style Selector="Border.segmented">
         <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
-        <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
+        <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusLG" />
         <Setter Property="Padding" Value="2" />
         <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
     <Style Selector="Button.segment">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="lt:Tokens.BorderThickness" Value="=0" />
         <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
-        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusMD" />
         <Setter Property="Height" Value="26" />
         <Setter Property="MinHeight" Value="0" />
         <Setter Property="Padding" Value="10,0" />
-        <Setter Property="FontSize" Value="11.5" />
-        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="lt:Tokens.FontSize" Value="DsFontSize250" />
+        <Setter Property="lt:Tokens.FontWeight" Value="DsWeightLabel" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Transitions">
@@ -128,7 +128,7 @@
     <Style Selector="Button.segment.selected">
         <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
-        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="lt:Tokens.FontWeight" Value="DsWeightStrong" />
     </Style>
     <Style Selector="Button.segment.selected:pointerover /template/ ContentPresenter#PART_ContentPresenter,
                      Button.segment.selected:pressed /template/ ContentPresenter#PART_ContentPresenter">
@@ -138,16 +138,16 @@
 
     <!-- ── Problem table ─────────────────────────────────────────────────────── -->
     <Style Selector="TextBlock.column-label">
-        <Setter Property="FontSize" Value="11" />
-        <Setter Property="FontWeight" Value="Bold" />
-        <Setter Property="LetterSpacing" Value="0.8" />
+        <Setter Property="lt:Tokens.FontSize" Value="DsFontSize200" />
+        <Setter Property="lt:Tokens.FontWeight" Value="DsWeightStrong" />
+        <Setter Property="lt:Tokens.LetterSpacing" Value="DsTracking080" />
         <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
         <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
 
     <Style Selector="Button.column-header">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="lt:Tokens.BorderThickness" Value="=0" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="MinHeight" Value="0" />
         <Setter Property="HorizontalAlignment" Value="Stretch" />
@@ -192,7 +192,7 @@
     <Style Selector="Border.problem-row">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
-        <Setter Property="BorderThickness" Value="0,0,0,1" />
+        <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderBottom" />
         <Setter Property="Transitions">
             <Transitions>
                 <BrushTransition Property="Background" Duration="0:0:0.1" />
@@ -208,7 +208,7 @@
 
     <Style Selector="Button.title-link">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="lt:Tokens.BorderThickness" Value="=0" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="MinHeight" Value="0" />
         <Setter Property="HorizontalAlignment" Value="Left" />
@@ -220,8 +220,8 @@
         <Setter Property="Background" Value="Transparent" />
     </Style>
     <Style Selector="Button.title-link > TextBlock">
-        <Setter Property="FontSize" Value="13" />
-        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="lt:Tokens.FontSize" Value="DsFontSize400" />
+        <Setter Property="lt:Tokens.FontWeight" Value="DsWeightLabel" />
         <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
         <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     </Style>
@@ -232,8 +232,8 @@
 
     <Style Selector="Button.row-action">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="lt:Tokens.BorderThickness" Value="=0" />
+        <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusMD" />
         <Setter Property="Width" Value="28" />
         <Setter Property="Height" Value="28" />
         <Setter Property="MinHeight" Value="0" />
@@ -261,10 +261,10 @@
     <Style Selector="Border.category-pill">
         <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
-        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
         <Setter Property="Height" Value="20" />
         <Setter Property="MinHeight" Value="20" />
-        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusSM" />
         <Setter Property="Padding" Value="8,0" />
         <Setter Property="HorizontalAlignment" Value="Left" />
         <Setter Property="VerticalAlignment" Value="Center" />
@@ -273,7 +273,7 @@
         <Setter Property="Background" Value="{DynamicResource DsSurfaceHoverBrush}" />
     </Style>
     <Style Selector="Border.category-pill > TextBlock">
-        <Setter Property="FontSize" Value="10.5" />
+        <Setter Property="lt:Tokens.FontSize" Value="DsFontSize150" />
         <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
         <Setter Property="TextTrimming" Value="CharacterEllipsis" />
         <Setter Property="HorizontalAlignment" Value="Center" />

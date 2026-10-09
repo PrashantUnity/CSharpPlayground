@@ -386,7 +386,9 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IDisposable
                 portService: new PdfEditorApp.Plugins.CSharpEditor.Services.Server.PortAvailabilityService(),
                 storageService: _storageService,
                 backToHubAction: NavigateToManager,
-                backToHomeAction: NavigateToHome);
+                backToHomeAction: NavigateToHome,
+                openScriptAction: NavigateToCodeStudio,
+                openNotebookAction: NavigateToNotebookStudio);
         }
         else
         {
@@ -503,6 +505,7 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         FlushSettings();
+        DocsViewModel.Dispose();
         Activity.Dispose();
     }
 }

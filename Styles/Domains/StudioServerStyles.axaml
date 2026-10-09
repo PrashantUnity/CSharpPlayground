@@ -1,4 +1,4 @@
-<Styles xmlns="https://github.com/avaloniaui"
+<Styles xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia">
 
@@ -7,7 +7,7 @@
     <!-- Endpoint cells, method dropdowns, route outline, traffic log -->
     <!-- ============================================================ -->
     <Style Selector="Button.method-dropdown-btn">
-            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusSM" />
             <Setter Property="Height" Value="22" />
             <Setter Property="MinHeight" Value="0" />
             <Setter Property="MinWidth" Value="46" />
@@ -27,8 +27,8 @@
     <Style Selector="ToggleButton.cell-action-toggle">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusSM" />
             <Setter Property="Height" Value="22" />
             <Setter Property="MinHeight" Value="0" />
             <Setter Property="Padding" Value="7,0" />
@@ -51,8 +51,8 @@
 
     <Style Selector="ToggleButton.cell-enable-toggle">
             <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="=0" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusSM" />
             <Setter Property="Width" Value="22" />
             <Setter Property="Height" Value="22" />
             <Setter Property="MinWidth" Value="0" />
@@ -81,8 +81,8 @@
     <Style Selector="Button.conflict-pill-btn">
             <Setter Property="Background" Value="{DynamicResource NavPinnedBgBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource NavPinnedFgBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusMD" />
             <Setter Property="Height" Value="26" />
             <Setter Property="MinHeight" Value="0" />
             <Setter Property="Padding" Value="8,0" />
@@ -97,7 +97,7 @@
 
     <Style Selector="ListBox.server-traffic-list">
             <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="=0" />
             <Setter Property="Padding" Value="0" />
         </Style>
 
@@ -108,7 +108,7 @@
         </Style>
 
     <Style Selector="ListBox.server-traffic-list ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="CornerRadius" Value="3" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusXS" />
         </Style>
 
     <Style Selector="ListBox.server-traffic-list ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
@@ -153,9 +153,9 @@
 
     <Style Selector="Button.server-outline-row">
             <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="2,0,0,0" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderAccentLeft" />
             <Setter Property="BorderBrush" Value="Transparent" />
-            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="lt:Tokens.CornerRadius" Value="=0" />
             <Setter Property="Height" Value="28" />
             <Setter Property="MinHeight" Value="0" />
             <Setter Property="Padding" Value="8,0" />
@@ -172,7 +172,7 @@
 
     <Style Selector="Button.server-outline-row /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="2,0,0,0" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderAccentLeft" />
             <Setter Property="BorderBrush" Value="Transparent" />
         </Style>
 
@@ -183,7 +183,7 @@
     <Style Selector="Button.server-outline-row.selected /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="{DynamicResource DsPrimarySubtleBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
-            <Setter Property="BorderThickness" Value="2,0,0,0" />
+            <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderAccentLeft" />
         </Style>
 
 </Styles>

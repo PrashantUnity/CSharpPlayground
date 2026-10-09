@@ -169,7 +169,10 @@ public partial class NotebookCellViewModel : ObservableObject
         _executionTimeText = model.ExecutionTimeText;
         _hasError = model.HasError;
         _hasOutput = model.HasOutput;
-        _isMarkdownPreviewMode = model.IsMarkdownPreviewMode;
+        // A notebook opens with its notes rendered, as in VS Code and Jupyter (a saved "editing" state isn't kept);
+        // an empty markdown cell opens for typing.
+        _isMarkdownPreviewMode = model.IsMarkdownPreviewMode || model.Type == CellType.Markdown && !string.IsNullOrWhiteSpace(model.Source);
+        model.IsMarkdownPreviewMode = _isMarkdownPreviewMode;
         _isInputCollapsed = model.IsInputCollapsed;
         _isOutputCollapsed = model.IsOutputCollapsed;
         _isOutputScrolled = model.IsOutputScrolled;
@@ -273,6 +276,7 @@ public partial class NotebookCellViewModel : ObservableObject
         OnPropertyChanged(nameof(IsMarkdownCell));
         OnPropertyChanged(nameof(LanguageTag));
         OnPropertyChanged(nameof(IsEditingMarkdown));
+        OnPropertyChanged(nameof(IsSourceEditorVisible));
         OnPropertyChanged(nameof(IsViewingMarkdown));
         OnPropertyChanged(nameof(InputCollapsedSummaryText));
         _onModified?.Invoke();
@@ -428,11 +432,15 @@ public partial class NotebookCellViewModel : ObservableObject
     {
         Model.IsMarkdownPreviewMode = value;
         OnPropertyChanged(nameof(IsEditingMarkdown));
+        OnPropertyChanged(nameof(IsSourceEditorVisible));
         OnPropertyChanged(nameof(IsViewingMarkdown));
         OnPropertyChanged(nameof(MarkdownPreviewButtonText));
     }
 
     public bool IsEditingMarkdown => IsMarkdownCell && !IsMarkdownPreviewMode;
+
+    /// <summary>The source is shown in the code editor: a code cell, or a markdown cell being edited.</summary>
+    public bool IsSourceEditorVisible => IsCodeCell || IsEditingMarkdown;
     public bool IsViewingMarkdown => IsMarkdownCell && IsMarkdownPreviewMode;
     public string MarkdownPreviewButtonText => IsViewingMarkdown ? "Edit" : "Preview";
 

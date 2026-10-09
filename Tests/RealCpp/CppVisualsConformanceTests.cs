@@ -82,6 +82,27 @@ public class CppVisualsConformanceTests : IDisposable
         fry::islands(std::vector<std::vector<int>>{{1, 0}, {1, 1}}, "Islands");
         """;
 
+    // The newer chart features (VisualConformanceFixturesTests.ChartFeatureCases), made the way C++ writes them.
+    private const string TheFeatureStatements = """
+        using Named = std::vector<std::pair<std::string, std::vector<int>>>;
+        std::vector<std::string> months{"Jan", "Feb", "Mar"};
+        std::vector<int> rev{40, 55, 48}, costs{30, 35, 38}, margin{25, 36, 21};
+        fry::bar_chart(Named{{"Revenue", rev}, {"Costs", costs}, {"Margin", margin}},
+            fry::ChartStyle().title("Combo").labels(months).y2_axis("Margin %", 0, 100)
+                .series("Margin", fry::SeriesStyle().kind("line").right_axis().dash("dashed")));
+        fry::stacked_bar_chart(Named{{"Revenue", rev}, {"Costs", costs}}, fry::ChartStyle().title("Stacked").labels(months));
+        fry::horizontal_bar_chart(Named{{"Revenue", rev}}, fry::ChartStyle().title("Horizontal").labels(months));
+        fry::line_chart(Named{{"Smooth", rev}, {"Steps", costs}, {"Filled", margin}}, fry::ChartStyle().title("Line styles")
+            .series("Smooth", fry::SeriesStyle().smooth(0.5))
+            .series("Steps", fry::SeriesStyle().step("after").dash("dotted").point_style("star", 6))
+            .series("Filled", fry::SeriesStyle().fill(true).color("#ff8800")));
+        fry::bubble_chart(std::vector<std::vector<double>>{{1, 2, 8}, {2, 4, 12}}, "Bubbles");
+        fry::radar_chart(Named{{"Ada", {8, 6, 9}}, {"Bo", {5, 9, 6}}}, fry::ChartStyle().title("Radar").labels({"Speed", "Power", "Skill"}));
+        fry::polar_area_chart(std::vector<std::pair<std::string, int>>{{"A", 3}, {"B", 5}}, "Polar");
+        fry::donut_chart(std::vector<std::pair<std::string, int>>{{"Done", 70}, {"Left", 30}}, fry::ChartStyle().title("Gauge").gauge());
+        fry::line_chart(Named{{"Growth", {1, 10, 100}}}, fry::ChartStyle().title("Scales").y_scale("log").suggested_y(1, 1000).reverse_x());
+        """;
+
     private static string BuildMainProgram(string statements) => $$"""
         #include <fry/display.hpp>
         #include <vector>
@@ -141,6 +162,28 @@ public class CppVisualsConformanceTests : IDisposable
             OnRichOutput = rich.Add,
         }, CancellationToken.None).WaitAsync(Patience);
         return (result, console.ToString(), rich);
+    }
+
+    [CppFact]
+    public async Task Run_TheChartFeatureCases_DrawAsTheFixturesDo()
+    {
+        var script = Write("features.cpp", BuildMainProgram(TheFeatureStatements));
+        var (session, console, outputs, processor) = await StartRun(script);
+        var result = await session.Completion.WaitAsync(Patience);
+        processor.Flush();
+
+        Assert.True(result.Succeeded, string.Concat(console));
+        Assert.Equal(VisualConformanceFixturesTests.ChartFeatureCases.Length, outputs.Count);
+
+        for (var i = 0; i < VisualConformanceFixturesTests.ChartFeatureCases.Length; i++)
+        {
+            var name = VisualConformanceFixturesTests.ChartFeatureCases[i].Name;
+            var (mime, drawn) = VisualConformanceFixturesTests.Expected(name);
+            var v = outputs[i].Visual;
+            Assert.NotNull(v);
+            Assert.Equal(mime, v.MimeType);
+            Assert.Equal(drawn, VisualConformanceFixturesTests.DrawnAs(mime, VisualJson.SerializeToElement(v.Spec)));
+        }
     }
 
     [CppFact]
@@ -204,7 +247,7 @@ public class CppVisualsConformanceTests : IDisposable
         await WaitUntil(() => outputs.Count == 1 && outputs[0].Visual?.IsInteractive == true);
         outputs[0].Visual!.Raise(VisualEvent.Click(new VisualEventTarget { Series = 0, Index = 1 }));
 
-        await WaitUntil(() => console.Any(c => c.Contains("clicked 1")));
+        await WaitUntil(() => string.Concat(console).Contains("clicked 1"));
         session.Stop();
     }
 

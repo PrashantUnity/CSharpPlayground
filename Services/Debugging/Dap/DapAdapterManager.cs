@@ -121,7 +121,7 @@ public sealed class DapAdapterManager
             {
                 if (managedProcess.HasExited)
                 {
-                    throw new InvalidOperationException($"The {languageId} debug adapter exited (code {managedProcess.Completion.Result}) before the debugger could connect to it. Anything it printed is in the Output.");
+                    throw new DebugAdapterExitedException(languageId, managedProcess.Completion.Result);
                 }
 
                 var attempt = new TcpClient();
@@ -146,7 +146,7 @@ public sealed class DapAdapterManager
             {
                 if (managedProcess.HasExited)
                 {
-                    throw new InvalidOperationException($"The {languageId} debug adapter exited (code {managedProcess.Completion.Result}) before the debugger could connect to it. Anything it printed is in the Output.");
+                    throw new DebugAdapterExitedException(languageId, managedProcess.Completion.Result);
                 }
                 throw new TimeoutException($"Timed out connecting to {languageId} DAP adapter on port {port}.");
             }
@@ -256,9 +256,8 @@ public sealed class DapAdapterManager
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
             await session.DisposeAsync().ConfigureAwait(false);
-            throw new IOException(process is { HasExited: true }
-                ? $"The {languageId} debug adapter exited before the session started (exit code {process.Completion.Result}). Anything it printed is in the Output."
-                : $"The {languageId} debug adapter closed the connection before the session started.");
+            if (process is { HasExited: true }) throw new DebugAdapterExitedException(languageId, process.Completion.Result);
+            throw new IOException($"The {languageId} debug adapter closed the connection before the session started.");
         }
         catch
         {

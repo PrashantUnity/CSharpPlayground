@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -13,15 +13,15 @@
 
     <Border Background="{DynamicResource DsSurfaceBrush}"
             BorderBrush="{DynamicResource DsBorderBrush}"
-            BorderThickness="0,1,0,0"
+            lt:Tokens.BorderThickness="DsBorderTop"
             Height="22"
             Padding="8,1">
         <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
             <!-- Left: Remote Pill & Problems Badge -->
-            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+            <StackPanel Grid.Column="0" Orientation="Horizontal" lt:Tokens.Spacing="DsSpace10" VerticalAlignment="Center">
                 <!-- VS Code Remote-Style Accent Pill -->
-                <Border Background="{DynamicResource DsPrimaryBrush}" CornerRadius="3" Padding="6,1">
-                    <TextBlock Text="&gt;&lt; FrySharp" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                <Border Background="{DynamicResource DsPrimaryBrush}" lt:Tokens.CornerRadius="DsRadiusXS" Padding="6,1">
+                    <TextBlock Text="&gt;&lt; FrySharp" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                 </Border>
 
                 <!-- Git Branch Pill with Branch Switcher Flyout -->
@@ -31,7 +31,7 @@
                         ToolTip.Tip="Checkout or switch Git Branch">
                     <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                         <materialIcons:MaterialIcon Kind="SourceBranch" Width="12" Height="12" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding CurrentGitBranch}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding CurrentGitBranch}" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                     </StackPanel>
                     <Button.Flyout>
                         <Flyout Placement="TopEdgeAlignedLeft">
@@ -47,7 +47,7 @@
                         ToolTip.Tip="Synchronize changes with remote repository">
                     <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                         <materialIcons:MaterialIcon Kind="Sync" Width="11" Height="11" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding SyncStatusText}" FontSize="10" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding SyncStatusText}" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
 
@@ -55,9 +55,9 @@
                 <Button Command="{Binding ShowProblemsTabCommand}" Classes="status-item" ToolTip.Tip="Errors and warnings (Ctrl+Shift+M)">
                     <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                         <materialIcons:MaterialIcon Kind="CloseCircleOutline" Width="12" Height="12" Foreground="{DynamicResource DsErrorBrush}" VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding ErrorCount}" FontSize="10" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding ErrorCount}" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                         <materialIcons:MaterialIcon Kind="AlertOutline" Width="12" Height="12" Foreground="{DynamicResource DsWarningBrush}" VerticalAlignment="Center" Margin="2,0,0,0" />
-                        <TextBlock Text="{Binding WarningCount}" FontSize="10" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding WarningCount}" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
 
@@ -67,13 +67,13 @@
                 <!-- Roslyn Compiler Status -->
                 <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                     <materialIcons:MaterialIcon Kind="CheckCircleOutline" Width="12" Height="12" Foreground="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding CompilerStatusText}" FontSize="10" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding CompilerStatusText}" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                 </StackPanel>
             </StackPanel>
 
             <!-- Center: Execution Time -->
             <TextBlock Grid.Column="1" Text="{Binding ExecutionTimeText, StringFormat='{}⏱ {0}'}"
-                       FontSize="10" Foreground="{DynamicResource DsMutedBrush}"
+                       lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsMutedBrush}"
                        Margin="14,0,0,0" VerticalAlignment="Center"
                        IsVisible="{Binding ExecutionTimeText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
@@ -84,8 +84,8 @@
                         Classes="status-item"
                         ToolTip.Tip="Go to Line/Column (Ctrl+G)">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="{Binding CaretLine, StringFormat='{}Ln {0}'}" FontSize="10" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding CaretColumn, StringFormat='{}, Col {0}'}" FontSize="10" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding CaretLine, StringFormat='{}Ln {0}'}" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding CaretColumn, StringFormat='{}, Col {0}'}" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
 
@@ -93,16 +93,16 @@
                 <Button Command="{Binding ToggleIndentationCommand}"
                         Classes="status-item"
                         ToolTip.Tip="Toggle Indentation (2 vs 4 Spaces)">
-                    <TextBlock Text="{Binding IndentationStatusText}" FontSize="10" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding IndentationStatusText}" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                 </Button>
 
-                <TextBlock Text="UTF-8" FontSize="10" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" Margin="5,0" />
+                <TextBlock Text="UTF-8" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" Margin="5,0" />
 
                 <!-- Zoom Level Indicator / Reset Button -->
                 <Button Command="{Binding ResetZoomCommand}"
                         Classes="status-item"
                         ToolTip.Tip="Editor Font Zoom (Cmd+= / Cmd+- / Cmd+0 / Cmd+Scroll) — Click to reset to 100%">
-                    <TextBlock Text="{Binding ZoomPercentageText}" FontSize="10" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding ZoomPercentageText}" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                 </Button>
 
                 <!-- Language Mode Selector Flyout -->
@@ -119,7 +119,7 @@
                             <MenuItem Header="External .NET SDK (dotnet CLI)" Command="{Binding SetCSharpRunnerCommand}" CommandParameter="external" />
                         </MenuFlyout>
                     </Button.Flyout>
-                    <TextBlock Text="{Binding LanguageModeStatusText}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding LanguageModeStatusText}" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
                 </Button>
 
                 <!-- Toolchain picker (e.g. which Python runs .py files), for a language that runs with an installed toolchain -->
@@ -130,7 +130,7 @@
                     <Button.Flyout>
                         <Flyout Placement="TopEdgeAlignedRight">
                             <StackPanel Spacing="2" MinWidth="300" MaxWidth="460">
-                                <TextBlock Text="Run with" FontSize="11" FontWeight="SemiBold" Margin="8,4,8,2" Foreground="{DynamicResource DsMutedBrush}" />
+                                <TextBlock Text="Run with" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightEmphasis" Margin="8,4,8,2" Foreground="{DynamicResource DsMutedBrush}" />
                                 <ItemsControl ItemsSource="{Binding ToolchainChoices}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
@@ -139,8 +139,8 @@
                                                     <materialIcons:MaterialIcon Grid.Column="0" Kind="Check" Width="13" Height="13" IsVisible="{Binding IsSelected}"
                                                                                 Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
                                                     <StackPanel Grid.Column="1" Spacing="1">
-                                                        <TextBlock Text="{Binding Label}" FontSize="11.5" Foreground="{DynamicResource DsTextWhiteBrush}" />
-                                                        <TextBlock Text="{Binding Detail}" FontSize="10" Foreground="{DynamicResource DsMutedBrush}" TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock Text="{Binding Label}" lt:Tokens.FontSize="DsFontSize250" Foreground="{DynamicResource DsTextWhiteBrush}" />
+                                                        <TextBlock Text="{Binding Detail}" lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsMutedBrush}" TextTrimming="CharacterEllipsis" />
                                                     </StackPanel>
                                                 </Grid>
                                             </Button>
@@ -153,13 +153,13 @@
                                         <DataTemplate>
                                             <Button Command="{Binding Command}" Classes="status-item" Height="NaN" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
                                                     Padding="8,4" ToolTip.Tip="{Binding Description}">
-                                                <TextBlock Text="{Binding Label}" FontSize="11.5" Margin="18,0,0,0" Foreground="{DynamicResource DsPrimaryBrush}" />
+                                                <TextBlock Text="{Binding Label}" lt:Tokens.FontSize="DsFontSize250" Margin="18,0,0,0" Foreground="{DynamicResource DsPrimaryBrush}" />
                                             </Button>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                                 <Button Command="{Binding RefreshToolchainsCommand}" Classes="status-item" Height="NaN" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="8,4">
-                                    <TextBlock Text="Look again for installed toolchains" FontSize="11.5" Margin="18,0,0,0" Foreground="{DynamicResource DsMutedBrush}" />
+                                    <TextBlock Text="Look again for installed toolchains" lt:Tokens.FontSize="DsFontSize250" Margin="18,0,0,0" Foreground="{DynamicResource DsMutedBrush}" />
                                 </Button>
                             </StackPanel>
                         </Flyout>
@@ -167,7 +167,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="4">
                         <materialIcons:MaterialIcon Kind="AlertOutline" Width="12" Height="12" IsVisible="{Binding IsToolchainMissing}"
                                                     Foreground="{DynamicResource DsWarningBrush}" VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding LanguageStatusText}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding LanguageStatusText}" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightEmphasis" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
 

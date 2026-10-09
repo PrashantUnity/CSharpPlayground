@@ -29,6 +29,7 @@ public static class ScriptImports
         "Avalonia.Animation",
         "Avalonia.Controls",
         "Avalonia.Media",
+        "Avalonia.Media.Immutable", // ImmutableSolidColorBrush and ImmutablePen: drawing resources a script can make off the UI thread
         "Avalonia.Media.Imaging",
         "Avalonia.Threading",
 

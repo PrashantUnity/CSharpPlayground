@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -25,9 +25,9 @@
                 Margin="0,50,0,0"
                 Background="{DynamicResource M3SurfaceContainerBrush}"
                 BorderBrush="{DynamicResource M3OutlineVariantBrush}"
-                BorderThickness="1"
-                CornerRadius="10"
-                BoxShadow="{DynamicResource DsModalShadow}"
+                lt:Tokens.BorderThickness="DsBorderThin"
+                lt:Tokens.CornerRadius="DsRadiusXL"
+                lt:Tokens.BoxShadow="DsModalShadow"
                 PointerPressed="OnPaletteCardPointerPressed">
             <Grid RowDefinitions="Auto,Auto,*">
                 <!-- Search Box Header -->
@@ -42,8 +42,8 @@
                              PlaceholderText="{Binding Placeholder}"
                              Background="Transparent"
                              BorderThickness="0"
-                             FontSize="14"
-                             FontFamily="{DynamicResource DsCodeFontFamily}"
+                             lt:Tokens.FontSize="DsFontSize500"
+                             lt:Tokens.FontFamily="DsCodeFontFamily"
                              Foreground="{DynamicResource M3OnSurfaceBrush}"
                              VerticalAlignment="Center"
                              KeyDown="OnSearchBoxKeyDown" />
@@ -79,7 +79,7 @@
                             <DataTemplate x:DataType="models:QuickOpenItem">
                                 <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
                                     <!-- Leading Icon -->
-                                    <Border Grid.Column="0" Width="28" Height="28" CornerRadius="6"
+                                    <Border Grid.Column="0" Width="28" Height="28" lt:Tokens.CornerRadius="DsRadiusMD"
                                             Background="{DynamicResource M3SurfaceContainerHighBrush}"
                                             Margin="0,0,10,0" VerticalAlignment="Center">
                                         <materialIcons:MaterialIcon Kind="{Binding IconKind}"
@@ -92,12 +92,12 @@
                                     <!-- Title and Subtitle -->
                                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
                                         <TextBlock Text="{Binding Title}"
-                                                   FontSize="13"
-                                                   FontWeight="SemiBold"
+                                                   lt:Tokens.FontSize="DsFontSize400"
+                                                   lt:Tokens.FontWeight="DsWeightEmphasis"
                                                    Foreground="{DynamicResource M3OnSurfaceBrush}"
                                                    TextTrimming="CharacterEllipsis" />
                                         <TextBlock Text="{Binding Subtitle}"
-                                                   FontSize="11"
+                                                   lt:Tokens.FontSize="DsFontSize200"
                                                    Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
                                                    TextTrimming="CharacterEllipsis"
                                                    IsVisible="{Binding Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
@@ -106,20 +106,20 @@
                                     <!-- Category & Shortcut Hint Badges -->
                                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="8,0,4,0">
                                         <Border Background="{DynamicResource M3SurfaceContainerHighestBrush}"
-                                                CornerRadius="4" Padding="6,2"
+                                                lt:Tokens.CornerRadius="DsRadiusSM" Padding="6,2"
                                                 IsVisible="{Binding Category, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                                             <TextBlock Text="{Binding Category}"
-                                                       FontSize="10"
-                                                       FontWeight="Medium"
+                                                       lt:Tokens.FontSize="DsFontSize100"
+                                                       lt:Tokens.FontWeight="DsWeightLabel"
                                                        Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
                                         </Border>
 
                                         <Border Background="{DynamicResource M3SurfaceVariantBrush}"
-                                                CornerRadius="4" Padding="6,2"
+                                                lt:Tokens.CornerRadius="DsRadiusSM" Padding="6,2"
                                                 IsVisible="{Binding ShortcutHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                                             <TextBlock Text="{Binding ShortcutHint}"
-                                                       FontSize="10"
-                                                       FontFamily="Cascadia Code, Consolas, Menlo, monospace"
+                                                       lt:Tokens.FontSize="DsFontSize100"
+                                                       lt:Tokens.FontFamily="DsCodeFontFamily"
                                                        Foreground="{DynamicResource M3PrimaryBrush}" />
                                         </Border>
                                     </StackPanel>

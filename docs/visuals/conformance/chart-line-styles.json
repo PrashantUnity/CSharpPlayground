@@ -1,0 +1,41 @@
+{
+  "mime": "application/vnd.fry.chart.v1\u002Bjson",
+  "spec": {
+    "kind": "line",
+    "series": [
+      {
+        "name": "Smooth",
+        "interpolation": "smooth",
+        "tension": 0.5,
+        "y": [
+          40,
+          55,
+          48
+        ]
+      },
+      {
+        "name": "Steps",
+        "dash": "dotted",
+        "step": "after",
+        "pointStyle": "star",
+        "pointRadius": 6,
+        "y": [
+          30,
+          35,
+          38
+        ]
+      },
+      {
+        "name": "Filled",
+        "color": "#ff8800",
+        "fill": true,
+        "y": [
+          25,
+          36,
+          21
+        ]
+      }
+    ],
+    "title": "Line styles"
+  }
+}

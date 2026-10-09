@@ -76,14 +76,18 @@ public sealed class LspClient : IAsyncDisposable, IDisposable
             // Forward stderr to logs
             _ = Task.Run(async () =>
             {
-                using var reader = _process.StandardError;
-                while (await reader.ReadLineAsync().ConfigureAwait(false) is { } line)
+                try
                 {
-                    if (!string.IsNullOrEmpty(line))
+                    using var reader = _process.StandardError;
+                    while (await reader.ReadLineAsync().ConfigureAwait(false) is { } line)
                     {
-                        LogReceived?.Invoke($"[LSP stderr] {line}");
+                        if (!string.IsNullOrEmpty(line))
+                        {
+                            LogReceived?.Invoke($"[LSP stderr] {line}");
+                        }
                     }
                 }
+                catch { }
             });
 
             // Send initialize request

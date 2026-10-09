@@ -12,7 +12,29 @@ public sealed class ChartSpec : VisualSpec
 
     public AxisSpec XAxis { get; set; } = new();
     public AxisSpec YAxis { get; set; } = new();
+
+    /// <summary>A second value axis, up the right side, for the series whose <c>axis</c> is right (they are measured on it, not on <c>yAxis</c>).</summary>
+    public AxisSpec Y2Axis { get; set; } = new();
+
     public LegendSpec Legend { get; set; } = new();
+
+    /// <summary>Which way bars run (default: vertical); only when every series is bars.</summary>
+    public ChartOrientation? Orientation { get; set; }
+
+    /// <summary>
+    /// How series on the same axis are piled up (default: none). A series' own <c>stack</c> names the pile it joins, so
+    /// bars can be stacked in groups. Bars, lines and areas stack; the rest don't.
+    /// </summary>
+    public ChartStack? Stack { get; set; }
+
+    /// <summary>Where a pie, donut or polar area starts, in degrees clockwise from the top (default: 0).</summary>
+    public double? StartAngle { get; set; }
+
+    /// <summary>How far round a pie, donut or polar area goes, in degrees (default: 360; 180 makes a half-circle gauge).</summary>
+    public double? Sweep { get; set; }
+
+    /// <summary>The share of a donut's radius left empty in the middle, from 0 to 0.95 (default: 0.55).</summary>
+    public double? Cutout { get; set; }
 
     /// <summary>Grid lines behind the data (default: on, except for pie and donut charts).</summary>
     public bool? Grid { get; set; }
@@ -47,6 +69,51 @@ public sealed class ChartSeriesSpec
 
     /// <summary>The line's width in pixels (default: 2).</summary>
     public double? LineWidth { get; set; }
+
+    /// <summary>How this series is drawn when the chart mixes kinds (a combo): line, area, bar or scatter. Default: the chart's kind.</summary>
+    public ChartType? Kind { get; set; }
+
+    /// <summary>Which value axis this series is measured on (default: left).</summary>
+    public AxisSide? Axis { get; set; }
+
+    /// <summary>The pile this series stacks in; series that share a name stack together. Default: one pile for all.</summary>
+    public string? Stack { get; set; }
+
+    /// <summary>A line or area only: solid, dashed or dotted (default: solid).</summary>
+    public LineDash? Dash { get; set; }
+
+    /// <summary>A line or area only: straight segments, or a curve through the values (default: linear).</summary>
+    public LineInterpolation? Interpolation { get; set; }
+
+    /// <summary>A smooth line only: how round the curve is, from 0 (straight) to 1 (default: 0.4).</summary>
+    public double? Tension { get; set; }
+
+    /// <summary>A line or area only: where it changes level between values, for a stepped line (default: none).</summary>
+    public LineStep? Step { get; set; }
+
+    /// <summary>A line only: fill down to the baseline. Default: on for an area, off for a line.</summary>
+    public bool? Fill { get; set; }
+
+    /// <summary>A line or area only: fill the space between this series and the series at this index.</summary>
+    public int? FillTo { get; set; }
+
+    /// <summary>A line, area, scatter or bubble: the shape of each marker (default: circle).</summary>
+    public PointShape? PointStyle { get; set; }
+
+    /// <summary>The marker radius in pixels (default: 3.5 on a line, 4 on a scatter).</summary>
+    public double? PointRadius { get; set; }
+
+    /// <summary>A line only: <c>colors</c> colour the segment that ends at each value instead of only its marker.</summary>
+    public bool? ColorSegments { get; set; }
+
+    /// <summary>A bubble chart: each circle's radius in pixels.</summary>
+    public List<double?>? Sizes { get; set; }
+
+    /// <summary>A bar chart: where each bar starts (default: the baseline), for floating bars from <c>from</c> to <c>y</c>.</summary>
+    public List<double?>? From { get; set; }
+
+    /// <summary>A bar only: how round its outer corners are, in pixels.</summary>
+    public double? CornerRadius { get; set; }
 
     public List<double?>? X { get; set; }
     public List<double?> Y { get; set; } = [];

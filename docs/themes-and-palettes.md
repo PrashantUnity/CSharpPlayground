@@ -68,6 +68,35 @@ The rules the generator follows:
 
 `HarmonicColorGenerator` keeps its old API as a facade over all this.
 
+## Syntax colours are VS Code's
+
+- Every editor (`BindableTextEditor`, `CodeViewer`, the Code Studio editor) colours code through
+  `SyntaxColoring.Apply(editor, language, isDark, enabled, fileExtension)` (`Controls/Editor/SyntaxColoring.cs`).
+- **Grammars:** VS Code's TextMate grammars and themes, from `AvaloniaEdit.TextMate` and `TextMateSharp.Grammars`
+  (`Services/Languages/Highlighting/StudioTextMate.cs`).
+  - Grammar choice: the language id first (VS Code's ids are the studio's), then the open file's extension, so a `.json`,
+    `.md`, `.yaml` or `.sh` file opened as plain text gets its own grammar, then the language's extensions. Plain `.txt`
+    gets none.
+  - Each grammar is read once for all editors. Tokenizing runs in the background, so a slow grammar (C++) colours
+    progressively instead of blocking.
+  - The grammars' regex engine is native (Onigwrap, `runtimes/<rid>/native`, packaged with the plugin). Where it
+    can't load, every language falls back to its own XSHD rules.
+- **Themes:**
+  - Dark+, Light+, Dracula, Monokai and One Dark use VS Code's own theme.
+  - A theme with `Syntax*` colours (generated themes) gets a TextMate theme made from those nine roles.
+  - Anything else gets Dark+ or Light+ by scheme.
+  - Theme switches re-theme every open editor (`ThemeChanged`, coalesced).
+- **C#:** the grammar can't follow top-level code (scripts and notebook cells), so on top of it a layer colours each word
+  by the role Roslyn's syntax tree gives it, as VS Code's C# extension does: types, namespaces, methods, properties,
+  locals and parameters, constants and enum members, control and other keywords, strings with escapes, and directives.
+  - `CSharpClassifier` (pure; uses the file's own declarations to tell `Items.Count` from `Console.WriteLine`).
+  - `CSharpLiveSyntax` reparses incrementally in the background (an edit in a 20,000-line file: well under 500 ms).
+    Until then it moves the old roles with their text.
+  - `CSharpRoleColorizer` reads the theme's colour for each role.
+- **Notebook markdown cells:** edited in the same editor (markdown grammar, wrapped, no code helpers). They open
+  rendered; Shift+Enter renders them.
+- Tests: `SyntaxColoringTests` holds VS Code's Dark+/Light+ colours per language and the C# roles.
+
 ## Syntax and charts follow the theme
 
 - `SyntaxPaletteApplier` maps each language's XSHD colour names to the nine roles by name: `*Comment*` → comment,
@@ -81,6 +110,73 @@ The rules the generator follows:
 - Built-in themes are not given `Syntax*` or `ChartSeries*` tokens when they are completed
   (`HarmonicColorGenerator.EnsureCompleteTheme`).
 
+## Layout & Typography
+
+Settings → Layout & Typography has levers for:
+- **fonts:** the interface font and the code font;
+- **type:** a type ramp of 13 sizes that follows the base size and a hierarchy lever, plus weights for body, labels, emphasis and headings, and caps letter spacing;
+- **corners:** a radius scale, with overrides for cards, buttons, inputs, tabs, rows, dialogs, chips and tooltips;
+- **borders:** border width, card outlines, dividers and the accent bar;
+- **spacing:** density and a spacing scale, with overrides for control height, row height, tab height and card padding;
+- **shadows:** strength, softness and card elevation.
+
+There are eight built-in presets: Studio, VS Code, Fluent 2, Material 3, macOS, Sharp, Soft and Large text. "My layouts" holds named layouts you save. A layout can be exported as W3C design tokens or as CSS variables, and imported back.
+
+How it applies:
+- The preview on the page follows each lever at once.
+- The studio follows when the slider is let go, or 300 ms after a key or click. That is one layout change.
+- Every change is remembered and can be undone (50 steps).
+- A colour theme switch keeps the layout. Saving a theme with "Include current layout" bundles the layout with it.
+
+### The tokens
+`LayoutSpec` (`Theming/Layout/LayoutSpec.cs`) is what is saved. `LayoutTokenMapper` turns it into the tokens; at the default layout every token equals the size the studio was drawn with before it had tokens.
+
+| Family | Tokens | Default |
+| :--- | :--- | :--- |
+| Type ramp | `DsFontSize050` … `DsFontSize800` | 8.5, 9.5, 10, 10.5, 11, 11.5, 12 (body), 12.5, 13, 14, 16, 20, 26 |
+| Weights | `DsWeightBody`, `DsWeightLabel`, `DsWeightEmphasis`, `DsWeightStrong` | Normal, Medium, SemiBold, Bold |
+| Letter spacing | `DsTracking050` … `DsTracking120` | 0.5 … 1.2 |
+| Fonts | `DsUiFontFamily`, `DsCodeFontFamily` | the platform default; Cascadia Code, JetBrains Mono, … |
+| Radii | `DsRadiusXS`, `SM`, `MD`, `LG`, `XL`, `2XL`, `3XL`, `4XL`, `Full` | 3, 4, 6, 8, 10, 12, 16, 24, 9999 |
+| Radii, one side | the radius tokens plus `Top`, `Bottom`, `Left` or `Right` (e.g. `DsRadiusMDTop`) | |
+| Radii, per component | `DsRadiusCard`, `Button`, `Input`, `Tab`, `Row`, `Dialog`, `Chip`, `Tooltip` | 10, 6, 6, 6, 4, 16, 12, 6 |
+| Borders | `DsBorderThin`, `Medium`, `Top`, `Bottom`, `Left`, `Right`, `NoBottom`, `AccentLeft`, `DsCardBorder` | 1 px (accent 2) |
+| Spacing | `DsSpace2` … `DsSpace32` (named by their default pixels), `DsCardPadding`, `DsControlHeight100…500`, `DsControlHeight`, `DsTabHeight`, `DsRowHeight` | density × spacing scale |
+| Shadows | `DsShadowLevel0…4`, `DsCardShadow`, `DsModalShadow`, `DsFloatingShadow`, `M3Elevation*` | Material 3 levels, deeper on dark themes |
+
+The activity bar (48 px) and status bar (22 px) never scale.
+
+`Styles/Tokens/StudioLayoutTokens.axaml` holds the defaults. It is generated, and a test keeps it in step: after changing the mapper, run `UiSnapshots layout-tokens`.
+
+### Using them in a view: keys, not dynamic resources
+Controls take layout tokens by **key**:
+
+```xml
+<TextBlock lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightEmphasis" />
+<Style Selector="Button.my-button">
+    <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusButton" />
+    <Setter Property="lt:Tokens.BorderThickness" Value="=0" />   <!-- a fixed value -->
+</Style>
+```
+
+The namespace is `xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin"`.
+
+`Tokens` (`Theming/Layout/Tokens.cs`) sets the token's value at the priority the key was set with. A layout change sets it again from a weak registry: ~5,000 controls, 140–260 ms including the re-layout with every page built.
+
+Why not `{DynamicResource}`:
+- In shared style setters it held about 140 MB (measured by A/B against literals). Avalonia builds a style per control as soon as a setter is a dynamic resource.
+- Every dynamic resource is re-resolved on each colour-theme switch.
+
+With keys, memory and theme switches are the same as with plain literals, and a key works outside the host (tool windows) too.
+
+The rules:
+- In shared styles, these properties always go through a key: `FontSize`, `FontWeight`, `FontFamily`, `LetterSpacing`, `CornerRadius`, `BorderThickness` and `BoxShadow`. A value without a token is written `Value="=0,2,1,0"`. Avalonia then decides which style wins on the key; a value set from code can't take part in style ordering.
+- Only the page's own preview (`LayoutSpecimenControl`) uses dynamic resources, from its own resources, so it can show values that aren't applied yet.
+- Code that builds controls uses `Tokens.SetFontSize(control, "DsFontSize300")`, or `LayoutTokens` for values read once (rendered Markdown and HTML, completion lists, tables), and rebuilds on `DynamicThemeEngine.LayoutChanged`.
+- `DesignTokenLintTests` fails on any hard-coded font size, weight, radius, border, code font or direct style setter in a view. `python3 tools/token_migrate.py <files>` converts them. Circles and rings that must stay round are on its short allowlist.
+
+Scripts: `Themes.ApplyLayout(json)`, `Themes.GetLayoutJson()` and `Themes.GetLayoutToken("DsRadiusCard")`. `SetDensity` changes the layout's density.
+
 ## Where preferences live
 
 Everything is under the studio's data folder: `%LOCALAPPDATA%/FryPDF/Plugins/com.frypdf.plugin.csharpeditor`, or
@@ -89,6 +185,7 @@ Everything is under the studio's data folder: `%LOCALAPPDATA%/FryPDF/Plugins/com
 | File | What | Written by |
 | :--- | :--- | :--- |
 | `studio_settings.json` | Every setting, plus `Appearance` (below) and `SchemaVersion`. | `StudioSettingsStore` |
+| `layouts/<id>.frylayout.json` | One saved layout each, ids `layout-user-…`. | `LayoutLibraryStore` |
 | `themes/<id>.frytheme.json` | One saved theme each, ids `user-…`. Holds the name, dates, source (`generated`, `imported` or `duplicate`), the theme's colours, the harmony controls, and the `PaletteSpec` it was made from. | `ThemeLibraryStore` |
 
 `Appearance` holds:
@@ -98,7 +195,8 @@ Everything is under the studio's data folder: `%LOCALAPPDATA%/FryPDF/Plugins/com
 - density;
 - single-token overrides;
 - the harmony controls;
-- the palette being designed (`PaletteSpec`, with its locks and engine).
+- the palette being designed (`PaletteSpec`, with its locks and engine);
+- the layout (`LayoutSpec`) and which preset or saved layout it came from. An older file with only a density becomes a layout with that density.
 
 How the files are written:
 - **Settings save themselves.** There is no Apply button. A change goes through `StudioSettingsStore.Update`
@@ -128,3 +226,5 @@ Budgets:
 - a Generate press, previewed and drawn with every page built, ≤ 30 ms (18 ms median);
 - applying a palette as the studio theme ≤ 300 ms;
 - a hue-wheel step ≤ 16 ms.
+- a layout change with every page built ≤ 400 ms (140–260 ms measured);
+- a colour-theme switch the same with layout tokens as without.

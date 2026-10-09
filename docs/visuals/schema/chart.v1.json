@@ -12,7 +12,10 @@
         "scatter",
         "pie",
         "donut",
-        "histogram"
+        "histogram",
+        "bubble",
+        "radar",
+        "polarArea"
       ]
     },
     "xAxis": {
@@ -35,6 +38,37 @@
             "number",
             "null"
           ]
+        },
+        "scale": {
+          "enum": [
+            "linear",
+            "log",
+            "time",
+            "category",
+            null
+          ],
+          "description": "A chart only: how values map to positions (default: linear)."
+        },
+        "suggestedMin": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "A chart only: the lowest the axis goes when the data doesn't reach it; a min overrides it."
+        },
+        "suggestedMax": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "A chart only: the highest the axis goes when the data doesn't reach it; a max overrides it."
+        },
+        "reverse": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "A chart only: run the axis the other way (largest first, or down for y)."
         }
       },
       "additionalProperties": false
@@ -59,9 +93,96 @@
             "number",
             "null"
           ]
+        },
+        "scale": {
+          "enum": [
+            "linear",
+            "log",
+            "time",
+            "category",
+            null
+          ],
+          "description": "A chart only: how values map to positions (default: linear)."
+        },
+        "suggestedMin": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "A chart only: the lowest the axis goes when the data doesn't reach it; a min overrides it."
+        },
+        "suggestedMax": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "A chart only: the highest the axis goes when the data doesn't reach it; a max overrides it."
+        },
+        "reverse": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "A chart only: run the axis the other way (largest first, or down for y)."
         }
       },
       "additionalProperties": false
+    },
+    "y2Axis": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "min": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "max": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "scale": {
+          "enum": [
+            "linear",
+            "log",
+            "time",
+            "category",
+            null
+          ],
+          "description": "A chart only: how values map to positions (default: linear)."
+        },
+        "suggestedMin": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "A chart only: the lowest the axis goes when the data doesn't reach it; a min overrides it."
+        },
+        "suggestedMax": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "A chart only: the highest the axis goes when the data doesn't reach it; a max overrides it."
+        },
+        "reverse": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "A chart only: run the axis the other way (largest first, or down for y)."
+        }
+      },
+      "additionalProperties": false,
+      "description": "A second value axis, up the right side, for the series whose axis is right (they are measured on it, not on yAxis)."
     },
     "legend": {
       "type": "object",
@@ -71,9 +192,57 @@
             "boolean",
             "null"
           ]
+        },
+        "position": {
+          "enum": [
+            "top",
+            "bottom",
+            "left",
+            "right",
+            null
+          ],
+          "description": "Which side of the chart it goes on (default: bottom)."
         }
       },
       "additionalProperties": false
+    },
+    "orientation": {
+      "enum": [
+        "vertical",
+        "horizontal",
+        null
+      ],
+      "description": "Which way bars run (default: vertical); only when every series is bars."
+    },
+    "stack": {
+      "enum": [
+        "none",
+        "stacked",
+        "percent",
+        null
+      ],
+      "description": "How series on the same axis are piled up (default: none). A series' own stack names the pile it joins, so bars can be stacked in groups. Bars, lines and areas stack; the rest don't."
+    },
+    "startAngle": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Where a pie, donut or polar area starts, in degrees clockwise from the top (default: 0)."
+    },
+    "sweep": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "How far round a pie, donut or polar area goes, in degrees (default: 360; 180 makes a half-circle gauge)."
+    },
+    "cutout": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "The share of a donut's radius left empty in the middle, from 0 to 0.95 (default: 0.55)."
     },
     "grid": {
       "type": [
@@ -140,6 +309,145 @@
               "null"
             ],
             "description": "The line's width in pixels (default: 2)."
+          },
+          "kind": {
+            "enum": [
+              "line",
+              "area",
+              "bar",
+              "scatter",
+              "pie",
+              "donut",
+              "histogram",
+              "bubble",
+              "radar",
+              "polarArea",
+              null
+            ],
+            "description": "How this series is drawn when the chart mixes kinds (a combo): line, area, bar or scatter. Default: the chart's kind."
+          },
+          "axis": {
+            "enum": [
+              "left",
+              "right",
+              null
+            ],
+            "description": "Which value axis this series is measured on (default: left)."
+          },
+          "stack": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The pile this series stacks in; series that share a name stack together. Default: one pile for all."
+          },
+          "dash": {
+            "enum": [
+              "solid",
+              "dashed",
+              "dotted",
+              null
+            ],
+            "description": "A line or area only: solid, dashed or dotted (default: solid)."
+          },
+          "interpolation": {
+            "enum": [
+              "linear",
+              "smooth",
+              "monotone",
+              null
+            ],
+            "description": "A line or area only: straight segments, or a curve through the values (default: linear)."
+          },
+          "tension": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "A smooth line only: how round the curve is, from 0 (straight) to 1 (default: 0.4)."
+          },
+          "step": {
+            "enum": [
+              "none",
+              "before",
+              "after",
+              "middle",
+              null
+            ],
+            "description": "A line or area only: where it changes level between values, for a stepped line (default: none)."
+          },
+          "fill": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "A line only: fill down to the baseline. Default: on for an area, off for a line."
+          },
+          "fillTo": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "A line or area only: fill the space between this series and the series at this index."
+          },
+          "pointStyle": {
+            "enum": [
+              "circle",
+              "triangle",
+              "square",
+              "diamond",
+              "cross",
+              "star",
+              null
+            ],
+            "description": "A line, area, scatter or bubble: the shape of each marker (default: circle)."
+          },
+          "pointRadius": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "The marker radius in pixels (default: 3.5 on a line, 4 on a scatter)."
+          },
+          "colorSegments": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "A line only: colors colour the segment that ends at each value instead of only its marker."
+          },
+          "sizes": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "description": "A bubble chart: each circle's radius in pixels."
+          },
+          "from": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "description": "A bar chart: where each bar starts (default: the baseline), for floating bars from from to y."
+          },
+          "cornerRadius": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "A bar only: how round its outer corners are, in pixels."
           },
           "x": {
             "type": [

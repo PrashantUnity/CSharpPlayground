@@ -1,0 +1,23 @@
+{
+  "mime": "application/vnd.fry.chart.v1\u002Bjson",
+  "spec": {
+    "kind": "bar",
+    "orientation": "horizontal",
+    "series": [
+      {
+        "name": "Revenue",
+        "y": [
+          40,
+          55,
+          48
+        ],
+        "labels": [
+          "Jan",
+          "Feb",
+          "Mar"
+        ]
+      }
+    ],
+    "title": "Horizontal"
+  }
+}

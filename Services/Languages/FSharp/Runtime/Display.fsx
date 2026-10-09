@@ -60,7 +60,7 @@ module private Detail =
                     if root.TryGetProperty("event", &evElem) then
                         if evElem.ValueKind = JsonValueKind.Object then
                             let mutable kindElem = Unchecked.defaultof<JsonElement>
-                            if evElem.TryGetProperty("kind", &kindElem) then
+                            if evElem.TryGetProperty("kind", &kindElem) || evElem.TryGetProperty("event", &kindElem) then
                                 evKind <- kindElem.GetString().ToLowerInvariant()
                             let mutable targetElem = Unchecked.defaultof<JsonElement>
                             if evElem.TryGetProperty("target", &targetElem) && targetElem.ValueKind = JsonValueKind.Object then
@@ -95,6 +95,7 @@ module private Detail =
                         )
                     for cb in callbacks do
                         try cb event with _ -> ()
+                    try stdout.Flush() with _ -> ()
             )
         with _ -> ()
 
@@ -446,6 +447,170 @@ type CanvasVisualizer(title: string, width: int, height: int) =
 
     member this.show() = this.Show()
 
+// ── Newer chart features: combos, stacks, scales, line styles, bubbles, radial kinds ──────────────────────────
+
+module private Num =
+    let text (v: float) = v.ToString("R", System.Globalization.CultureInfo.InvariantCulture)
+
+/// A series' values and how it is drawn: Display.series(margin).Kind("line").RightAxis().Dash("dashed").
+type SeriesData(values: obj) =
+    let fields = List<string * string>()
+    let set (key: string) (json: string) =
+        fields.RemoveAll(fun (k, _) -> k = key) |> ignore
+        fields.Add((key, json))
+    member _.Values = values
+    member _.Fields : seq<string * string> = fields :> seq<_>
+    /// Draws this series as another kind than the chart's: line, area, bar or scatter.
+    member this.Kind(k: string) = set "kind" (JsonSerializer.Serialize k); this
+    /// Measures this series on the second value axis, up the right side.
+    member this.RightAxis() = set "axis" "\"right\""; this
+    member this.Color(c: string) = set "color" (JsonSerializer.Serialize c); this
+    member this.LineWidth(pixels: float) = set "lineWidth" (Num.text pixels); this
+    /// "dashed" or "dotted".
+    member this.Dash(d: string) = set "dash" (JsonSerializer.Serialize d); this
+    /// A curve through the values; tension is from 0 to 1.
+    member this.Smooth(tension: float) = set "interpolation" "\"smooth\""; set "tension" (Num.text tension); this
+    member this.Monotone() = set "interpolation" "\"monotone\""; this
+    /// "before", "after" or "middle".
+    member this.Step(s: string) = set "step" (JsonSerializer.Serialize s); this
+    member this.Fill(on: bool) = set "fill" (if on then "true" else "false"); this
+    member this.FillTo(series: int) = set "fillTo" (string series); this
+    /// "circle", "triangle", "square", "diamond", "cross" or "star", and the marker radius.
+    member this.PointStyle(shape: string, radius: float) = set "pointStyle" (JsonSerializer.Serialize shape); set "pointRadius" (Num.text radius); this
+    member this.ColorSegments() = set "colorSegments" "true"; this
+    member this.Stack(name: string) = set "stack" (JsonSerializer.Serialize name); this
+    member this.CornerRadius(pixels: float) = set "cornerRadius" (Num.text pixels); this
+
+/// What a chart is told besides its data: ChartStyle().Title("Sales").Labels(months).Stacked().Y2Axis("%", 0.0, 100.0).
+type ChartStyle() =
+    let top = List<string * string>()
+    let axes = List<string * string * string>()
+    let mutable title = ""
+    let mutable labels : string list = []
+    let setTop (key: string) (json: string) =
+        top.RemoveAll(fun (k, _) -> k = key) |> ignore
+        top.Add((key, json))
+    let setAxis (axis: string) (field: string) (json: string) =
+        axes.RemoveAll(fun (a, f, _) -> a = axis && f = field) |> ignore
+        axes.Add((axis, field, json))
+    member _.TitleText = title
+    member _.LabelNames = labels
+    member _.Top : seq<string * string> = top :> seq<_>
+    member _.Axes : seq<string * string * string> = axes :> seq<_>
+    member this.Title(t: string) = title <- t; this
+    /// Names the places of the values: x positions, a radar's spokes, a pie's slices.
+    member this.Labels(names: seq<string>) = labels <- List.ofSeq names; this
+    member this.Stacked() = setTop "stack" "\"stacked\""; this
+    member this.PercentStacked() = setTop "stack" "\"percent\""; this
+    member this.Horizontal() = setTop "orientation" "\"horizontal\""; this
+    member this.Gauge() = setTop "startAngle" "-90"; setTop "sweep" "180"; this
+    member this.Angles(start: float, sweep: float) = setTop "startAngle" (Num.text start); setTop "sweep" (Num.text sweep); this
+    member this.Cutout(share: float) = setTop "cutout" (Num.text share); this
+    /// "top", "bottom", "left" or "right".
+    member this.LegendAt(position: string) = setTop "legend" ("{\"position\":" + JsonSerializer.Serialize position + "}"); this
+    /// A second value axis, up the right side, for the series set RightAxis().
+    member this.Y2Axis(title: string, min: float, max: float) =
+        setAxis "y2Axis" "title" (JsonSerializer.Serialize title)
+        setAxis "y2Axis" "min" (Num.text min)
+        setAxis "y2Axis" "max" (Num.text max)
+        this
+    /// "linear", "log", "time" (x only) or "category" (x only).
+    member this.XScale(scale: string) = setAxis "xAxis" "scale" (JsonSerializer.Serialize scale); this
+    member this.YScale(scale: string) = setAxis "yAxis" "scale" (JsonSerializer.Serialize scale); this
+    member this.SuggestedY(min: float, max: float) =
+        setAxis "yAxis" "suggestedMin" (Num.text min)
+        setAxis "yAxis" "suggestedMax" (Num.text max)
+        this
+    member this.ReverseX() = setAxis "xAxis" "reverse" "true"; this
+    member this.ReverseY() = setAxis "yAxis" "reverse" "true"; this
+
+module private ChartJson =
+    type One =
+        { Name: string option
+          X: string
+          Y: string
+          Labels: string
+          Sizes: string
+          Count: int
+          Fields: seq<string * string> }
+
+    let private isSeq (v: obj) = not (isNull v) && not (v :? string) && (v :? System.Collections.IEnumerable)
+    let private items (v: obj) = (v :?> System.Collections.IEnumerable) |> Seq.cast<obj> |> Seq.toArray
+
+    // (x, y, size) items: tuples or sequences of three numbers.
+    let private bubble (name: string option) (values: obj) (fields: seq<string * string>) : One =
+        let rows =
+            items values
+            |> Array.map (fun item ->
+                let parts =
+                    if isNull item then [||]
+                    elif Microsoft.FSharp.Reflection.FSharpType.IsTuple(item.GetType()) then Microsoft.FSharp.Reflection.FSharpValue.GetTupleFields item
+                    elif isSeq item then items item
+                    else [||]
+                if parts.Length >= 3 then [| toJsonVal parts.[0]; toJsonVal parts.[1]; toJsonVal parts.[2] |] else [| "null"; "null"; "null" |])
+        let column (k: int) = "[" + String.Join(",", rows |> Array.map (fun r -> r.[k])) + "]"
+        { Name = name; X = column 0; Y = column 1; Labels = ""; Sizes = column 2; Count = rows.Length; Fields = fields }
+
+    let build (kind: string) (data: obj) (style: ChartStyle) : string =
+        let pairs =
+            match tryGetDictionaryEntries data with
+            | Some entries -> Some entries
+            | None when isSeq data ->
+                let found = items data |> Array.map tryGetKeyValue
+                if found.Length > 0 && found |> Array.forall Option.isSome then Some (found |> Array.map Option.get |> List.ofArray) else None
+            | None -> None
+        let isSeries (v: obj) = (v :? SeriesData) || isSeq v
+        let series : One list =
+            if kind = "bubble" then
+                match pairs with
+                | Some entries when entries |> List.forall (fun (_, v) -> isSeq v) && not (items data |> Array.exists (fun i -> not (isNull i) && Microsoft.FSharp.Reflection.FSharpType.IsTuple(i.GetType()) && (Microsoft.FSharp.Reflection.FSharpValue.GetTupleFields i).Length >= 3)) ->
+                    [ for (k, v) in entries -> bubble (Some k) v Seq.empty ]
+                | _ -> [ bubble None data Seq.empty ]
+            else
+                match pairs with
+                | Some entries when entries |> List.exists (fun (_, v) -> isSeries v) ->
+                    [ for (k, v) in entries ->
+                        let values, fields = match v with | :? SeriesData as sd -> sd.Values, sd.Fields | _ -> v, Seq.empty
+                        let ys = items values
+                        { Name = Some k; X = ""; Y = toJsonArray ys; Labels = ""; Sizes = ""; Count = ys.Length; Fields = fields } ]
+                | Some entries ->
+                    [ { Name = None
+                        X = ""
+                        Y = toJsonArray (entries |> List.map snd)
+                        Labels = toJsonArray (entries |> List.map fst)
+                        Sizes = ""
+                        Count = entries.Length
+                        Fields = Seq.empty } ]
+                | None when isSeq data ->
+                    let ys = items data
+                    [ { Name = None; X = ""; Y = toJsonArray ys; Labels = ""; Sizes = ""; Count = ys.Length; Fields = Seq.empty } ]
+                | None -> []
+        let sb = StringBuilder("{\"kind\":")
+        sb.Append(JsonSerializer.Serialize kind).Append(",\"series\":[") |> ignore
+        series
+        |> List.iteri (fun i one ->
+            if i > 0 then sb.Append(",") |> ignore
+            sb.Append("{") |> ignore
+            let parts = List<string>()
+            match one.Name with
+            | Some n -> parts.Add("\"name\":" + JsonSerializer.Serialize n)
+            | None -> ()
+            if one.X <> "" then parts.Add("\"x\":" + one.X)
+            parts.Add("\"y\":" + one.Y)
+            if one.Labels <> "" then parts.Add("\"labels\":" + one.Labels)
+            elif not style.LabelNames.IsEmpty && style.LabelNames.Length = one.Count then
+                parts.Add("\"labels\":" + toJsonArray style.LabelNames)
+            if one.Sizes <> "" then parts.Add("\"sizes\":" + one.Sizes)
+            for (key, json) in one.Fields do parts.Add("\"" + key + "\":" + json)
+            sb.Append(String.Join(",", parts)).Append("}") |> ignore)
+        sb.Append("]") |> ignore
+        if style.TitleText <> "" then sb.Append(",\"title\":").Append(JsonSerializer.Serialize style.TitleText) |> ignore
+        for (key, json) in style.Top do sb.Append(",\"").Append(key).Append("\":").Append(json) |> ignore
+        for axis in [ "xAxis"; "yAxis"; "y2Axis" ] do
+            let fields = style.Axes |> Seq.filter (fun (a, _, _) -> a = axis) |> Seq.map (fun (_, f, v) -> "\"" + f + "\":" + v) |> Seq.toList
+            if not fields.IsEmpty then sb.Append(",\"").Append(axis).Append("\":{").Append(String.Join(",", fields)).Append("}") |> ignore
+        sb.Append("}").ToString()
+
 type Display private () =
     // ── Basic Display Primitives ──────────────────────────────────────────
 
@@ -790,6 +955,36 @@ type Display private () =
         Helpers.emitDisplay CHART_MIME (sb.ToString())
 
     static member histogram(data: seq<'T>, ?title: string, ?bins: int) = Display.Histogram(data, ?title = title, ?bins = bins)
+
+    // Newer chart features: each takes a ChartStyle (title, labels, stacking, axes…); a series with options is Display.series(values).
+    static member Series(values: obj) : SeriesData = SeriesData(values)
+    static member series(values: obj) : SeriesData = SeriesData(values)
+
+    static member private ShowChart(kind: string, data: obj, style: ChartStyle) : DisplayHandle =
+        Helpers.emitDisplay CHART_MIME (ChartJson.build kind data style)
+
+    static member LineChart(data: obj, style: ChartStyle) = Display.ShowChart("line", data, style)
+    static member lineChart(data: obj, style: ChartStyle) = Display.ShowChart("line", data, style)
+    static member AreaChart(data: obj, style: ChartStyle) = Display.ShowChart("area", data, style)
+    static member areaChart(data: obj, style: ChartStyle) = Display.ShowChart("area", data, style)
+    static member BarChart(data: obj, style: ChartStyle) = Display.ShowChart("bar", data, style)
+    static member barChart(data: obj, style: ChartStyle) = Display.ShowChart("bar", data, style)
+    static member PieChart(data: obj, style: ChartStyle) = Display.ShowChart("pie", data, style)
+    static member pieChart(data: obj, style: ChartStyle) = Display.ShowChart("pie", data, style)
+    static member DonutChart(data: obj, style: ChartStyle) = Display.ShowChart("donut", data, style)
+    static member donutChart(data: obj, style: ChartStyle) = Display.ShowChart("donut", data, style)
+    /// (x, y, size) items; the size is a radius in pixels.
+    static member BubbleChart(data: obj, style: ChartStyle) = Display.ShowChart("bubble", data, style)
+    static member bubbleChart(data: obj, style: ChartStyle) = Display.ShowChart("bubble", data, style)
+    /// A polygon for each series over a spoke for each value (name the spokes with ChartStyle.Labels).
+    static member RadarChart(data: obj, style: ChartStyle) = Display.ShowChart("radar", data, style)
+    static member radarChart(data: obj, style: ChartStyle) = Display.ShowChart("radar", data, style)
+    static member PolarAreaChart(data: obj, style: ChartStyle) = Display.ShowChart("polarArea", data, style)
+    static member polarAreaChart(data: obj, style: ChartStyle) = Display.ShowChart("polarArea", data, style)
+    static member StackedBarChart(data: obj, style: ChartStyle) = Display.ShowChart("bar", data, style.Stacked())
+    static member stackedBarChart(data: obj, style: ChartStyle) = Display.ShowChart("bar", data, style.Stacked())
+    static member HorizontalBarChart(data: obj, style: ChartStyle) = Display.ShowChart("bar", data, style.Horizontal())
+    static member horizontalBarChart(data: obj, style: ChartStyle) = Display.ShowChart("bar", data, style.Horizontal())
 
     // 7. Scatter 3D
     static member Scatter3D(data: seq<'T>, ?title: string) : DisplayHandle =

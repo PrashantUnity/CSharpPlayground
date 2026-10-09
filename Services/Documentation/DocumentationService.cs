@@ -55,6 +55,8 @@ public partial class DocumentationService
         var visualizerCategory = BuildVisualizersCategory();
         var polyglotVisualsCategory = BuildPolyglotVisualsCategory();
         var displayCategory = BuildDisplayApisCategory();
+        var chartGalleryCategory = BuildChartGalleryCategory();
+        var echartCategory = BuildEChartCategory();
         var shortcutsCategory = BuildShortcutsCategory();
 
         _categories.Add(appCategory);
@@ -80,6 +82,8 @@ public partial class DocumentationService
         _categories.Add(visualizerCategory);
         _categories.Add(polyglotVisualsCategory);
         _categories.Add(displayCategory);
+        _categories.Add(chartGalleryCategory);
+        _categories.Add(echartCategory);
         _categories.Add(shortcutsCategory);
 
         foreach (var category in _categories)
@@ -88,9 +92,19 @@ public partial class DocumentationService
             {
                 article.CategoryId = category.Id;
                 _articlesById[article.Id] = article;
+                if (!NotRunnableCategories.Contains(category.Id)) continue;
+                foreach (var snippet in article.CodeSnippets) snippet.NotRunnable = true;
             }
         }
     }
+
+    // Samples that start a web server, need a database or package, or build a plugin: they are read, or opened in a studio.
+    private static readonly HashSet<string> NotRunnableCategories = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "aspnet_core",
+        "ef_core",
+        "extensibility_customization"
+    };
 
     public event Action? Changed;
 

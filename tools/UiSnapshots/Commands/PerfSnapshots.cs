@@ -496,6 +496,8 @@ internal static class PerfSnapshots
         Console.WriteLine($"  one rendered frame, nothing changed:                             {Median(Repeat(5, () => { using (window.CaptureRenderedFrame()) { } })),9:F1}");
 
         // The Hub draws a capped number of cards; the button that reveals the rest must really be on screen.
+        if (options.Flag("binding-census")) BindingCensus(window);
+
         var hub = host.ManagerViewModel;
         var showMore = (view.Pages.ViewFor(hub) as Control)?.GetVisualDescendants().OfType<Button>().FirstOrDefault(b => b.Command == hub.ShowMoreItemsCommand);
         // Its own flag (bound to HasHiddenItems): the Hub itself is hidden by now, another page is showing.
@@ -821,5 +823,39 @@ internal static class PerfSnapshots
     {
         var sorted = values.Order().ToList();
         return sorted.Count == 0 ? 0 : sorted[sorted.Count / 2];
+    }
+
+    // --binding-census: how many resource subscriptions (one per dynamic resource) each kind of control holds, every
+    // page built. Compare two builds to see where bindings come from.
+    private static void BindingCensus(Window window)
+    {
+        var field = typeof(Avalonia.StyledElement).GetField("ResourcesChanged", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                    ?? typeof(Avalonia.StyledElement).GetFields(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                        .FirstOrDefault(f => f.Name.Contains("resourcesChanged", StringComparison.OrdinalIgnoreCase) || f.Name.Contains("ResourcesChanged"));
+        if (field == null)
+        {
+            Console.WriteLine("binding census: ResourcesChanged backing field not found; fields: " +
+                              string.Join(", ", typeof(Avalonia.StyledElement).GetFields(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Select(f => f.Name)));
+            return;
+        }
+
+        var byType = new Dictionary<string, (int Controls, int Subscribers)>();
+        int controls = 0, subscribers = 0;
+        foreach (var visual in window.GetVisualDescendants().Prepend(window))
+        {
+            if (visual is not Avalonia.StyledElement element) continue;
+            controls++;
+            var count = (field.GetValue(element) as Delegate)?.GetInvocationList().Length ?? 0;
+            subscribers += count;
+            var name = element.GetType().Name;
+            var (c, n) = byType.GetValueOrDefault(name);
+            byType[name] = (c + 1, n + count);
+        }
+
+        Console.WriteLine($"binding census: {controls:N0} controls, {subscribers:N0} resource subscriptions");
+        foreach (var (name, (c, n)) in byType.OrderByDescending(kv => kv.Value.Subscribers).Take(15))
+        {
+            Console.WriteLine($"  {name,-34} {c,7:N0} controls {n,8:N0} subscriptions ({(double)n / c:F1} each)");
+        }
     }
 }
