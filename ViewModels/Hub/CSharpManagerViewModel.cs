@@ -267,13 +267,22 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle
     private readonly Services.Languages.LanguageRegistry _languagesRegistry;
     private Task? _toolchainCheck;
 
+    private readonly object _syncToolchainsGate = new();
+
     private void OnLanguagesRegistryChanged()
     {
         void Sync()
         {
-            SyncToolchainStatuses();
-            SyncCreateLanguages();
-            _ = CheckToolchainsAsync(lookAgain: false);
+            try
+            {
+                SyncToolchainStatuses();
+                SyncCreateLanguages();
+                _ = CheckToolchainsAsync(lookAgain: false);
+            }
+            catch
+            {
+                // Background registry updates must not fault external language registrations
+            }
         }
 
         if (Avalonia.Application.Current == null || Dispatcher.UIThread.CheckAccess()) Sync();
@@ -282,18 +291,24 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle
 
     private void SyncCreateLanguages()
     {
-        var allLangs = _languagesRegistry.All.Where(l => l.Storage == LanguageStorageKind.SourceFile || l.IsNamed(LanguageIds.CSharp)).ToList();
-        var existing = AvailableCreateLanguages.Select(l => l.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        var toRemove = AvailableCreateLanguages.Where(l => !allLangs.Any(a => a.IsNamed(l.Id))).ToList();
-        foreach (var r in toRemove) AvailableCreateLanguages.Remove(r);
-
-        foreach (var l in allLangs)
+        lock (_syncToolchainsGate)
         {
-            if (!existing.Contains(l.Id)) AvailableCreateLanguages.Add(l);
-        }
+            var allLangs = _languagesRegistry.All.Where(l => l != null && (l.Storage == LanguageStorageKind.SourceFile || l.IsNamed(LanguageIds.CSharp))).ToList();
+            var existing = AvailableCreateLanguages
+                .Where(l => l?.Id != null)
+                .Select(l => l.Id)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        SelectedCreateLanguage ??= AvailableCreateLanguages.FirstOrDefault(l => l.IsNamed(LanguageIds.CSharp)) ?? AvailableCreateLanguages.FirstOrDefault();
+            var toRemove = AvailableCreateLanguages.Where(l => l == null || !allLangs.Any(a => a.IsNamed(l.Id))).ToList();
+            foreach (var r in toRemove) AvailableCreateLanguages.Remove(r);
+
+            foreach (var l in allLangs)
+            {
+                if (l.Id != null && !existing.Contains(l.Id)) AvailableCreateLanguages.Add(l);
+            }
+
+            SelectedCreateLanguage ??= AvailableCreateLanguages.FirstOrDefault(l => l?.IsNamed(LanguageIds.CSharp) == true) ?? AvailableCreateLanguages.FirstOrDefault();
+        }
     }
 
     private void ReloadTemplates()
@@ -321,20 +336,26 @@ public partial class CSharpManagerViewModel : ObservableObject, IPageLifecycle
 
     private void SyncToolchainStatuses()
     {
-        var existing = ToolchainStatuses.Select(t => t.Language.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var registered = _languagesRegistry.All.Where(l => l.Toolchain != null).ToList();
-
-        // Remove any no longer registered
-        var toRemove = ToolchainStatuses.Where(t => !registered.Any(r => r.IsNamed(t.Language.Id))).ToList();
-        foreach (var item in toRemove) ToolchainStatuses.Remove(item);
-
-        // Add newly registered
-        foreach (var language in registered)
+        lock (_syncToolchainsGate)
         {
-            if (existing.Contains(language.Id)) continue;
-            if (language.Toolchain is { } provider)
+            var existing = ToolchainStatuses
+                .Where(t => t?.Language?.Id != null)
+                .Select(t => t.Language.Id)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var registered = _languagesRegistry.All.Where(l => l?.Toolchain != null && l.Id != null).ToList();
+
+            // Remove any no longer registered
+            var toRemove = ToolchainStatuses.Where(t => t == null || t.Language == null || !registered.Any(r => r.IsNamed(t.Language.Id))).ToList();
+            foreach (var item in toRemove) ToolchainStatuses.Remove(item);
+
+            // Add newly registered
+            foreach (var language in registered)
             {
-                ToolchainStatuses.Add(new Common.ToolchainStatusItem(language, provider));
+                if (existing.Contains(language.Id)) continue;
+                if (language.Toolchain is { } provider)
+                {
+                    ToolchainStatuses.Add(new Common.ToolchainStatusItem(language, provider));
+                }
             }
         }
     }

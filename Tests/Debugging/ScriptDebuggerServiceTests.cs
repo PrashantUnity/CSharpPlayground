@@ -3,10 +3,12 @@ using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
+using CSharpEditorPlugin.Tests.Debugging;
 using Xunit;
 
 namespace CSharpEditorPlugin.Tests;
 
+[Collection(ScriptDebugSessionCollection.Name)]
 public class ScriptDebuggerServiceTests
 {
     private readonly RoslynCompilerService _compiler = new();

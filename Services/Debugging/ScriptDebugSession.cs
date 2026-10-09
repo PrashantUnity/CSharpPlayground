@@ -45,21 +45,29 @@ public class ScriptDebugSession
     public event Action? Resumed;
     public event Action? Stopped;
 
+    private static readonly object _sessionGate = new();
+
     public static ScriptDebugSession BeginSession(IEnumerable<BreakpointItem> breakpoints, CancellationTokenSource cts, string? scriptId = null)
     {
-        EndSession();
-        var session = new ScriptDebugSession(breakpoints, cts, scriptId);
-        _current = session;
-        return session;
+        lock (_sessionGate)
+        {
+            EndSession();
+            var session = new ScriptDebugSession(breakpoints, cts, scriptId);
+            _current = session;
+            return session;
+        }
     }
 
     public static void EndSession()
     {
-        if (_current != null)
+        lock (_sessionGate)
         {
-            _current.State = DebugSessionState.Terminated;
-            _current._stepGate?.TrySetCanceled();
-            _current = null;
+            if (_current != null)
+            {
+                _current.State = DebugSessionState.Terminated;
+                _current._stepGate?.TrySetCanceled();
+                _current = null;
+            }
         }
     }
 

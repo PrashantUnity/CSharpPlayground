@@ -8,6 +8,7 @@ using Xunit;
 
 namespace CSharpEditorPlugin.Tests.Debugging;
 
+[Collection(ScriptDebugSessionCollection.Name)]
 public class RichDebugInspectionTests
 {
     [Fact]
