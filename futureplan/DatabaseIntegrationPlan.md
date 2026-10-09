@@ -1,379 +1,297 @@
 # Universal Database Integration Plan
 
-> **Objective**: Equip C# Code Studio (**FrySharp**) with an authentic, high-performance universal database engineering suite. Developers can connect to any **RDBMS** (PostgreSQL, MySQL, SQLite, SQL Server, DuckDB) or **NoSQL** data store (MongoDB, Redis, Elasticsearch, LiteDB), explore schemas, interactively design and edit data inline, generate strongly typed C# POCOs/EF Core models, execute queries directly inside the editor and polyglot notebooks (`#!sql`, `#!mongo`), and visualize execution plans and ER diagrams—all within the 5-zone VS Code ergonomic layout.
+> **Objective**: Make FrySharp a first-class database workbench for .NET developers. Connect to relational databases (SQLite, PostgreSQL, SQL Server, MySQL/MariaDB, DuckDB) and later to document and key-value stores (MongoDB, Redis). Browse schemas lazily even when there are tens of thousands of tables. Run queries from `.sql` files and notebook cells (`#!sql --connection prod-pg`), edit rows with a reviewed SQL diff, and generate C# from the schema. Everything stays inside the 5-zone layout.
+
+*Last checked against the code: 2026-10-09 (branch `UiIssues`).*
 
 ---
 
-## 1. Architectural Vision & 5-Zone VS Code Integration
+## 0. Why, and what is different from the first draft
 
-In strict alignment with the **5-Zone VS Code Ergonomics Mandate**, database capabilities integrate natively into the existing studio chrome:
-
-```
-┌────┬──────────────────────┬──────────────────────────────────────────────────────────────┐
-│ A  │   DATA EXPLORER      │                         EDITOR AREA                          │
-│ C  │                      │                                                              │
-│ T  │  ▼ Connections       │  [Tab: Query.sql ×]  [Tab: Schema.er]  [Notebook: App.csnb]  │
-│ I  │    ▶ [DEV] Local PG  ├──────────────────────────────────────────────────────────────┤
-│ V  │    ▼ [PROD] AWS RDS  │  🔴 [PRODUCTION SAFE MODE - READ ONLY]                       │
-│ I  │      ▶ customers     │  SELECT id, company, revenue FROM customers WHERE id = @cid; │
-│ T  │      ▶ orders        ├──────────────────────────────────────────────────────────────┤
-│ Y  │    ▶ [DEV] Mongo DB  │  [Parameter Bar]  @cid: [ 42091 ]  [▶ Run (Cmd+Enter)]       │
-│    │  ▼ Query History     ├──────────────────────────────────────────────────────────────┤
-│ B  │    ⏱ 2m ago (14ms)   │                     BOTTOM PANEL / DOCK                      │
-│ A  │    ⏱ 1h ago (320ms)  │  [RESULTS #1] [RESULTS #2] [EXPLAIN PLAN] [JSON] [HISTORY]   │
-│ R  │  ▼ ER Diagram        │  (Virtualized grid, inline CRUD editing, staged SQL commit)  │
-├────┴──────────────────────┴──────────────────────────────────────────────────────────────┤
-│                                  STATUS BAR (22px fixed)                                 │
-│ >< C# Studio  🔴 [PROD] RDS PG 16  Tx: Manual (1 staged)  Ln 1, Col 1  Rows: 1,420 (8ms) 
-└──────────────────────────────────────────────────────────────────────────────────────────┘
-```
-
-### 5-Zone Role Breakdown:
-- **Zone 1: Activity Bar**: Dedicated Database rail icon (`DatabaseOutline` / `ServerOutline`) with badge counters for active connections or uncommitted transactions.
-- **Zone 2: Primary Side Bar**: 
-  - **Connection Profiles Tree**: Grouped by environment tags (`[DEV]`, `[STAGE]`, `[PROD]`).
-  - **Schema Explorer**: Drill down into Catalogs $\rightarrow$ Schemas $\rightarrow$ Tables $\rightarrow$ Columns, Keys, Indexes, Functions, and Collections.
-  - **Query History Deck**: Chronological log of recent executions with execution times, row counts, and one-click reload.
-  - **Contextual Code Actions**: Right-click table $\rightarrow$ "Generate C# Record / POCO", "Generate Dapper Query", "Generate EF Core Model", "Show ER Diagram".
-- **Zone 3: Editor Canvas**:
-  - Full `.sql` and `.mql` (MongoDB Query Language) editor with syntax highlighting, code folding, and auto-completion.
-  - **Parameter Bar (`@param` / `:param`)**: Auto-detected query parameters rendered as an interactive form bar directly above the editor.
-  - **Production Safe Mode Banner**: Highly visible crimson banner for Production connections preventing accidental destructive executions.
-  - **Visual ER Diagram Canvas**: Interactive graph view showing table relationships, cardinalities, and foreign keys.
-  - **Polyglot Notebook Integration**: `#!sql` and `#!mongo` cell magics with seamless cross-language sharing (`#!share --from sql myTable --as df`).
-- **Zone 4: Bottom Tool Deck**:
-  - **Multi-Tab Results Grid**: High-performance virtualized `DataGrid` supporting multiple simultaneous result sets (`SELECT 1; SELECT 2;`).
-  - **Inline CRUD Data Editor**: Double-click cell editing, row additions, and deletions with staged diffs and reviewable SQL `COMMIT` dialog.
-  - **Visual Execution Plan**: Graphical tree breakdown of `EXPLAIN (ANALYZE, BUFFERS)` showing expensive sequential scans and index bottlenecks.
-  - **JSON Document Tree Inspector**: Collapsible tree viewer for MongoDB BSON documents and JSON column payloads.
-- **Zone 5: Status Bar**:
-  - Environment badge (🟢 `[DEV]`, 🟡 `[STAGE]`, 🔴 `[PROD]`).
-  - Active Connection & Database name (`postgres@aws-rds:5432 / billing_db`).
-  - Transaction status indicator (`Tx: Auto-Commit` or `Tx: Manual (2 staged changes)`).
-  - Execution stopwatch (`⏱ 14ms`) and fetched row count (`Rows: 500 / 14,200`).
+- **The gap is real.** Azure Data Studio was retired in early 2026, and Polyglot Notebooks, the SQL-notebook replacement Microsoft pointed people to, was deprecated at the same time ([DevClass](https://www.devclass.com/databases/2026/02/14/microsoft-deprecates-polyglot-notebooks-developers-react/4091167)). C# + SQL in one notebook is now an empty niche.
+- **This revision** grounds the plan in what already exists (§1). The first draft did not mention the current SQL language at all. This revision also cuts the first milestone to a measurable vertical slice, keeps big schemas fast, moves safety enforcement into the database instead of regexes, replaces `Ctrl+S` (already Save) for committing grid edits, and fixes the notebook example so it compiles against the real `#!share` behaviour.
 
 ---
 
-## 2. Core Architecture & Extensible Provider Engine
+## 1. Starting point (verified in the code)
 
-To support both relational SQL and document/key-value NoSQL engines without code bloat, the architecture separates connection lifecycle, schema discovery, data editing, and query execution into isolated interfaces.
+| What exists | Where | What it means for this plan |
+|---|---|---|
+| **SQL language module**: `.sql` files, notebook cells, aliases `sql` / `sqlite` / `sqlite3`, completion, quick info, folding, indentation | `Services/Languages/Sql/*` (15 files, ~2,000 lines) | Extend it. Don't build a parallel "database" feature next to it. |
+| Execution runs through the **`sqlite3` CLI**: `SqlScriptRunner` calls `sqlite3 -header -table <db> ".read file.sql"`, and `SqlToolchainProvider` searches PATH and `SQLITE3_PATH` for it | `SqlScriptRunner.cs`, `SqlToolchainProvider*.cs` | SQL **does not work unless sqlite3 is installed**. Output is text tables, not typed results. There is no server database support. |
+| `-- :database <path>` (or `:db`) directive picks the database file; `:memory:` works | `SqlScriptRunner.cs:13` | Keep it. Add `-- :connection <name>` beside it. |
+| Notebook SQL uses a **throw-away temp database** per notebook (`%TEMP%/FryStudio/sql_kernel/<hash>/notebook.db`) | `SqlNotebookKernel.cs` | `#!sql --connection` is new work. The temp database stays the default. |
+| `#!share --from <language> <name> [--as <new name>]` works across kernels. A SQL table shared into C# becomes a **`List<object>` of `Dictionary<string, object>` rows** | `NotebookCellDirectives.cs`, `KernelValueSharing.cs` (`Infer`/`Array`) | No `.Rows`, no types. A typed share (§8) is a real improvement. |
+| Language directives take **no options** today (`#!sql` only picks the language) | `NotebookCellDirectives.cs` | `#!sql --connection x --as y` needs the directive parser extended. |
+| Completion knows keywords, functions, dot-commands, and tables from `CREATE TABLE` / `CREATE VIEW` **in the same document** (regex) | `SqlCompletionService.cs` | Schema-aware completion from a live connection is new work. It needs the schema cache (§3.4). |
+| Results table: `DumpTableView` uses a `VirtualizingStackPanel` for rows. `DumpTableBuilder` previews 1,000 rows. No `DataGrid` package is referenced | `Views/DumpTableView*.cs`, `Services/Display/DumpTableBuilder.cs` | Start from `DumpTableView` and add paging and editing. Adding Avalonia's DataGrid is a separate decision (§11). |
+| **No secret store.** The AI API key is stored in plain text in `studio_settings.json` (`Models/AI/AiSettings.cs:83`) | `Services/Settings/StudioSettingsStore.cs` | Build one `ISecretStore` (§6) and move the AI key into it too. That fixes an existing weakness. |
+| Extension points for Activity Bar, Side Bar view, Bottom Deck tab and Status Bar widget | `Services/Extensibility/Sdk/UI/UiContributionModels.cs` | The database UI can register through these instead of being hard-wired into the host ViewModel. This matches the module-kernel direction. |
+| NuGet resolution and isolated load contexts | `Services/Roslyn/NuGetReferenceResolver.cs`, `Services/Extensibility/Host/ExtensionLoadContext.cs` | Reuse them for on-demand drivers (§9). No new resolver needed. |
+| Lazy, virtualized tree pattern | `LazyExplorerTree`, `ExplorerRowList` (Explorer) | Reuse it for the schema tree. |
+| Keybindings: `Ctrl+S` = Save in Code Studio, Notebook and Server studios. `Ctrl+Shift+Enter` is used in the notebook. `Ctrl+Enter` is free in the Code Studio editor | `Views/*StudioView.axaml.cs` | Grid commit must **not** use `Ctrl+S` (§4). |
 
-```
-                              ┌────────────────────────┐
-                              │   IDatabaseProvider    │
-                              └───────────┬────────────┘
-                                          │
-                         ┌────────────────┴────────────────┐
-                         ▼                                 ▼
-              ┌─────────────────────┐           ┌─────────────────────┐
-              │  IRelationalSession │           │    INoSqlSession    │
-              └──────────┬──────────┘           └──────────┬──────────┘
-                         │                                 │
-          ┌──────────────┼──────────────┐           ┌──────┴──────┐
-          ▼              ▼              ▼           ▼             ▼
-       Npgsql     MySqlConnector     SQLite       MongoDB       Redis
-      (Postgres)     (MySQL)                    (BSON/MQL)  (Commands)
-```
+---
 
-### Core Interface Definitions
+## 2. Principles
+
+1. **One SQL language, many engines.** `SqlLanguage` stays the single language. A connection decides which engine runs the text. The sqlite3 CLI becomes an optional fallback, not a requirement.
+2. **Big schemas are normal.** Production databases with 50,000 tables and a million columns must open instantly. Everything is lazy, paged, cancellable and off the UI thread (`.agents/rules/performance_and_zero_lag_mandate.md`). Results stream; nothing loads a whole catalog or a whole result set.
+3. **Safety lives in the database.** A client-side check is a seatbelt, not a lock (§5).
+4. **Capabilities, not inheritance trees.** Engines differ a lot (Redis has no schema; Mongo explains differently). Use a flags enum, the same idiom as `LanguageCapabilities`, plus optional interfaces.
+5. **Ship a vertical slice first,** then widen. Each milestone has a measurable "done when".
+
+---
+
+## 3. Architecture
+
+### 3.1 Placement
+- `Services/Database/` holds the engine-neutral contracts, profiles, history and the safety guard. It has **no Avalonia types**, so it moves to `FrySharp.Core` in [Idea.md](Idea.md) Phase 0 without changes.
+- Providers live in `Services/Database/Providers/<Engine>/`. On-demand drivers load in an isolated context (§9).
+- UI: a Data side bar view, the Results tab and a status bar widget, registered through the extension descriptors.
+- **Web mode is the preferred surface** ([Idea.md](Idea.md)). Every database action goes through Core and is exposed as `fry/db/*` methods on the session protocol (`connect`, `children`, `execute` streaming `QueryEvent`s, `cancel`, `explain`, `applyChanges`). The browser then gets the same features as the desktop, with the web's virtualized table renderer (Idea.md W5) as its results grid. Secrets never reach the browser: the server resolves them from `ISecretStore`.
+
+### 3.2 Contracts (revised)
 
 ```csharp
-public enum DatabaseCategory
+[Flags]
+public enum DatabaseCapabilities
 {
-    Relational,
-    Document,
-    KeyValue,
-    WideColumn,
-    SearchEngine
+    None = 0,
+    Schema = 1 << 0,            // GetChildrenAsync returns a tree
+    Transactions = 1 << 1,      // BeginAsync / Commit / Rollback
+    Explain = 1 << 2,           // ExplainAsync
+    EditableResults = 1 << 3,   // results from a single keyed table can be edited
+    MultipleResultSets = 1 << 4,
+    Parameters = 1 << 5,        // @p / :p / $1 binding
+    ServerSideCancel = 1 << 6,  // cancelling stops work on the server, not just the reader
+    ReadOnlySession = 1 << 7,   // the engine can enforce read-only for the session (see §5)
 }
 
-public enum EnvironmentTier
-{
-    Development,
-    Staging,
-    Production
-}
+public enum EnvironmentTier { Development, Staging, Production }
 
 public interface IDatabaseProvider
 {
-    string ProviderId { get; }          // e.g. "postgres", "mysql", "sqlite", "mongodb", "redis"
+    string ProviderId { get; }                      // "sqlite", "postgres", "sqlserver", "mysql", "duckdb", "mongodb", "redis"
     string DisplayName { get; }
-    DatabaseCategory Category { get; }
-    IReadOnlyList<ConnectionFieldDescriptor> RequiredParameters { get; }
+    DatabaseCapabilities Capabilities { get; }
+    IReadOnlyList<ConnectionFieldDescriptor> Fields { get; }
+    string QueryLanguageId { get; }                 // "sql" for relational; "mongo" / "redis" get their own languages later
 
-    Task<IDatabaseSession> ConnectAsync(ConnectionProfile profile, CancellationToken ct);
-    Task<ConnectionTestResult> TestConnectionAsync(ConnectionProfile profile, CancellationToken ct);
+    Task<IDatabaseSession> OpenAsync(ConnectionProfile profile, ISecretStore secrets, CancellationToken ct);
 }
 
 public interface IDatabaseSession : IAsyncDisposable
 {
-    string SessionId { get; }
     ConnectionProfile Profile { get; }
-    ConnectionState State { get; }
-    ITransactionManager TransactionManager { get; }
+    string ServerVersion { get; }                   // shown in the status bar: "PostgreSQL 17.2"
 
-    Task<IReadOnlyList<SchemaNode>> GetSchemaHierarchyAsync(CancellationToken ct);
-    Task<QueryBatchResult> ExecuteQueryAsync(string queryText, QueryExecutionOptions options, CancellationToken ct);
-    Task<ExecutionPlanResult?> ExplainQueryAsync(string queryText, CancellationToken ct);
-    Task CancelActiveQueryAsync();
+    // Lazy tree: null parent = roots. Large levels are paged.
+    Task<SchemaPage> GetChildrenAsync(SchemaNode? parent, string? pageToken, CancellationToken ct);
+
+    // Streams events as they arrive: ResultSetStarted(columns) → RowsChunk(rows) … → ResultSetEnded(rowsAffected, elapsed) → Message/Notice → Completed.
+    // The token cancels; providers with ServerSideCancel also stop the server work.
+    IAsyncEnumerable<QueryEvent> ExecuteAsync(QueryRequest request, CancellationToken ct);
 }
+
+// Optional, checked with `session is IExplainable e`:
+public interface IExplainable  { Task<ExecutionPlan> ExplainAsync(string query, bool analyze, CancellationToken ct); }
+public interface ITransactional { bool InTransaction { get; } Task BeginAsync(CancellationToken ct); Task CommitAsync(CancellationToken ct); Task RollbackAsync(CancellationToken ct); }
 ```
 
-### Transaction Management (`ITransactionManager`)
+Changes from the first draft, and why:
+- **`GetSchemaHierarchyAsync` → `GetChildrenAsync(parent, pageToken)`.** Loading the full hierarchy breaks on big databases and blocks the first paint.
+- **Materialized `QueryBatchResult` → `IAsyncEnumerable<QueryEvent>`.** The first rows appear right away, memory stays bounded, and multiple result sets and server notices arrive in order.
+- **`CancelActiveQueryAsync` removed.** One `CancellationToken` is the cancel path. Npgsql turns it into a PostgreSQL cancel request; each provider's behaviour is tested (§10).
+- **`IRelationalSession` / `INoSqlSession` split dropped.** The draft's diagram and code disagreed, and capabilities cover the differences.
+- **Staged grid edits are separate from transactions.** The draft's `ITransactionManager.StagedModificationsCount` mixed them. Edits are a client-side `ChangeSet` on the result model. "Apply" runs the generated statements in one transaction where the engine supports it.
+
+### 3.3 One SQL lexer
+`SqlSyntaxHighlighting` is an AvaloniaEdit XSHD rule set and can't be reused as a tokenizer, and `SqlCompletionService` uses regexes. Add one small, dialect-aware lexer in `Services/Database/` that understands strings, quoted identifiers, `--` and `/* */` comments, and PostgreSQL dollar quoting. Four features share it:
+- the statement splitter (`Ctrl+Enter` runs the statement at the caret, and multi-statement batches),
+- parameter detection (`@p`, `:p`, `$1`, but not inside strings or comments),
+- the safety classifier (§5),
+- completion context ("after `FROM`", "after `alias.`").
+
+Its cost per keystroke must track the edited statement, not the document size.
+
+### 3.4 Schema cache (for the tree, completion and code generation)
+- Built in the background per connection, level by level, and cancellable. It can be refreshed per node.
+- Completion asks the cache and **never waits on the network** while the user types. If a name isn't loaded yet, completion offers what is loaded and asks for the rest in the background.
+- Persist an optional snapshot per profile (with a timestamp) so a cold start on a huge schema has completion at once.
+
+---
+
+## 4. UI in the 5-zone layout
+
+| Zone | What appears | Notes |
+|---|---|---|
+| 1 Activity Bar | **Data** icon (`Database`), badge = open connections | Single-sidebar rule: one Data view with sections, not several side bars |
+| 2 Side Bar | Sections: **Connections** (grouped by tier) → lazy schema tree; **Query History**; right-click actions (New Query, Select Top 100, Generate C#, Copy Name) | Uses `LazyExplorerTree`. A paged level shows "Load 500 more" |
+| 3 Editor | `.sql` tabs with a connection picker in the editor toolbar. A **Production banner** when the tier is Production. A parameter bar when the query has parameters | The connection comes from `-- :connection name` in the file, else from the picker |
+| 4 Bottom Deck | The existing **Results** tab gains sub-tabs per result set (`Result 1 · 14 rows`), plus **Messages** and later **Plan** | Reuse the Results tab. No second results deck |
+| 5 Status Bar | Tier badge + `user@host/db`, transaction state, `Rows: 500 of 14,200 · 8 ms` | Shown only while a SQL document or SQL cell is active. The 22px bar has little room |
+
+**Keybindings** (scoped to SQL editors, checked against the existing keymap):
+- `F5`: run the file or selection (unchanged meaning).
+- `Ctrl+Enter`: run the **statement at the caret** (free in the Code Studio editor today).
+- `Shift+F5` / `Esc` in Results: cancel.
+- Grid edits: an **Apply** button opens the Review SQL dialog. **Not `Ctrl+S`**, which is Save everywhere. If a shortcut is wanted, choose one the keymap doesn't use and add it to the shortcuts list.
+
+---
+
+## 5. Production safety (corrected)
+
+The first draft relied on "inspecting the query AST" and "rejecting all non-SELECT statements". Neither is reliable on its own:
+- `SELECT` can change data (`SELECT pg_terminate_backend(…)`, functions with side effects), and PostgreSQL allows `WITH d AS (DELETE …) SELECT …`.
+- A regex over raw text is fooled by comments, strings and dollar-quoting, and a real AST needs a parser per dialect.
+
+**Layered design:**
+1. **Read-only enforced by the engine where possible** (`ReadOnlySession` capability):
+   - SQLite: open with `Mode=ReadOnly`. This is a real guarantee.
+   - PostgreSQL: `Options=-c default_transaction_read_only=on`. A user statement can turn it off again, so this is a guard, not a guarantee.
+   - MySQL/MariaDB: `SET SESSION TRANSACTION READ ONLY` after connecting. Same caveat.
+   - SQL Server: there is no session switch (`ApplicationIntent=ReadOnly` only routes to replicas).
+   - **Docs and the connection dialog say so plainly:** the real protection for production is a **read-only database role**. The dialog offers a "connect as a read-only user" hint for Production profiles.
+2. **Client-side statement classifier (the seatbelt):** tokenize with comments, strings, quoted identifiers and dollar quotes removed, split statements, and flag `DROP`, `TRUNCATE`, `ALTER`, `GRANT`/`REVOKE`, and `DELETE`/`UPDATE` without `WHERE`. On Production, a flagged statement asks the user to **type the database name**. On Staging, a plain confirm. On Development, nothing.
+3. **Visual chrome:** a Production banner in the editor, a crimson status-bar badge, a tinted Results header. Use theme tokens, not hard-coded colours (theme studio rule).
+4. **Grid edits on Production** are always reviewed and never auto-committed.
+
+---
+
+## 6. Credentials and connection profiles
+
+- **Profiles** (no secrets) live in `connections.json`, at user level or in the workspace (`.frysharp/connections.json`, safe to commit). Values can use `${env:PG_PASSWORD}` for teams and CI.
+- **Secrets** go through one new `ISecretStore`:
+  - macOS: Keychain, through the `security` CLI or Security.framework P/Invoke.
+  - Windows: DPAPI (`System.Security.Cryptography.ProtectedData`, a Windows-only package).
+  - Linux: Secret Service via `secret-tool`/libsecret. If that is missing, **say so** and offer "don't save the password" rather than writing it in plain text silently.
+- **Move the AI API key into `ISecretStore` in the same milestone.** It is in plain text today.
+- SSH tunnels (SSH.NET) come later (M4): a profile option, with the key passphrase in `ISecretStore`.
+
+---
+
+## 7. Notebooks (`#!sql` with connections)
+
+What needs building: options on the language directive line, a connection-bound SQL kernel, and a typed share.
 
 ```csharp
-public interface ITransactionManager
-{
-    bool IsAutoCommitEnabled { get; set; }
-    bool HasActiveTransaction { get; }
-    int StagedModificationsCount { get; }
-
-    Task BeginTransactionAsync(CancellationToken ct);
-    Task CommitAsync(CancellationToken ct);
-    Task RollbackAsync(CancellationToken ct);
-}
-```
-
----
-
-## 3. C# Superpower: Schema-to-C# Code Generation
-
-As an authentic C# IDE, FrySharp provides instant code scaffolding directly from the database schema:
-
-```
-┌───────────────────────────────────────────────┐
-│ Database Explorer:                            │
-│   ▼ tables                                    │
-│     ▶ customers  ───► Right Click Context:    │
-│     ▶ orders         ├── Generate C# Record   │
-│                      ├── Generate Dapper Repo │
-│                      ├── Generate EF Core     │
-│                      └── Inject into Tab      │
-└───────────────────────────────────────────────┘
-```
-
-### Scaffolding Capabilities:
-1. **C# 13 Record / POCO Generator**:
-   - Maps database column data types (`uuid` $\rightarrow$ `Guid`, `timestamptz` $\rightarrow$ `DateTimeOffset`, `numeric` $\rightarrow$ `decimal`, `jsonb` $\rightarrow$ `JsonDocument` or typed POCO).
-   - Generates nullable reference types based on database nullability flags (`string?`, `int?`).
-   - Supports attributes: `System.Text.Json`, `Newtonsoft.Json`, and `Dapper.Contrib`.
-2. **Dapper Repository Scaffolder**:
-   - Generates type-safe asynchronous query methods (`GetByIdAsync`, `ListAsync`, `InsertAsync`, `UpdateAsync`).
-3. **Entity Framework Core Entity & `DbContext` Scaffolder**:
-   - Generates fluent API configuration (`OnModelCreating`) with table mappings, column types, primary keys, and foreign key relationships.
-4. **"Inject Into Active Tab" Action**:
-   - One-click insertion directly into the open C# script (`.csx`), FryCS document, or notebook cell without needing manual copy-pasting.
-
----
-
-## 4. Inline Grid Data Editing & Safe CRUD Operations
-
-Developers can manipulate table data without writing manual `INSERT`, `UPDATE`, or `DELETE` statements:
-
-1. **Inline Cell Editing**:
-   - Double-click any cell to modify values inline with type validation (dates, integers, booleans, GUIDs).
-   - Multi-line text and JSON modal editor for complex structures.
-2. **Staged Change Diffing**:
-   - Edited rows are highlighted in **Yellow** (Modified).
-   - Newly inserted rows are highlighted in **Green** (Inserted).
-   - Marked-for-deletion rows are highlighted in **Red** (Deleted).
-3. **"Review SQL & Commit" Modal**:
-   - Clicking **Apply Changes** (`Ctrl+S` / `Cmd+S`) displays a formatted preview of the exact generated SQL statements:
-     ```sql
-     -- Staged Changes Preview (2 operations)
-     UPDATE customers SET email = 'jane.doe@example.com' WHERE id = 104;
-     DELETE FROM orders WHERE id = 8991;
-     ```
-   - Developers review and confirm the statements before executing them against the target database.
-
----
-
-## 5. Production "Safe Mode" & Environment Governance
-
-Accidental data loss on production instances is prevented through active safeguards:
-
-1. **Environment Tiers**:
-   - Each connection profile is tagged: **Development** (Green), **Staging** (Amber), or **Production** (Crimson).
-2. **Visual Warning Chrome**:
-   - When connected to Production, the status bar badge, editor breadcrumbs, and results deck render high-visibility crimson accent borders.
-3. **Destructive Query Interceptor**:
-   - Automatically inspects outgoing query ASTs.
-   - Any query containing `DROP`, `TRUNCATE`, `ALTER`, `DELETE` (without `WHERE`), or `UPDATE` (without `WHERE`) triggers an explicit confirmation dialog requiring the user to type the database name to confirm execution.
-4. **Read-Only Enforced Mode**:
-   - Toggleable flag on connection profiles that rejects all non-`SELECT` statements before sending them over the wire.
-
----
-
-## 6. Interactive Visual ER Diagrams
-
-Leveraging FrySharp's existing visual canvas architecture (`Charting`, `Visuals`):
-
-1. **Automatic Foreign Key Graphing**:
-   - Analyzes schema relationships and foreign key constraints to build an interactive node-and-link graph.
-   - Nodes display table names, primary keys (🔑), column types, and nullability.
-   - Edges display relationship cardinalities ($1:1$, $1:N$, $N:M$) and foreign key constraints (`ON DELETE CASCADE`).
-2. **Interactive Controls**:
-   - Smooth pan and zoom with mini-map overview.
-   - Isolate table: Focus on a selected table and dim all unrelated tables.
-   - Export diagram to SVG, PNG, or Markdown Mermaid format.
-
----
-
-## 7. Execution Plans & Multi-Result Sets
-
-1. **Multiple Result Sets**:
-   - Supports multi-statement batches (`SELECT * FROM users; SELECT * FROM products;`).
-   - Renders each result set in an independent numbered sub-tab in the Bottom Tool Deck (`Result 1 (14 rows)`, `Result 2 (80 rows)`).
-2. **Visual Execution Plan (EXPLAIN ANALYZE)**:
-   - Evaluates PostgreSQL JSON execution plans, SQL Server XML execution plans, and MySQL explain data.
-   - Graphically renders the query plan tree with visual indicators:
-     - High-cost nodes (e.g. Seq Scan on 1,000,000 rows highlighted in red).
-     - Actual vs. estimated row discrepancies.
-     - Buffer hit ratios and index scan efficiency.
-
----
-
-## 8. Query History, Parameters & Export Engine
-
-1. **Query History Log**:
-   - Automatically tracks every executed query in an isolated SQLite local log.
-   - Metadata recorded: timestamp, connection profile, duration (ms), row count, and execution status (success / error).
-   - Filter history by text, date, or connection name; one-click "Open in Editor".
-2. **Interactive Parameter Bar**:
-   - Automatically parses `@param` (SQL Server, MySQL, SQLite) or `:param` / `$1` (Postgres, Oracle).
-   - Generates input fields in a floating parameter bar above the editor with typed inputs.
-3. **Export Engine**:
-   - One-click export of any result set to:
-     - **CSV / TSV** (custom delimiter, headers, quoted strings)
-     - **JSON / JSON Lines**
-     - **Excel (`.xlsx`)** (with formatted headers and auto-column width)
-     - **Markdown Table** (ready for documentation)
-     - **SQL `INSERT INTO` statements** (for data migration)
-
----
-
-## 9. On-Demand Dynamic Driver Resolution (Driver Store)
-
-To prevent bloating the base application binary with hundreds of megabytes of third-party drivers:
-- **Core Drivers Bundled**: Lightweight essential drivers (SQLite, PostgreSQL, MySQL) are bundled natively.
-- **On-Demand NuGet Resolution**: Specialized drivers (Oracle `Oracle.ManagedDataAccess.Core`, SQL Server `Microsoft.Data.SqlClient`, Snowflake, Cassandra, Neo4j) are dynamically downloaded via NuGet into the studio's managed package cache when first requested.
-- **Isolated `AssemblyLoadContext`**: Drivers load into isolated contexts to prevent dependency conflicts with the IDE host runtime.
-
----
-
-## 10. Supported Database Ecosystem
-
-### Relational / ADO.NET Engines
-| Engine | Driver Package | Feature Coverage |
-|---|---|---|
-| **PostgreSQL** | `Npgsql` | Catalogs, Schemas, JSONB, Arrays, Functions, EXPLAIN ANALYZE |
-| **SQLite** | `Microsoft.Data.Sqlite` | Embedded file & in-memory databases, zero-configuration |
-| **MySQL / MariaDB** | `MySqlConnector` | Catalogs, Tables, Views, Stored Procedures, Explain |
-| **SQL Server** | `Microsoft.Data.SqlClient` | Schemas, Temp tables, XML/JSON columns, Execution Plans |
-| **DuckDB** | `DuckDB.NET.Data` | Embedded analytical query engine directly over Parquet, CSV, and JSON |
-
-### NoSQL & Non-Relational Engines
-| Engine | Driver Package | Interaction Model |
-|---|---|---|
-| **MongoDB** | `MongoDB.Driver` | Collections, BSON queries, Aggregation pipelines, Document tree |
-| **Redis** | `StackExchange.Redis` | Keyspace inspection, Strings, Hashes, Lists, Sets, TTLs, Live Command REPL |
-| **Elasticsearch** | `Elastic.Clients.Elasticsearch` | Indices, Mappings, Lucene/DSL queries, Cluster health |
-| **LiteDB** | `LiteDB` | Embedded document database for rapid desktop prototyping |
-
----
-
-## 11. Polyglot Notebook Integration (`#!sql` Magic)
-
-Engineers combine direct database querying with C# data analysis and rich charting:
-
-```csharp
-// Cell 1: Query database directly into notebook memory
+// Cell 1: SQL against a named connection; the result is kept as "customersTable"
 #!sql --connection dev-postgres --as customersTable
-SELECT id, company_name, revenue, country 
-FROM customers 
-WHERE active = true 
-ORDER BY revenue DESC;
+SELECT id, company_name, revenue, country
+FROM customers
+WHERE active
+ORDER BY revenue DESC
+LIMIT 100;
+```
 
-// Cell 2: Share and analyze seamlessly in C# (.NET 10)
+```csharp
+// Cell 2: C#. Today a shared SQL table arrives as List<object> of Dictionary<string, object> rows.
 #!csharp
 #!share --from sql customersTable --as customers
 
-var top10 = customers.Rows
-    .Select(r => new { Name = r["company_name"], Revenue = (decimal)r["revenue"] })
-    .Take(10);
+var top10 = customers.Cast<Dictionary<string, object>>()
+    .Select(r => (Name: (string)r["company_name"], Revenue: Convert.ToDouble(r["revenue"])))
+    .Take(10)
+    .ToList();
 
-Display.Table(top10);
-Display.BarChart(top10.Select(x => x.Name), top10.Select(x => x.Revenue));
+top10.Dump();
+Display.BarChart(top10.ToDictionary(x => x.Name, x => x.Revenue), "Top 10 customers by revenue");
 ```
 
----
-
-## 12. Security & Credential Protection
-
-- **Master Credential Vault**: Passwords and connection tokens are never saved in plain-text `.json` or workspace configs.
-- **OS Platform Keychain**:
-  - **macOS**: Apple Keychain Services via Security framework.
-  - **Windows**: Windows Data Protection API (DPAPI / `ProtectedData`).
-  - **Linux**: Freedesktop Secret Service API via D-Bus / SecretStorage.
-- **Connection Environment Variables**: Support `$PG_PASSWORD`, `${ENV_VAR}` interpolation for team repositories and CI.
-- **SSH Jump-Host Tunneling**: Built-in SSH forwarding (`SSH.NET`) for accessing internal private VPC databases securely.
+- Without `--connection`, cells keep today's behaviour: the per-notebook temp SQLite database.
+- `--as` caps how many rows are kept (default 10,000, configurable) and says when it truncates. A share never silently drops rows.
+- **Typed share (M3):** when the source is a known table or query, share into C# as a generated `record` list (or `DataTable`, which `KernelValueSharing` already handles going the other way). Then `customers[0].Revenue` is a `decimal` with completion, which ties into code generation (§8).
 
 ---
 
-## 13. Phased Implementation Roadmap
+## 8. Schema → C# code generation
 
-### Milestone 1: Core Engine & Relational Foundation
-- [ ] Create `Services/Database/` domain in `CSharpPlayground`.
-- [ ] Define `IDatabaseProvider`, `IDatabaseSession`, `ISchemaExplorer`, `IQueryExecutor`, `ITransactionManager`.
-- [ ] Implement `AdoNetRelationalProvider` base class.
-- [ ] Implement **SQLite** (`Microsoft.Data.Sqlite`) and **PostgreSQL** (`Npgsql`) providers.
-- [ ] Connection profile manager with OS Keychain encryption and environment tier tags (`Dev`, `Stage`, `Prod`).
+1. **Record / POCO** with nullable reference types from column nullability. Type map per engine (`uuid`→`Guid`, `timestamptz`→`DateTimeOffset`, `numeric`→`decimal`, `jsonb`→`JsonDocument`). Optional `System.Text.Json` attributes. The project builds with `LangVersion 13`, so generated code must not use C# 14 features.
+2. **Dapper repository** (`GetByIdAsync`, `ListAsync`, `InsertAsync`, `UpdateAsync`) with parameters, never string concatenation.
+3. **EF Core** entity + `DbContext` with fluent configuration (keys, FKs, column types).
+4. **Insert into active tab / cell**, or open in a new `.frycs` tab. Generation reads from the schema cache, so it is instant and works offline.
+5. Golden-file tests per engine type map.
 
-### Milestone 2: UI Controls & VS Code Tool Windows
-- [ ] Add Database icon to `ActivityBarControl`.
-- [ ] Create `DatabaseExplorerControl` in Primary Side Bar:
-  - TreeView for connections, schemas, tables, collections, columns.
-  - Context menu actions ("New Query", "Select Top 100", "Generate POCO", "Show ER Diagram").
-- [ ] Create `ConnectionDialogView`:
-  - Connection mode (Parameters vs. Connection String URI).
-  - Environment tier selector (Dev / Stage / Prod).
-  - SSH Tunneling configuration tab.
-  - "Test Connection" button with ping/latency indicator.
-- [ ] Create `DataGridResultsDeck`:
-  - Virtualizing grid capable of handling 100,000+ rows smoothly.
-  - Multi-tab support for multiple result sets.
-  - Export actions: CSV, JSON, Excel, Markdown, SQL INSERT.
+---
 
-### Milestone 3: C# Code Generator & Data Editing
-- [ ] Implement `ISchemaToCodeGenerator`:
-  - C# 13 Record / POCO generator with accurate nullability and data type mapping.
-  - Dapper query generator & EF Core model scaffolder.
-  - "Inject into Active Tab" command.
-- [ ] Implement inline CRUD data editing:
-  - Double-click cell edit with staged change tracking.
-  - "Review SQL & Commit" modal with generated `UPDATE` / `DELETE` / `INSERT` diff preview.
-  - Status Bar transaction management badge (`Auto-Commit` vs `Manual`).
+## 9. Drivers: bundled vs. on demand
 
-### Milestone 4: Safety & Developer Ergonomics
-- [ ] Implement Production Safe Mode:
-  - Visual crimson chrome indicators for `[PROD]` connections.
-  - Destructive query interceptor with explicit confirmation modal.
-  - Read-only connection profile enforcement.
-- [ ] Implement Query History & Parameter Bar:
-  - Local SQLite query history tracker with search and one-click reload.
-  - Dynamic parameter bar above editor parsing `@param` and `:param`.
+FrySharp ships as a FryPDF plugin, so every bundled megabyte reaches every user. Some drivers carry native binaries per platform.
 
-### Milestone 5: Visualizations & NoSQL Support
-- [ ] Interactive Visual ER Diagram:
-  - Foreign key relationship graph with zoom/pan and isolate table view.
-- [ ] Visual Execution Plan (`EXPLAIN ANALYZE`):
-  - Tree visualizer for PostgreSQL and SQL Server execution plans highlighting expensive nodes.
-- [ ] NoSQL Providers:
-  - **MongoDB** provider with BSON query runner and `JsonDocumentTreeViewer`.
-  - **Redis** provider with keyspace browser and command console.
-  - **DuckDB** provider for instant querying of local Parquet and CSV files.
+| Tier | Engine | Package | Notes |
+|---|---|---|---|
+| Bundled | SQLite | `Microsoft.Data.Sqlite` (+ SQLitePCLRaw native `e_sqlite3`) | **Removes the sqlite3 CLI requirement.** Check that the FryPDF host doesn't load a different SQLitePCLRaw first (load-context conflict). |
+| Bundled | PostgreSQL | `Npgsql` (managed) | |
+| On demand | SQL Server | `Microsoft.Data.SqlClient` | Has native and auth dependencies, so load it in its own context |
+| On demand | MySQL / MariaDB | `MySqlConnector` (managed) | Small, so it could be bundled. Decide by measured plugin size |
+| On demand | DuckDB | `DuckDB.NET.Data.Full` (large native library) | Great for Parquet/CSV analysis in notebooks; a strong candidate after PostgreSQL |
+| Later (M6) | MongoDB, Redis | `MongoDB.Driver`, `StackExchange.Redis` | Different query models, so they need their own design (§12) |
+| Unscheduled | Oracle, Snowflake, Elasticsearch, Cassandra, Neo4j, LiteDB | — | Only when users ask. Each one is a maintenance commitment |
 
-### Milestone 6: Polyglot Notebook Integration & Dynamic Drivers
-- [ ] Polyglot notebook `#!sql` and `#!mongo` kernel handlers.
-- [ ] `#!share` integration into C# dataframes / dynamic rows.
-- [ ] On-demand dynamic NuGet driver downloading (`IDriverPackageResolver`) via isolated `AssemblyLoadContext`.
+On-demand drivers download through `NuGetReferenceResolver` into the managed package cache and load in an isolated `AssemblyLoadContext` (pattern: `ExtensionLoadContext`). Show progress and size before downloading, and make it work offline once cached.
+
+---
+
+## 10. Milestones (each with "done when")
+
+### M1 — Vertical slice: SQLite in-process + PostgreSQL
+- [ ] `Services/Database/` contracts (§3.2), `ConnectionProfile`, `ISecretStore` (the AI key moves too).
+- [ ] SQLite provider on `Microsoft.Data.Sqlite`. `SqlScriptRunner` and `SqlNotebookKernel` use it; the sqlite3 CLI stays only as a fallback. **Decision in §11.**
+- [ ] PostgreSQL provider on Npgsql.
+- [ ] Connection dialog: fields or URI, tier, "Test connection" with latency.
+- [ ] Data side bar: connections → lazy, paged schema tree.
+- [ ] Run file / selection / statement at caret, **streamed** into the Results tab with result-set sub-tabs, Messages, cancel, and "Fetch more" past the first page.
+- [ ] Status bar: tier badge, connection, row count, elapsed.
+- [ ] `-- :connection <name>` in files; `#!sql --connection <name> --as <var>` in notebooks.
+
+**Done when** (measured with `tools/UiSnapshots perf`, plus tests):
+- `SELECT` over **1,000,000 rows**: first rows show within 300 ms of the server's first byte, the UI thread is never blocked for more than 50 ms, and memory stays under a fixed cap (the grid pages; it doesn't hold a million rows).
+- A schema with **50,000 tables**: the tree's first level shows within 200 ms, and expanding a node never lists the whole catalog.
+- Cancelling a running `pg_sleep(60)` returns within 1 s, and the server-side query is gone (checked in `pg_stat_activity`).
+- SQL runs on a machine **without sqlite3 installed**.
+- Tests run against **real engines**: SQLite always, in-process. PostgreSQL through a local server or Docker when one is available, otherwise the tests are reported as skipped (never silently passing).
+
+### M2 — Safety, history, parameters, export
+- [ ] §5 in full: engine read-only, statement classifier with tests for comments/strings/CTEs, Production confirmations and chrome.
+- [ ] Query history (local SQLite): text, profile, duration, rows, status. Search, reopen, **retention limit, and a per-profile "don't record"** (query text can contain personal data or secrets).
+- [ ] Parameter bar for `@p`, `:p` and `$1`, with typed inputs and values remembered per document.
+- [ ] Export: CSV/TSV, JSON/JSON Lines, Markdown, SQL `INSERT`. **Excel only if a dependency (e.g. ClosedXML) is accepted.** Optional: export to PDF through the host, a natural fit for FryPDF.
+
+### M3 — Code generation, typed share, grid editing
+- [ ] §8 generators with golden tests.
+- [ ] Typed `#!share` from SQL (§7).
+- [ ] Grid editing only when the result set comes from **one table with a primary key** (otherwise read-only, with the reason shown). The `ChangeSet` diff is coloured with theme tokens. The Review SQL dialog shows the exact parameterized statements, and Apply runs them in one transaction.
+
+### M4 — More engines and connectivity
+- [ ] On-demand driver store (§9).
+- [ ] SQL Server, MySQL/MariaDB, DuckDB providers.
+- [ ] SSH tunnels.
+
+### M5 — Plans and diagrams
+- [ ] `EXPLAIN` / `EXPLAIN ANALYZE` parsed from PostgreSQL JSON, SQL Server showplan XML and MySQL `FORMAT=JSON` into one `ExecutionPlan` tree, with hot nodes and estimate-vs-actual gaps marked.
+- [ ] ER diagram. **No node-link diagram renderer exists in the studio today.** Ship text first (Mermaid `erDiagram` / DBML export, cheap and useful in docs), then pick a renderer (e.g. a layout library in the existing WebView) as its own design task.
+
+### M6 — Document and key-value stores
+- [ ] Separate design doc first: query languages (`#!mongo` as a new language id with its own editor support; Redis command console), result shapes (document tree view), and what "schema" means (sampled fields).
+
+---
+
+## 11. Decisions for the owner
+
+1. **SQLite engine:** replace the sqlite3 CLI with in-process `Microsoft.Data.Sqlite` (recommended: works with nothing installed, typed results, streaming)? Or keep the CLI as the default? Dot-commands like `.tables` and `.import` only exist in the CLI, so keep the CLI as an opt-in for them.
+2. **Results grid:** extend `DumpTableView` (recommended: already virtualized and themed) or add Avalonia's `DataGrid` / `TreeDataGrid` package (more built-in editing, more dependency and styling work)?
+3. **Bundle size:** bundle MySqlConnector or download it on demand?
+4. **Excel export:** accept a library dependency, or ship CSV and let Excel open it?
+5. **Priority vs. web mode ([Idea.md](Idea.md)):** build M1's engine half (contracts, providers, `ISecretStore`) straight into `FrySharp.Core` right after Phase 0 slice 0a, and the UI on desktop and web together. Or finish web W1–W4 first and add databases after?
+
+## 12. Risks
+
+| Risk | Mitigation |
+|---|---|
+| Scope creep (9+ engines, diagrams, plans, editing) | Engines in tiers. M1 is the only commitment until it meets its numbers. |
+| Native driver conflicts inside the FryPDF host | Isolated load contexts. Test the plugin inside the real host, not only in the standalone `Runner`. |
+| False sense of safety on Production | Say plainly in the UI and docs that read-only roles are the real protection. Test the classifier against tricky SQL. |
+| Huge results freezing the UI or using memory | Streaming + paging + a row cap with "Fetch more". The 1M-row check is in the perf harness. |
+| Secrets leaking through history or exports | Per-profile history opt-out, retention limits, no secrets in profiles, `${env:…}` support. |
+| NoSQL contorting the relational design | Capabilities + optional interfaces. NoSQL gets its own design pass (M6). |
