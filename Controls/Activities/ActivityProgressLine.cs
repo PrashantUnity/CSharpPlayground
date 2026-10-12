@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel;
 using System.Threading;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Controls;
@@ -129,10 +130,16 @@ public sealed class ActivityProgressLine : Panel
         double segment = width * SegmentShare;
         // A still frame (a snapshot, a paused clock) shows the segment on screen rather than parked off the left edge.
         _slide.X = width * 0.2;
+        _animation = new CancellationTokenSource();
+        StartAnimationLoop(_segment, width, segment, _animation.Token);
+    }
+
+    private async void StartAnimationLoop(Border segmentBorder, double width, double segment, CancellationToken token)
+    {
         var animation = new Animation
         {
             Duration = TimeSpan.FromSeconds(1.4),
-            IterationCount = IterationCount.Infinite,
+            IterationCount = new IterationCount(1),
             Easing = new Avalonia.Animation.Easings.QuadraticEaseInOut(),
             Children =
             {
@@ -140,9 +147,19 @@ public sealed class ActivityProgressLine : Panel
                 new KeyFrame { Cue = new Cue(1d), Setters = { new Setter(TranslateTransform.XProperty, width) } },
             },
         };
-        _animation = new CancellationTokenSource();
-        // Transform animations run on the control and drive its RenderTransform.
-        _ = animation.RunAsync(_segment, _animation.Token);
+
+        try
+        {
+            while (!token.IsCancellationRequested)
+            {
+                await animation.RunAsync(segmentBorder, token);
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ActivityProgressLine] Animation loop stopped: {ex.Message}");
+        }
     }
 
     private void StopAnimation()

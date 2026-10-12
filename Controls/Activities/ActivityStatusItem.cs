@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel;
 using System.Threading;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Controls;
@@ -120,18 +121,34 @@ public sealed class ActivityStatusItem : StackPanel
         }
 
         if (_animation != null) return;
+        _animation = new CancellationTokenSource();
+        StartAnimationLoop(_animation.Token);
+    }
+
+    private async void StartAnimationLoop(CancellationToken token)
+    {
         var animation = new Animation
         {
             Duration = TimeSpan.FromSeconds(1),
-            IterationCount = IterationCount.Infinite,
+            IterationCount = new IterationCount(1),
             Children =
             {
                 new KeyFrame { Cue = new Cue(0d), Setters = { new Setter(RotateTransform.AngleProperty, 0d) } },
                 new KeyFrame { Cue = new Cue(1d), Setters = { new Setter(RotateTransform.AngleProperty, 360d) } },
             },
         };
-        _animation = new CancellationTokenSource();
-        // Transform animations run on the control and drive its RenderTransform.
-        _ = animation.RunAsync(_ring, _animation.Token);
+
+        try
+        {
+            while (!token.IsCancellationRequested)
+            {
+                await animation.RunAsync(_ring, token);
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ActivityStatusItem] Animation loop stopped: {ex.Message}");
+        }
     }
 }
