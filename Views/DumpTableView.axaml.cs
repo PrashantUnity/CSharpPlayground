@@ -154,6 +154,24 @@ public partial class DumpTableView : UserControl
     /// <summary>Shows <paramref name="table"/> now (nested tables and tools call this directly).</summary>
     public void BuildTable(DumpTableResult table) => Attach(table, refreshNow: true);
 
+    // The Copy menu: what the table shows (filtered and sorted) goes to this view's own clipboard, the one of the window
+    // it is in, not the studio's main window.
+    private void OnCopyTsv(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => _ = CopyAsync(t => t.ToTsv());
+
+    private void OnCopyCsv(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => _ = CopyAsync(t => t.ToCsv());
+
+    private void OnCopyJson(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => _ = CopyAsync(t => t.ToJson());
+
+    private void OnCopyMarkdown(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => _ = CopyAsync(t => t.ToMarkdown());
+
+    private async Task CopyAsync(Func<DumpTableResult, string> format)
+    {
+        var table = _currentTable ?? DataContext as DumpTableResult;
+        var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
+        if (table == null || clipboard == null) return;
+        await clipboard.SetTextAsync(format(table));
+    }
+
     private void Attach(DumpTableResult table, bool refreshNow)
     {
         if (!ReferenceEquals(_currentTable, table))

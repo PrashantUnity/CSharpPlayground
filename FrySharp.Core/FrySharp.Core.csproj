@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>FrySharp.Core</AssemblyName>
+    <RootNamespace>PdfEditorApp.Plugins.CSharpEditor</RootNamespace>
+    <Description>Headless execution, Roslyn scripting, workspace index, toolchains, kernels and visuals render models for FrySharp</Description>
+    <!-- FrySharp.Core.xml ships next to the DLL so hovering Display, Dump... in a script shows their docs.
+         Only the documented members need comments (CS1591, CS1573). -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CS1573</NoWarn>
+    <!-- Resources are listed below by hand: the runtime scripts are embedded twice, as part of the kernel and alone. -->
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.12.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The words of the visual contract (ChartType, ElementState, ...): charts, 3D plots and visualizers all use them. -->
+    <Using Include="PdfEditorApp.Plugins.CSharpEditor.Visuals.Spec" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- ECharts and echarts-gl, read by HtmlAssets for every host that shows ECharts outputs. -->
+    <EmbeddedResource Include="Assets/echarts/*.js" LogicalName="ECharts.%(Filename)%(Extension)" />
+    <!-- The Python and JavaScript notebook kernels and display runtimes, written out to the data folder when a cell or a
+         script of that language first runs. -->
+    <EmbeddedResource Include="Services/Languages/Python/Kernel/*.py" LogicalName="PythonKernel.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Services/Languages/Python/Runtime/*.py" LogicalName="PythonKernel.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Services/Languages/Python/Runtime/*.py" LogicalName="PythonRuntime.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Services/Languages/JavaScript/Kernel/*.js" LogicalName="JavaScriptKernel.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Services/Languages/JavaScript/Runtime/*.js" LogicalName="JavaScriptKernel.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Services/Languages/JavaScript/Runtime/*.js" LogicalName="JavaScriptRuntime.%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <!-- Core runs where there is no UI (web server, CLI, tests), so a UI package here is a build error, not a review comment. -->
+  <Target Name="AssertNoAvalonia" AfterTargets="ResolvePackageAssets">
+    <ItemGroup>
+      <_FryUiPackageAsset Include="@(RuntimeCopyLocalItems)" Condition="$([System.String]::Copy('%(NuGetPackageId)').ToLowerInvariant().StartsWith('avalonia'))" />
+      <_FryUiPackageAsset Include="@(ResolvedCompileFileDefinitions)" Condition="$([System.String]::Copy('%(NuGetPackageId)').ToLowerInvariant().StartsWith('avalonia'))" />
+    </ItemGroup>
+    <Error Condition="'@(_FryUiPackageAsset)' != ''"
+           Text="FrySharp.Core must stay headless, but these Avalonia packages reach it: @(_FryUiPackageAsset->'%(NuGetPackageId)'->Distinct()). Move the UI code to the desktop plugin." />
+  </Target>
+</Project>

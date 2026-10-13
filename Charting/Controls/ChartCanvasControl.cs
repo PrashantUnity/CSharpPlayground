@@ -202,7 +202,7 @@ public class ChartCanvasControl : Control
         var color = ChartPaletteService.ParseColor(
             !string.IsNullOrEmpty(hit.Point.CustomColor)
                 ? hit.Point.CustomColor
-                : (!string.IsNullOrEmpty(hit.Series.Color) ? hit.Series.Color : Options?.PrimaryColor ?? "#4ec9b0"));
+                : (!string.IsNullOrEmpty(hit.Series.Color) ? hit.Series.Color : ChartPaletteService.GetSeriesColor(Options?.Series.IndexOf(hit.Series) ?? 0)));
 
         var haloBrush = new SolidColorBrush(Color.FromArgb(50, color.R, color.G, color.B));
         var dotBrush = new SolidColorBrush(color);

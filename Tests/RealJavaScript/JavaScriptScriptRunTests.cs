@@ -42,7 +42,7 @@ public class JavaScriptScriptRunTests : IDisposable
         var node = TestJavaScript.Require();
         var services = TestJavaScript.Services(Path.Combine(_dir, ".studio"));
         var language = (JavaScriptLanguage)services.Registry.Get(LanguageIds.JavaScript)!;
-        var plan = await language.ScriptRunner.PlanAsync(new ScriptRunContext(path, Path.GetDirectoryName(path)!, node));
+        var plan = await language.Engine.ScriptRunner.PlanAsync(new ScriptRunContext(path, Path.GetDirectoryName(path)!, node));
         var output = new ConcurrentQueue<string>();
         var session = new ScriptRunExecutor(services.Processes).Start(plan, path, language.RunDiagnostics, output.Enqueue);
         return (session, output);

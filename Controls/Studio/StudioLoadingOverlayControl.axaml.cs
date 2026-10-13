@@ -148,7 +148,7 @@ public partial class StudioLoadingOverlayControl : UserControl
         var token = _animations.Token;
         foreach (var (animation, target) in BuildAnimations())
         {
-            _ = animation.RunAsync(target, token);
+            RunSingleAnimationLoop(animation, target, token);
         }
     }
 
@@ -161,9 +161,25 @@ public partial class StudioLoadingOverlayControl : UserControl
         StepAnimation(TimeSpan.Zero);
     }
 
+    private async void RunSingleAnimationLoop(Animation animation, Animatable target, CancellationToken token)
+    {
+        try
+        {
+            while (!token.IsCancellationRequested)
+            {
+                await animation.RunAsync(target, token);
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[StudioLoadingOverlay] Animation loop stopped: {ex.Message}");
+        }
+    }
+
     private static Animation Loop(double seconds, AvaloniaProperty property, params (double Cue, object Value)[] frames)
     {
-        var animation = new Animation { Duration = TimeSpan.FromSeconds(seconds), IterationCount = IterationCount.Infinite };
+        var animation = new Animation { Duration = TimeSpan.FromSeconds(seconds), IterationCount = new IterationCount(1) };
         foreach (var (cue, value) in frames)
         {
             animation.Children.Add(new KeyFrame { Cue = new Cue(cue), Setters = { new Setter(property, value) } });

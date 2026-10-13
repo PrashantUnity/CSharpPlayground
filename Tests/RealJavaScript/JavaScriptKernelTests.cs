@@ -41,7 +41,7 @@ public class JavaScriptKernelTests : IDisposable
         var services = new StudioLanguageServices(Path.Combine(_baseDir, "services"));
         var js = (JavaScriptLanguage)services.Registry.Get(LanguageIds.JavaScript)!;
         js.JavaScriptToolchain.Select(TestJavaScript.Require().ExecutablePath);
-        var kernel = (ProtocolKernel)js.NotebookKernels.Create(new KernelCreationContext(() => _notebookFolder));
+        var kernel = (ProtocolKernel)js.Engine.NotebookKernels.Create(new KernelCreationContext(() => _notebookFolder));
         _kernels.Add(kernel);
         return kernel;
     }

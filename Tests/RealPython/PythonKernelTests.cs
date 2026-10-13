@@ -42,7 +42,7 @@ public class PythonKernelTests : IDisposable
         var services = new StudioLanguageServices(Path.Combine(_baseDir, "services"));
         var python = (PythonLanguage)services.Registry.Get(LanguageIds.Python)!;
         python.PythonToolchain.Select(TestPython.Require().ExecutablePath);
-        var kernel = (ProtocolKernel)python.NotebookKernels.Create(new KernelCreationContext(() => _notebookFolder));
+        var kernel = (ProtocolKernel)python.Engine.NotebookKernels.Create(new KernelCreationContext(() => _notebookFolder));
         _kernels.Add(kernel);
         return kernel;
     }

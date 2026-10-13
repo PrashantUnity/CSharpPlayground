@@ -127,6 +127,7 @@ public partial class NotebookTabViewModel : ObservableObject
         _workspaceRoot = workspaceRoot;
         Kernel = new NotebookExecutionKernel();
         _router = new NotebookKernelRouter(_languages.Registry, new KernelCreationContext(() => WorkingFolder, workspaceRoot), Kernel);
+        _directives = new NotebookDirectiveRunner(_languages.Registry, _router);
 
         // skipInitialPopulate = true when the caller will await PopulateCellsAsync()
         // immediately after construction (avoids blocking the UI thread for large notebooks).
@@ -453,7 +454,8 @@ public partial class NotebookTabViewModel : ObservableObject
             ct: ct,
             sourceId: cell.Id,
             onLiveConsole: console.Write,
-            onRichOutput: console.Show));
+            onRichOutput: console.Show,
+            stdin: new InputRequestReader(cell.AskAsync, ct)));
 
         if (await ExecutionAbandonment.WaitWithGraceAsync(executionTask, ct))
         {
@@ -507,15 +509,15 @@ public partial class NotebookTabViewModel : ObservableObject
                 }
                 break;
             case CellOutputKind.Control:
-                if (rich.InteractiveControl != null)
+                if (rich.InteractiveControl is Avalonia.Controls.Control control)
                 {
-                    cell.SetInteractiveControl(rich.InteractiveControl);
+                    cell.SetInteractiveControl(control);
                 }
                 break;
             case CellOutputKind.Html:
                 if (!string.IsNullOrEmpty(rich.HtmlContent))
                 {
-                    cell.SetHtmlContent(rich.HtmlContent);
+                    cell.SetHtmlContent(rich.HtmlContent, rich.MarkdownSource);
                 }
                 break;
             case CellOutputKind.Table:

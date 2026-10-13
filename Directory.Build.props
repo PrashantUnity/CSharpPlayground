@@ -13,6 +13,15 @@
     <PackageReadmeFile Condition="Exists('README.md')">README.md</PackageReadmeFile>
   </PropertyGroup>
 
+  <!-- The headless projects (FrySharp.Core, FrySharp.Web, FrySharp.Cli and their tests) share one set of compiler rules. -->
+  <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('FrySharp.'))">
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>13</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
   <ItemGroup Condition="Exists('README.md')">
     <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>

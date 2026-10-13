@@ -13,28 +13,8 @@ using PdfEditorApp.Plugins.CSharpEditor.Visualizers.Services;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 
-public static partial class Display
+public sealed partial class Display
 {
-    /// <summary>
-    /// Displays an animated GIF in the interactive output cell.
-    /// </summary>
-    public static void Gif(byte[] gifBytes)
-    {
-        Image(gifBytes, "GIF");
-    }
-
-    /// <summary>
-    /// Displays an animated GIF from a file path in the interactive output cell.
-    /// </summary>
-    public static void Gif(string filePath)
-    {
-        if (File.Exists(filePath))
-        {
-            var bytes = File.ReadAllBytes(filePath);
-            Image(bytes, "GIF");
-        }
-    }
-
     /// <summary>
     /// Exports recorded algorithm visualizer steps directly to an animated GIF file.
     /// </summary>

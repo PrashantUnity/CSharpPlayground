@@ -14,6 +14,7 @@ public static class Program
         TaskScheduler.UnobservedTaskException += (_, e) =>
             Console.Error.WriteLine($"[TaskScheduler.UnobservedTaskException] {e.Exception}");
 
+        PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn.DesktopScriptHost.Configure();
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
 

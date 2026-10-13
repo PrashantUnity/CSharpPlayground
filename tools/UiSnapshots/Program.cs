@@ -3,6 +3,7 @@
 using PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots;
 using PdfEditorApp.Plugins.CSharpEditor.Tools.UiSnapshots.Commands;
 
+PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn.DesktopScriptHost.Configure();
 var options = new Options(args);
 if (options.Command is null or "help" or "-h")
 {

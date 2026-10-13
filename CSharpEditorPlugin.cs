@@ -74,6 +74,9 @@ public class CSharpEditorPlugin : IFryPlugin
 
     public Task ApplyAsync(IFryPluginContext ctx, CancellationToken ct = default)
     {
+        // Scripts compile against the desktop API (Display, charts, Avalonia), so fix that before anything compiles.
+        PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn.DesktopScriptHost.Configure();
+
         CSharpStudioHostViewModel? activeHost = null;
 
         void NavigateToStudio(IServiceProvider sp)

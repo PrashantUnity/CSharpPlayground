@@ -10,6 +10,7 @@ using FrySharp.Sdk;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.ColorMath;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Common;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.Settings;
 
@@ -44,7 +45,7 @@ public partial class CSharpSettingsViewModel
 
     public ObservableCollection<CategoryFilterItemViewModel> CategoryFilters { get; } = new();
     public ObservableCollection<ColorTokenItemViewModel> ColorTokens { get; } = new();
-    public PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common.RangeObservableCollection<ColorTokenItemViewModel> FilteredColorTokens { get; } = new();
+    public PdfEditorApp.Plugins.CSharpEditor.Services.Common.RangeObservableCollection<ColorTokenItemViewModel> FilteredColorTokens { get; } = new();
 
     public int TotalTokensCount => ColorTokens.Count;
 

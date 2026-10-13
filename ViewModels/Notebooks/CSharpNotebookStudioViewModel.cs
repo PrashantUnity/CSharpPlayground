@@ -15,6 +15,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Workspace;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Common;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.Notebooks;
 
@@ -452,13 +453,13 @@ public partial class CSharpNotebookStudioViewModel : ObservableObject, IPageLife
 
         // Go to File finds any file of the workspace, not just the open tabs.
         QuickOpen.FileSearch = new WorkspaceFileSearch(() => _storageService.FileIndex, () => _storageService.ActiveWorkspaceRootPath, OpenWorkspaceFileAsync).Search;
-        PopulateExplorerTree();
+        // The Explorer is listed later, off the engine's start-up path: see ExplorerRefresh.
 
-        _storageService.ActiveWorkspaceChanged += () => Dispatcher.UIThread.Post(() => _ = RefreshExplorer());
+        _storageService.ActiveWorkspaceChanged += () => Dispatcher.UIThread.Post(() => RefreshExplorerAsync().FireAndForget(_activities, "Listing the workspace"));
         // Files changed outside the studio: catch up now if this page is on screen, else on the next visit (OnActivated).
         _storageService.ExternalChangeDetected += () => Dispatcher.UIThread.Post(() =>
         {
-            if (_isPageActive) _ = RefreshExplorerIfStaleAsync();
+            if (_isPageActive) RefreshExplorerIfStaleAsync().FireAndForget(_activities, "Listing the workspace");
         });
 
         InitializeExtensibilityBridge();

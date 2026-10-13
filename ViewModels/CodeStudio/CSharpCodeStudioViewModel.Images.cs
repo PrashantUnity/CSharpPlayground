@@ -226,7 +226,7 @@ public partial class CSharpCodeStudioViewModel
 
             // The size comes from the header at once; the pixels are decoded off the UI thread (a camera photo took
             // ~6 s here before), at most ImageDecoder.MaxDisplayWidth across.
-            if (ImageDecoder.TryReadDimensions(path, out var w, out var h))
+            if (ImageHeader.TryReadDimensions(path, out var w, out var h))
             {
                 ImageDimensionsText = $"{w} × {h} px";
             }
@@ -300,5 +300,5 @@ public partial class CSharpCodeStudioViewModel
     }
 
     public static bool TryReadImageHeaderDimensions(string path, out int width, out int height) =>
-        ImageDecoder.TryReadDimensions(path, out width, out height);
+        ImageHeader.TryReadDimensions(path, out width, out height);
 }

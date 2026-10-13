@@ -16,43 +16,8 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 /// storage, the Explorer, Code Studio, notebooks, the Hub and the toolchain picker all work from it. See
 /// docs/adding-a-language.md.
 /// </summary>
-public interface ILanguageDefinition
+public interface ILanguageDefinition : ILanguageEngine
 {
-    /// <summary>Lower-case id, e.g. <c>python</c>. Stored in notebook cells, so it must never change.</summary>
-    string Id { get; }
-
-    string DisplayName { get; }
-
-    /// <summary>Short chip text, e.g. "C#" or "PY".</summary>
-    string ShortName { get; }
-
-    /// <summary>Other names accepted by <c>#!name</c> and <c>#!share --from name</c>, lower case. The id always works.</summary>
-    IReadOnlyList<string> Aliases { get; }
-
-    /// <summary>File extensions, lower case with the dot. The first one names new files.</summary>
-    IReadOnlyList<string> FileExtensions { get; }
-
-    LanguageStorageKind Storage { get; }
-
-    /// <summary>True when the language relies on an ahead-of-time compiler (Java, C++, C) rather than a pure script interpreter.</summary>
-    bool IsCompiled { get; }
-
-    LanguageCapabilities Capabilities { get; }
-
-    /// <summary>A Material icon name (<c>MaterialIconKind</c>), e.g. <c>LanguagePython</c>.</summary>
-    string IconKind { get; }
-
-    string AccentHex { get; }
-
-    /// <summary>What Ctrl+/ puts in front of a line.</summary>
-    string LineCommentPrefix { get; }
-
-    /// <summary>The text a new file of this language starts with.</summary>
-    string NewFileTemplate { get; }
-
-    /// <summary>How the language runs, for the breadcrumbs when it has no toolchain to name (C#: "C# (.NET 10 Roslyn)").</summary>
-    string RuntimeDescription { get; }
-
     /// <summary>Syntax colors for the editor, or null for plain text.</summary>
     IHighlightingDefinition? GetHighlighting(bool isDark);
 
@@ -64,25 +29,8 @@ public interface ILanguageDefinition
     /// <summary>Completion, hover or live diagnostics attached to an editor (e.g. through a language server), or null.</summary>
     IEditorAssistantFactory? EditorAssistants { get; }
 
-    /// <summary>Finds the program that runs this language, or null when it runs inside the studio (C#).</summary>
-    IToolchainProvider? Toolchain { get; }
-
-    /// <summary>Turns a source file into the commands that build and run it, or null for the built-in C# runner.</summary>
-    IScriptRunner? ScriptRunner { get; }
-
-    /// <summary>Reads errors out of a run's output for the Problems panel.</summary>
-    IDiagnosticParser? RunDiagnostics { get; }
-
-    /// <summary>Creates the kernel that runs this language's notebook cells, or null when it has none.</summary>
-    INotebookKernelFactory? NotebookKernels { get; }
-
-    IPackageManager? Packages { get; }
-
     /// <summary>Creates and configures debug sessions for this language, or null when debugging is not supported.</summary>
     PdfEditorApp.Plugins.CSharpEditor.Services.Debugging.IDebuggerProvider? Debugger { get; }
-
-    /// <summary>How Jupyter knows the language, for .ipynb export; null when it has no Jupyter kernel.</summary>
-    JupyterLanguageInfo? Jupyter { get; }
 }
 
 /// <summary>Collapsible regions of a document.</summary>
@@ -145,27 +93,33 @@ public static class LanguageDefinitionExtensions
     /// </summary>
     public static bool UsesRoslynHelper(this ILanguageDefinition? language, LanguageCapabilities capability) =>
         language == null || (language.Has(capability) && language.EditorAssistants == null);
-
-    /// <summary>True when the language has every one of <paramref name="capabilities"/>.</summary>
-    public static bool Has(this ILanguageDefinition language, LanguageCapabilities capabilities) =>
-        (language.Capabilities & capabilities) == capabilities;
-
-    /// <summary>True for <paramref name="name"/> matching the id or an alias, ignoring case.</summary>
-    public static bool IsNamed(this ILanguageDefinition language, string? name) =>
-        !string.IsNullOrWhiteSpace(name) &&
-        (string.Equals(language.Id, name.Trim(), StringComparison.OrdinalIgnoreCase) ||
-         language.Aliases.Any(a => string.Equals(a, name.Trim(), StringComparison.OrdinalIgnoreCase)));
-
-    public static string DefaultExtension(this ILanguageDefinition language) =>
-        language.FileExtensions.Count > 0 ? language.FileExtensions[0] : string.Empty;
 }
 
-/// <summary>A language as Jupyter knows it: the kernelspec and language_info of an exported .ipynb.</summary>
-public sealed record JupyterLanguageInfo(
-    string KernelName,
-    string KernelDisplayName,
-    string KernelLanguage,
-    string LanguageName,
-    string FileExtension,
-    string MimeType,
-    string? Version = null);
+/// <summary>
+/// A language whose engine (toolchain, runner, packages, notebook kernels) lives in FrySharp.Core, shared with the
+/// headless hosts; the definition adds the editor (highlighting, folding, indentation, assistants) and the debugger.
+/// </summary>
+public abstract class EngineLanguageDefinition<TEngine>(TEngine engine) : LanguageDefinition where TEngine : ILanguageEngine
+{
+    public TEngine Engine { get; } = engine ?? throw new ArgumentNullException(nameof(engine));
+
+    public sealed override string Id => Engine.Id;
+    public sealed override string DisplayName => Engine.DisplayName;
+    public sealed override string ShortName => Engine.ShortName;
+    public sealed override IReadOnlyList<string> Aliases => Engine.Aliases;
+    public sealed override IReadOnlyList<string> FileExtensions => Engine.FileExtensions;
+    public sealed override LanguageStorageKind Storage => Engine.Storage;
+    public sealed override bool IsCompiled => Engine.IsCompiled;
+    public sealed override LanguageCapabilities Capabilities => Engine.Capabilities;
+    public sealed override string IconKind => Engine.IconKind;
+    public sealed override string AccentHex => Engine.AccentHex;
+    public sealed override string LineCommentPrefix => Engine.LineCommentPrefix;
+    public sealed override string NewFileTemplate => Engine.NewFileTemplate;
+    public sealed override string RuntimeDescription => Engine.RuntimeDescription;
+    public sealed override IToolchainProvider? Toolchain => Engine.Toolchain;
+    public sealed override IScriptRunner? ScriptRunner => Engine.ScriptRunner;
+    public sealed override IDiagnosticParser? RunDiagnostics => Engine.RunDiagnostics;
+    public sealed override IPackageManager? Packages => Engine.Packages;
+    public sealed override INotebookKernelFactory? NotebookKernels => Engine.NotebookKernels;
+    public sealed override JupyterLanguageInfo? Jupyter => Engine.Jupyter;
+}

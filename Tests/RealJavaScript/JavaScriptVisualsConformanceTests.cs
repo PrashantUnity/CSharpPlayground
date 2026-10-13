@@ -104,7 +104,7 @@ public class JavaScriptVisualsConformanceTests : IDisposable
         var node = TestJavaScript.Require();
         var services = TestJavaScript.Services(Path.Combine(_dir, ".studio"));
         var language = (JavaScriptLanguage)services.Registry.Get(LanguageIds.JavaScript)!;
-        var plan = await language.ScriptRunner.PlanAsync(new ScriptRunContext(path, Path.GetDirectoryName(path)!, node));
+        var plan = await language.Engine.ScriptRunner.PlanAsync(new ScriptRunContext(path, Path.GetDirectoryName(path)!, node));
         var console = new List<string>();
         var outputs = new List<RichCellOutput>();
         var processor = new ExternalOutputProcessor(console.Add, outputs.Add, visuals: session?.Visuals);
@@ -122,7 +122,7 @@ public class JavaScriptVisualsConformanceTests : IDisposable
         var services = new StudioLanguageServices(Path.Combine(_dir, "services"));
         var js = (JavaScriptLanguage)services.Registry.Get(LanguageIds.JavaScript)!;
         js.JavaScriptToolchain.Select(TestJavaScript.Require().ExecutablePath);
-        var kernel = (ProtocolKernel)js.NotebookKernels.Create(new KernelCreationContext(() => _dir));
+        var kernel = (ProtocolKernel)js.Engine.NotebookKernels.Create(new KernelCreationContext(() => _dir));
         _kernels.Add(kernel);
         return kernel;
     }

@@ -4,28 +4,9 @@ using Avalonia.Media;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Charting.Services;
 
+/// <summary>Chart colours as Avalonia brushes, and series colours from the active desktop theme (<see cref="ChartPalette"/> otherwise).</summary>
 public static class ChartPaletteService
 {
-    public static readonly string DefaultCyan = "#4ec9b0";
-    public static readonly string AccentAmber = "#f59e0b";
-    public static readonly string AccentIndigo = "#6366f1";
-    public static readonly string AccentEmerald = "#10b981";
-    public static readonly string AccentRose = "#f43f5e";
-    public static readonly string AccentSky = "#0ea5e9";
-    public static readonly string AccentPurple = "#a855f7";
-
-    public static readonly IReadOnlyList<string> ExpressivePalette = new[]
-    {
-        "#4ec9b0", // Cyan / Teal
-        "#60a5fa", // Blue
-        "#f59e0b", // Amber
-        "#f43f5e", // Rose
-        "#10b981", // Emerald
-        "#a855f7", // Purple
-        "#38bdf8", // Sky
-        "#fb923c"  // Orange
-    };
-
     public static IBrush GetBrush(string? colorHexOrName, double opacity = 1.0)
     {
         var color = ParseColor(colorHexOrName);
@@ -39,7 +20,7 @@ public static class ChartPaletteService
     public static Color ParseColor(string? colorHexOrName)
     {
         if (string.IsNullOrWhiteSpace(colorHexOrName))
-            return Color.Parse(DefaultCyan);
+            return Color.Parse(ChartPalette.DefaultCyan);
 
         try
         {
@@ -50,7 +31,7 @@ public static class ChartPaletteService
         }
         catch
         {
-            return Color.Parse(DefaultCyan);
+            return Color.Parse(ChartPalette.DefaultCyan);
         }
     }
 
@@ -68,7 +49,7 @@ public static class ChartPaletteService
             return themed;
         }
 
-        return ExpressivePalette[seriesIndex % ExpressivePalette.Count];
+        return ChartPalette.DefaultSeriesColor(seriesIndex);
     }
 
     private const int ThemeSeriesCount = 8;

@@ -43,17 +43,10 @@ public partial class LocalScriptStorageService
 
     public LanguageRegistry Languages => _languages;
 
-    public static bool IsSourceFileId(string? id) => id != null && id.StartsWith(SourceFileIdPrefix, StringComparison.Ordinal);
+    public static bool IsSourceFileId(string? id) => ScriptStorageIdHelper.IsSourceFileId(id);
 
     /// <summary>The id of the source file at <paramref name="path"/>: the same path always gives the same id.</summary>
-    public static string SourceFileId(string path)
-    {
-        var full = Path.GetFullPath(path);
-        // macOS and Windows file systems ignore case by default: MAIN.PY and main.py are one file.
-        if (!OperatingSystem.IsLinux()) full = full.ToUpperInvariant();
-        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(full));
-        return SourceFileIdPrefix + Convert.ToHexString(hash, 0, 12).ToLowerInvariant();
-    }
+    public static string SourceFileId(string path) => ScriptStorageIdHelper.SourceFileId(path);
 
     private static readonly HashSet<string> IgnoredFileNames = new(StringComparer.OrdinalIgnoreCase)
     {

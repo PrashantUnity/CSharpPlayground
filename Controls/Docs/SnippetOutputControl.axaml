@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:docs="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Docs"
-             xmlns:display="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Display"
+             xmlns:display="using:PdfEditorApp.Plugins.CSharpEditor.Services.Display"
              xmlns:views="using:PdfEditorApp.Plugins.CSharpEditor.Views"
              xmlns:visuals="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Visuals"
              xmlns:common="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Common"
@@ -68,7 +68,7 @@
                             </Border>
                             <Border IsVisible="{Binding IsImageKind}" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}"
                                     lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="8" Margin="0,0,0,10" HorizontalAlignment="Left">
-                                <Image Source="{Binding DecodedImage}" MaxHeight="450" Stretch="Uniform" HorizontalAlignment="Center" />
+                                <Image Source="{Binding ImageBytes, Converter={x:Static common:ImageBytesToBitmapConverter.Instance}}" MaxHeight="450" Stretch="Uniform" HorizontalAlignment="Center" />
                             </Border>
                             <Border IsVisible="{Binding IsControlKind}" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}"
                                     lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="12,8" Margin="0,0,0,10">

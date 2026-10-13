@@ -33,7 +33,7 @@ public class AnimatedGifEncoderTests
         Assert.Equal("GIF89a", header);
 
         // Verify ImageDecoder reads matching dimensions
-        Assert.True(ImageDecoder.TryReadDimensions(gifBytes, out int readW, out int readH));
+        Assert.True(ImageHeader.TryReadDimensions(gifBytes, out int readW, out int readH));
         Assert.Equal(width, readW);
         Assert.Equal(height, readH);
 
@@ -66,7 +66,7 @@ public class AnimatedGifEncoderTests
 
         string ascii = Encoding.ASCII.GetString(gifBytes);
         Assert.Contains("NETSCAPE2.0", ascii);
-        Assert.True(ImageDecoder.TryReadDimensions(gifBytes, out int w, out int h));
+        Assert.True(ImageHeader.TryReadDimensions(gifBytes, out int w, out int h));
         Assert.Equal(width, w);
         Assert.Equal(height, h);
     }

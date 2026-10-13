@@ -1,0 +1,134 @@
+{
+  "name": "frysharp",
+  "displayName": "FrySharp: Polyglot Notebooks & Roslyn Scripting",
+  "description": "Interactive .NET 10 Roslyn scripting, polyglot notebooks (C#, Python, JavaScript), variable sharing, and rich visuals for VS Code",
+  "version": "1.0.0",
+  "publisher": "CodeFryDev",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrashantUnity/CSharpPlayground"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Notebooks",
+    "Data Science"
+  ],
+  "keywords": [
+    "csharp",
+    "c#",
+    "dotnet",
+    "notebook",
+    "polyglot",
+    "roslyn",
+    "jupyter",
+    "interactive"
+  ],
+  "activationEvents": [
+    "onNotebook:frysharp-notebook",
+    "onCommand:frysharp.newNotebook",
+    "onCommand:frysharp.runScript"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "notebooks": [
+      {
+        "type": "frysharp-notebook",
+        "displayName": "FrySharp Polyglot Notebook",
+        "selector": [
+          {
+            "filenamePattern": "*.frynb"
+          },
+          {
+            "filenamePattern": "*.ipynb"
+          },
+          {
+            "filenamePattern": "*.csnb"
+          }
+        ],
+        "priority": "default"
+      }
+    ],
+    "commands": [
+      {
+        "command": "frysharp.newNotebook",
+        "title": "New Polyglot Notebook",
+        "category": "FrySharp"
+      },
+      {
+        "command": "frysharp.runScript",
+        "title": "Run Script with FrySharp",
+        "category": "FrySharp"
+      },
+      {
+        "command": "frysharp.restartSidecar",
+        "title": "Restart Engine Sidecar",
+        "category": "FrySharp"
+      },
+      {
+        "command": "frysharp.restartNotebook",
+        "title": "Restart Kernel",
+        "category": "FrySharp",
+        "icon": "$(debug-restart)"
+      },
+      {
+        "command": "frysharp.interruptNotebook",
+        "title": "Interrupt Kernel",
+        "category": "FrySharp",
+        "icon": "$(primitive-square)"
+      },
+      {
+        "command": "frysharp.showVariables",
+        "title": "Variables View",
+        "category": "FrySharp",
+        "icon": "$(symbol-variable)"
+      },
+      {
+        "command": "frysharp.clearNotebookOutputs",
+        "title": "Clear All Outputs",
+        "category": "FrySharp",
+        "icon": "$(clear-all)"
+      }
+    ],
+    "menus": {
+      "notebook/toolbar": [
+        {
+          "command": "frysharp.restartNotebook",
+          "when": "notebookType == frysharp-notebook",
+          "group": "navigation@1"
+        },
+        {
+          "command": "frysharp.interruptNotebook",
+          "when": "notebookType == frysharp-notebook",
+          "group": "navigation@2"
+        },
+        {
+          "command": "frysharp.showVariables",
+          "when": "notebookType == frysharp-notebook",
+          "group": "navigation@3"
+        },
+        {
+          "command": "frysharp.clearNotebookOutputs",
+          "when": "notebookType == frysharp-notebook",
+          "group": "navigation@4"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "vscode-jsonrpc": "^8.2.0"
+  }
+}

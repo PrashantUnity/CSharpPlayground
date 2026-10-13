@@ -42,6 +42,7 @@ public sealed class StudioLanguageServices
         Host = host ?? new HostEnvironment();
         Processes = processLauncher ?? new ProcessLauncher();
         ToolchainSettings = new ToolchainSettingsStore(Path.Combine(BaseDirectory, "toolchains.json"));
+        Engines = new LanguageEngineServices(BaseDirectory, Host, Processes, ToolchainSettings);
         StudioSettings = new Settings.StudioSettingsStore(Path.Combine(BaseDirectory, "studio_settings.json"));
         ThemeLibrary = new Extensibility.Theming.ThemeLibraryStore(Path.Combine(BaseDirectory, "themes"));
         LayoutLibrary = new Extensibility.Theming.Layout.LayoutLibraryStore(Path.Combine(BaseDirectory, "layouts"));
@@ -83,6 +84,9 @@ public sealed class StudioLanguageServices
     public IProcessLauncher Processes { get; }
     public Debugging.Dap.DapAdapterManager AdapterManager { get; }
     public ToolchainSettingsStore ToolchainSettings { get; }
+
+    /// <summary>The same machine, launcher, settings and data folder, as the Core language engines take them.</summary>
+    public LanguageEngineServices Engines { get; }
     public Settings.StudioSettingsStore StudioSettings { get; }
 
     /// <summary>The user's saved themes (as many as they like, each named), one file each under <c>themes/</c>.</summary>

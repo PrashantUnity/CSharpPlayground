@@ -106,7 +106,7 @@ public class PythonVisualsConformanceTests : IDisposable
         var python = TestPython.Require();
         var services = TestPython.Services(Path.Combine(_dir, ".studio"));
         var language = (PythonLanguage)services.Registry.Get(LanguageIds.Python)!;
-        var plan = await language.ScriptRunner.PlanAsync(new ScriptRunContext(path, Path.GetDirectoryName(path)!, python));
+        var plan = await language.Engine.ScriptRunner.PlanAsync(new ScriptRunContext(path, Path.GetDirectoryName(path)!, python));
         var console = new List<string>();
         var outputs = new List<RichCellOutput>();
         var processor = new ExternalOutputProcessor(console.Add, outputs.Add, visuals: session?.Visuals);
@@ -124,7 +124,7 @@ public class PythonVisualsConformanceTests : IDisposable
         var services = new StudioLanguageServices(Path.Combine(_dir, "services"));
         var python = (PythonLanguage)services.Registry.Get(LanguageIds.Python)!;
         python.PythonToolchain.Select(TestPython.Require().ExecutablePath);
-        var kernel = (ProtocolKernel)python.NotebookKernels.Create(new KernelCreationContext(() => _dir));
+        var kernel = (ProtocolKernel)python.Engine.NotebookKernels.Create(new KernelCreationContext(() => _dir));
         _kernels.Add(kernel);
         return kernel;
     }
