@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.5
+
+- Synchronized with FrySharp v2.0.5 release.
+- Bundles the latest headless `FrySharp.Sidecar` JSON-RPC engine with multi-language execution improvements for SQL, Java, Go, Rust, and C++.
+- Robust cross-platform process launching and argument escaping.
+- Improved live Roslyn diagnostics and asynchronous session management.
+
 ## 1.0.0
 
 First release.
