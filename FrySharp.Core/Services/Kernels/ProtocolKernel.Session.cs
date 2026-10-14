@@ -289,15 +289,21 @@ public sealed partial class ProtocolKernel
             string? value = null;
             try
             {
-                if (target?.Request.OnInputRequest is { } ask) value = await ask(prompt, password, target.Token);
+                if (target is { Finished: false } && target.Request.OnInputRequest is { } ask)
+                {
+                    value = await ask(prompt, password, target.Token);
+                }
             }
             catch (Exception ex) when (ex is OperationCanceledException or InvalidOperationException)
             {
                 value = null;
             }
 
-            // As a terminal shows it: the prompt, then what was typed.
-            target?.Write(prompt + (password ? string.Empty : value ?? string.Empty) + "\n");
+            if (target is { Finished: false })
+            {
+                // As a terminal shows it: the prompt, then what was typed.
+                target.Write(prompt + (password ? string.Empty : value ?? string.Empty) + "\n");
+            }
 
             try
             {

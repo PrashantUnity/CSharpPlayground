@@ -65,16 +65,21 @@ public class FryKernel {
             inputReplies.clear();
         }
 
+        synchronized void endCell() {
+            ended = true;
+            inputReplies.offer(Optional.empty());
+        }
+
         private boolean fill() throws IOException {
             if (position < pending.length) return true;
-            if (ended) return false;
+            if (ended || currentRequestId == null) return false;
 
             String id = currentRequestId;
             flushText();
-            send(Map.of("type", "input_request", "id", id == null ? "" : id, "prompt", "", "password", false));
+            send(Map.of("type", "input_request", "id", id, "prompt", "", "password", false));
             try {
                 Optional<String> reply = inputReplies.take();
-                if (reply.isEmpty()) {
+                if (reply.isEmpty() || ended || currentRequestId == null) {
                     ended = true;
                     return false;
                 }
@@ -674,6 +679,7 @@ public class FryKernel {
         }
 
         currentRequestId = null;
+        kernelInput.endCell();
     }
 
     // True when the value of this snippet (the temporary JShell makes for an expression, or a variable named on its own)
