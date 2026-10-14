@@ -27,7 +27,7 @@ public class CSharpEditorPlugin : IFryPlugin
 {
     public string Id => "com.frypdf.plugin.csharpeditor";
     public string Name => "FrySharp";
-    public Version Version => new(1, 0, 0);
+    public Version Version => new(2, 0, 5);
     public bool AutoOpenOverlay => false;
     public IReadOnlyList<Type> RequiredServices => Array.Empty<Type>();
 
