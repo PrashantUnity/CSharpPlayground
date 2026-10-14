@@ -71,10 +71,14 @@ public sealed class ProcessLauncher : IProcessLauncher
     public IManagedProcess Start(ProcessStartSpec spec, Action<string> onStandardOutput, Action<string> onStandardError)
     {
         // Run through the shell only to join the two streams: the shell replaces itself with the program, so the process id is the program's.
-        var merge = spec.MergeStandardError && !OperatingSystem.IsWindows() && File.Exists("/bin/sh");
+        var mergeUnix = spec.MergeStandardError && !OperatingSystem.IsWindows() && File.Exists("/bin/sh");
+        var mergeWindows = spec.MergeStandardError && OperatingSystem.IsWindows();
+        var comspec = Environment.GetEnvironmentVariable("COMSPEC");
+        if (string.IsNullOrEmpty(comspec)) comspec = "cmd.exe";
+
         var startInfo = new ProcessStartInfo
         {
-            FileName = merge ? "/bin/sh" : spec.FileName,
+            FileName = mergeUnix ? "/bin/sh" : mergeWindows ? comspec : spec.FileName,
             UseShellExecute = false,
             CreateNoWindow = true,
             RedirectStandardInput = true,
@@ -86,14 +90,32 @@ public sealed class ProcessLauncher : IProcessLauncher
             StandardErrorEncoding = Encoding.UTF8,
             WorkingDirectory = spec.WorkingDirectory ?? string.Empty
         };
-        if (merge)
+        if (mergeUnix)
         {
             startInfo.ArgumentList.Add("-c");
             startInfo.ArgumentList.Add("exec \"$0\" \"$@\" 2>&1");
             startInfo.ArgumentList.Add(spec.FileName);
+            foreach (var argument in spec.Arguments) startInfo.ArgumentList.Add(argument);
         }
-
-        foreach (var argument in spec.Arguments) startInfo.ArgumentList.Add(argument);
+        else if (mergeWindows)
+        {
+            var cmd = new StringBuilder();
+            cmd.Append("/d /s /c \"\"");
+            cmd.Append(spec.FileName.Replace("\"", "\\\""));
+            cmd.Append('\"');
+            foreach (var argument in spec.Arguments)
+            {
+                cmd.Append(" \"");
+                cmd.Append(argument.Replace("\"", "\\\""));
+                cmd.Append('\"');
+            }
+            cmd.Append(" 2>&1\"");
+            startInfo.Arguments = cmd.ToString();
+        }
+        else
+        {
+            foreach (var argument in spec.Arguments) startInfo.ArgumentList.Add(argument);
+        }
         foreach (var (name, value) in spec.Environment)
         {
             if (value == null) startInfo.Environment.Remove(name);
