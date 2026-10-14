@@ -123,6 +123,7 @@ public sealed partial class SqlNotebookKernel : INotebookKernel
             // No limit of the kernel's own: how long a cell may take is the studio's ExecutionTimeoutSeconds setting, which
             // arrives as the cancellation token.
             var exitCode = await managedProcess.WaitForExitOrKillAsync(ct).ConfigureAwait(false);
+            ct.ThrowIfCancellationRequested();
 
             string output;
             List<(int Offset, string Text)> errors;

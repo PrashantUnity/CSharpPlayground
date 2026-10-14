@@ -11,7 +11,13 @@ public static class ManagedProcessExtensions
     {
         try
         {
-            return await process.Completion.WaitAsync(ct).ConfigureAwait(false);
+            var exitCode = await process.Completion.WaitAsync(ct).ConfigureAwait(false);
+            if (ct.IsCancellationRequested)
+            {
+                process.Kill();
+                ct.ThrowIfCancellationRequested();
+            }
+            return exitCode;
         }
         catch (OperationCanceledException)
         {
