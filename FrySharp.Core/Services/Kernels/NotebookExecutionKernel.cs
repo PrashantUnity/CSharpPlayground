@@ -31,6 +31,12 @@ public class KernelExecutionResult
 
     /// <summary>A name the code used that isn't defined (C#'s CS0103, Python's NameError), for the "run the cell that defines it" hint.</summary>
     public string? MissingName { get; set; }
+
+    /// <summary>The kind of error a kernel in another language reported (Python's <c>ZeroDivisionError</c>), when it did.</summary>
+    public string? ErrorName { get; set; }
+
+    /// <summary>The line of the cell the error was on, when the kernel said (a Python or JavaScript traceback names it).</summary>
+    public int? ErrorLine { get; set; }
 }
 
 public class NotebookExecutionKernel : INotebookKernel
@@ -300,6 +306,7 @@ public class NotebookExecutionKernel : INotebookKernel
                     }
 
                     result.ErrorMessage = root.Message;
+                    result.ErrorName = root.GetType().Name;
                     liveWriter.WriteLine($"\n❌ Runtime Error: {root.GetType().Name}: {root.Message}\n{root.StackTrace}");
                     if (root != ex && ex.InnerException != null && ex.InnerException != root)
                     {

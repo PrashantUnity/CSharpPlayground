@@ -88,6 +88,7 @@ public static class Program
             languages,
             runs,
             notebooks,
+            new EngineInfoService(languages, workspace),
             logger);
 
         jsonRpc.AddLocalRpcTarget(rpc);

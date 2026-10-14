@@ -21,6 +21,7 @@ public sealed class SidecarRpc(
     LanguageRegistry<ILanguageEngine> languages,
     RunService runs,
     NotebookService notebooks,
+    EngineInfoService engineInfo,
     ILogger logger)
 {
     private SidecarSession? _session;
@@ -47,6 +48,9 @@ public sealed class SidecarRpc(
             options.MaxOpenFileBytes);
     }
 
+    [JsonRpcMethod("fry/engine/info", UseSingleObjectParameterDeserialization = true)]
+    public Task<EngineInfo> EngineInfoAsync(EmptyParams request, CancellationToken ct) => engineInfo.GetAsync(ct);
+
     private List<LanguageInfo> Languages()
     {
         return languages.All.Select(l => new LanguageInfo(
@@ -55,7 +59,7 @@ public sealed class SidecarRpc(
             l.Aliases, l.LineCommentPrefix, l.IconKind, l.AccentHex,
             CanRun: FileRunner.CanRun(l),
             CanRunCells: NotebookDirectiveRunner.IsNotebookLanguage(l),
-            HasCompletion: l.Id == LanguageIds.CSharp,
+            HasCompletion: LanguageFeatures.CanCompleteCells(l.Id),
             l.NewFileTemplate)).ToList();
     }
 
@@ -147,6 +151,15 @@ public sealed class SidecarRpc(
     public Task<HoverResult?> HoverAsync(PositionParams request, CancellationToken ct) =>
         languageFeatures.HoverAsync(Require(), request, ct);
 
+    [JsonRpcMethod("fry/language/completeCell", UseSingleObjectParameterDeserialization = true)]
+    public Task<CompletionResult> CompleteCellAsync(CellPositionParams request, CancellationToken ct) => languageFeatures.CompleteCellAsync(request, ct);
+
+    [JsonRpcMethod("fry/language/hoverCell", UseSingleObjectParameterDeserialization = true)]
+    public Task<HoverResult?> HoverCellAsync(CellPositionParams request, CancellationToken ct) => languageFeatures.HoverCellAsync(request, ct);
+
+    [JsonRpcMethod("fry/language/diagnoseCell", UseSingleObjectParameterDeserialization = true)]
+    public Task<CellDiagnosticsResult> DiagnoseCellAsync(CellDiagnosticsParams request, CancellationToken ct) => languageFeatures.DiagnoseCellAsync(request, ct);
+
     // ── Runs ─────────────────────────────────────────────────────────────────────────────────────────────────────
 
     [JsonRpcMethod("fry/run/start", UseSingleObjectParameterDeserialization = true)]
@@ -173,20 +186,20 @@ public sealed class SidecarRpc(
     public Task<ExecuteCellResult> ExecuteCellAsync(ExecuteCellParams request, CancellationToken ct) => notebooks.ExecuteAsync(Require(), request, ct);
 
     [JsonRpcMethod("fry/notebook/interrupt", UseSingleObjectParameterDeserialization = true)]
-    public void InterruptNotebook(PathParams request) => notebooks.Interrupt(request.Path);
+    public void InterruptNotebook(NotebookRef request) => notebooks.Interrupt(NotebookService.KeyOf(request));
 
     [JsonRpcMethod("fry/notebook/restart", UseSingleObjectParameterDeserialization = true)]
-    public void RestartNotebook(PathParams request) => notebooks.Restart(request.Path);
+    public void RestartNotebook(NotebookRef request) => notebooks.Restart(NotebookService.KeyOf(request));
 
     [JsonRpcMethod("fry/notebook/variables", UseSingleObjectParameterDeserialization = true)]
-    public Task<IReadOnlyList<VariableDto>> NotebookVariablesAsync(PathParams request, CancellationToken ct) =>
-        notebooks.VariablesAsync(request.Path, ct);
+    public Task<IReadOnlyList<VariableDto>> NotebookVariablesAsync(NotebookRef request, CancellationToken ct) =>
+        notebooks.VariablesAsync(NotebookService.KeyOf(request), ct);
 
     [JsonRpcMethod("fry/notebook/save", UseSingleObjectParameterDeserialization = true)]
     public Task<SaveResult> SaveNotebookAsync(NotebookSaveParams request, CancellationToken ct) => notebooks.SaveAsync(request, ct);
 
     [JsonRpcMethod("fry/notebook/close", UseSingleObjectParameterDeserialization = true)]
-    public Task CloseNotebookAsync(PathParams request) => notebooks.CloseAsync(request.Path);
+    public Task CloseNotebookAsync(NotebookRef request) => notebooks.CloseAsync(NotebookService.KeyOf(request));
 
     private SidecarSession Require()
     {

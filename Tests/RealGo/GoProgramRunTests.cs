@@ -42,7 +42,7 @@ public class GoProgramRunTests : IDisposable
         var go = TestGo.Require();
         var services = TestGo.Services(Path.Combine(_dir, ".studio"));
         var language = (GoLanguage)services.Registry.Get(LanguageIds.Go)!;
-        var plan = await language.ScriptRunner.PlanAsync(new ScriptRunContext(path, Path.GetDirectoryName(path)!, go));
+        var plan = await language.Engine.ScriptRunner.PlanAsync(new ScriptRunContext(path, Path.GetDirectoryName(path)!, go));
         var output = new ConcurrentQueue<string>();
         var session = new ScriptRunExecutor(services.Processes).Start(plan, path, language.RunDiagnostics, output.Enqueue);
         return (session, output);

@@ -1,0 +1,134 @@
+name: CI
+
+# The headless engine and the VS Code extension: what a change to either must not break. (The desktop app's own suite and
+# the release gate are in release.yml.)
+
+on:
+  push:
+    branches: [main, Server]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  engine:
+    name: Engine (Core, Sidecar)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      # The sidecar's tests run real Python and Node, as the engine's users do.
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # The Java tests run the real JDK (javac, java, JShell).
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # The Go tests run the real toolchain: every cell is built with `go build`.
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      # The Rust tests run the real toolchain: every cell is built with Cargo (a runner has no crates cached, so the first cell is slow).
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      # The SQL tests run the real sqlite3: macOS and Linux runners have it (a missing one fails there); a Windows runner
+      # does not, and its SQL tests are skipped with the reason.
+      # The F# tests run the real `dotnet fsi` (the SDK that setup-dotnet installs) and restore a small NuGet package.
+      - name: Core tests
+        run: dotnet test Tests.Core/FrySharp.Core.Tests.csproj
+        env:
+          FRY_REQUIRE_SQL: ${{ matrix.os == 'windows-latest' && '' || '1' }}
+          FRY_REQUIRE_FSHARP: '1'
+          FRY_REQUIRE_JAVA: '1'
+          FRY_REQUIRE_RUST: '1'
+          FRY_REQUIRE_GO: '1'
+          # a Windows runner's MSVC needs its own environment: the C++ tests are skipped there, with the reason
+          FRY_REQUIRE_CPP: ${{ matrix.os == 'windows-latest' && '' || '1' }}
+          FRY_TEST_NETWORK: '1'
+
+      - name: Sidecar tests
+        run: dotnet test Tests.Sidecar/FrySharp.Sidecar.Tests.csproj
+        env:
+          FRY_REQUIRE_PYTHON: '1'
+          FRY_REQUIRE_SQL: ${{ matrix.os == 'windows-latest' && '' || '1' }}
+          FRY_REQUIRE_FSHARP: '1'
+          FRY_REQUIRE_JAVA: '1'
+          FRY_REQUIRE_RUST: '1'
+          FRY_REQUIRE_GO: '1'
+          # a Windows runner's MSVC needs its own environment: the C++ tests are skipped there, with the reason
+          FRY_REQUIRE_CPP: ${{ matrix.os == 'windows-latest' && '' || '1' }}
+          FRY_TEST_NETWORK: '1'
+
+  extension:
+    name: Extension (lint, types, tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: vscode-frysharp/package-lock.json
+
+      # The client's tests start the real engine.
+      - name: Build the sidecar
+        run: dotnet build FrySharp.Sidecar/FrySharp.Sidecar.csproj
+
+      - name: Install
+        working-directory: vscode-frysharp
+        run: npm ci
+
+      - name: Lint
+        working-directory: vscode-frysharp
+        run: npm run lint
+
+      - name: Type check
+        working-directory: vscode-frysharp
+        run: npm run typecheck
+
+      - name: Tests
+        working-directory: vscode-frysharp
+        run: npm test
+        env:
+          FRY_REQUIRE_SIDECAR: '1'
+
+      # The tests write the notebooks the extension saves (test/fixtures/written), which Tests.Core reads back with the
+      # desktop's reader: they are committed, so a change in what the extension writes shows up here.
+      - name: The notebooks the extension writes are the committed ones
+        run: git diff --exit-code -- vscode-frysharp/test/fixtures
+
+      - name: Bundle
+        working-directory: vscode-frysharp
+        run: node esbuild.js --production

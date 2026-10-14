@@ -1,10 +1,19 @@
 {
   "name": "frysharp",
   "displayName": "FrySharp: Polyglot Notebooks & Roslyn Scripting",
-  "description": "Interactive .NET 10 Roslyn scripting, polyglot notebooks (C#, Python, JavaScript), variable sharing, and rich visuals for VS Code",
+  "description": "Polyglot notebooks and script runs for C#, F#, Python, JavaScript, Java, SQL, Rust, Go and C++: tables, charts, 3D, an Object Explorer, variable sharing between languages, and live diagnostics.",
   "version": "1.0.0",
-  "publisher": "CodeFryDev",
+  "publisher": "Codefrydev",
   "license": "MIT",
+  "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#181a26",
+    "theme": "dark"
+  },
+  "homepage": "https://github.com/PrashantUnity/CSharpPlayground#readme",
+  "bugs": {
+    "url": "https://github.com/PrashantUnity/CSharpPlayground/issues"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/PrashantUnity/CSharpPlayground"
@@ -25,14 +34,25 @@
     "polyglot",
     "roslyn",
     "jupyter",
-    "interactive"
+    "interactive",
+    "fsharp",
+    "python",
+    "javascript",
+    "java",
+    "sql",
+    "rust",
+    "go",
+    "cpp",
+    "charts",
+    "repl"
   ],
   "activationEvents": [
     "onNotebook:frysharp-notebook",
+    "onNotebook:frysharp-jupyter",
     "onCommand:frysharp.newNotebook",
     "onCommand:frysharp.runScript"
   ],
-  "main": "./out/extension.js",
+  "main": "./dist/extension.js",
   "contributes": {
     "notebooks": [
       {
@@ -43,13 +63,20 @@
             "filenamePattern": "*.frynb"
           },
           {
-            "filenamePattern": "*.ipynb"
-          },
-          {
             "filenamePattern": "*.csnb"
           }
         ],
         "priority": "default"
+      },
+      {
+        "type": "frysharp-jupyter",
+        "displayName": "FrySharp Polyglot Notebook (Jupyter file)",
+        "selector": [
+          {
+            "filenamePattern": "*.ipynb"
+          }
+        ],
+        "priority": "option"
       }
     ],
     "commands": [
@@ -60,8 +87,9 @@
       },
       {
         "command": "frysharp.runScript",
-        "title": "Run Script with FrySharp",
-        "category": "FrySharp"
+        "title": "Run with FrySharp",
+        "category": "FrySharp",
+        "icon": "$(play)"
       },
       {
         "command": "frysharp.restartSidecar",
@@ -91,44 +119,404 @@
         "title": "Clear All Outputs",
         "category": "FrySharp",
         "icon": "$(clear-all)"
+      },
+      {
+        "command": "frysharp.showEngineInfo",
+        "title": "Show Engine Info",
+        "category": "FrySharp"
+      },
+      {
+        "command": "frysharp.showLog",
+        "title": "Show Engine Log",
+        "category": "FrySharp"
+      },
+      {
+        "command": "frysharp.refreshVariables",
+        "title": "Refresh Variables",
+        "category": "FrySharp",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "frysharp.copyVariableValue",
+        "title": "Copy Value",
+        "category": "FrySharp"
+      },
+      {
+        "command": "frysharp.engineMenu",
+        "title": "Engine Menu",
+        "category": "FrySharp"
+      },
+      {
+        "command": "frysharp.runScriptWithArguments",
+        "title": "Run with FrySharp and Arguments...",
+        "category": "FrySharp"
+      },
+      {
+        "command": "frysharp.stopRun",
+        "title": "Stop Run",
+        "category": "FrySharp",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "frysharp.rerun",
+        "title": "Run Again",
+        "category": "FrySharp",
+        "icon": "$(debug-restart)"
+      },
+      {
+        "command": "frysharp.clearResults",
+        "title": "Clear Results",
+        "category": "FrySharp",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "frysharp.newScratchpad",
+        "title": "New Scratchpad",
+        "category": "FrySharp"
+      },
+      {
+        "command": "frysharp.sendToScratchpad",
+        "title": "Send Selection to Scratchpad",
+        "category": "FrySharp"
       }
     ],
     "menus": {
       "notebook/toolbar": [
         {
           "command": "frysharp.restartNotebook",
-          "when": "notebookType == frysharp-notebook",
+          "when": "notebookType == frysharp-notebook || notebookType == frysharp-jupyter",
           "group": "navigation@1"
         },
         {
           "command": "frysharp.interruptNotebook",
-          "when": "notebookType == frysharp-notebook",
+          "when": "notebookType == frysharp-notebook || notebookType == frysharp-jupyter",
           "group": "navigation@2"
         },
         {
           "command": "frysharp.showVariables",
-          "when": "notebookType == frysharp-notebook",
+          "when": "notebookType == frysharp-notebook || notebookType == frysharp-jupyter",
           "group": "navigation@3"
         },
         {
           "command": "frysharp.clearNotebookOutputs",
-          "when": "notebookType == frysharp-notebook",
+          "when": "notebookType == frysharp-notebook || notebookType == frysharp-jupyter",
           "group": "navigation@4"
         }
+      ],
+      "view/title": [
+        {
+          "command": "frysharp.refreshVariables",
+          "when": "view == frysharp.variables",
+          "group": "navigation"
+        },
+        {
+          "command": "frysharp.clearResults",
+          "when": "view == frysharp.results",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "frysharp.copyVariableValue",
+          "when": "view == frysharp.variables && viewItem == frysharp.variable"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "frysharp.copyVariableValue",
+          "when": "false"
+        }
+      ],
+      "editor/title/run": [
+        {
+          "command": "frysharp.runScript",
+          "when": "config.frysharp.run.showEditorButton && resourceLangId in frysharp.runnableLanguages && !frysharp.runActive",
+          "group": "navigation@5"
+        },
+        {
+          "command": "frysharp.stopRun",
+          "when": "config.frysharp.run.showEditorButton && frysharp.runActive",
+          "group": "navigation@5"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "frysharp.runScript",
+          "when": "!explorerResourceIsFolder && resourceLangId in frysharp.runnableLanguages",
+          "group": "navigation@30"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "frysharp.runScript",
+          "when": "editorTextFocus && resourceLangId in frysharp.runnableLanguages",
+          "group": "navigation@30"
+        },
+        {
+          "command": "frysharp.sendToScratchpad",
+          "when": "editorTextFocus && resourceLangId in frysharp.runnableLanguages",
+          "group": "navigation@31"
+        }
       ]
-    }
+    },
+    "configuration": {
+      "title": "FrySharp",
+      "properties": {
+        "frysharp.dotnetPath": {
+          "type": "string",
+          "default": "",
+          "scope": "machine-overridable",
+          "markdownDescription": "The `dotnet` executable that runs the FrySharp engine (needs the .NET 10 runtime). Empty: the `dotnet` on the PATH, or a runtime the .NET Install Tool downloads."
+        },
+        "frysharp.sidecarPath": {
+          "type": "string",
+          "default": "",
+          "scope": "machine-overridable",
+          "markdownDescription": "A `frysharp-sidecar.dll` to run instead of the one packaged with the extension (for developing the engine)."
+        },
+        "frysharp.codeLens.enabled": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Show **Run with FrySharp** (and **Stop** while it runs) above the first line of a script of a language FrySharp runs. Not on plain `.cs` files: the C# extension has its own lenses there."
+        },
+        "frysharp.notebook.outputTabs": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "A cell that makes more than one kind of output (printed text, a table, a chart ...) shows them as tabs in one output, as the desktop app does: **Table**, **Console**, **Chart** ... and **All**. Off: the outputs come one after another. Takes effect for cells that run from now on and for notebooks opened from now on; the file saved is the same either way."
+        },
+        "frysharp.notebook.stopOnError": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Run All and Run Below stop at the first cell that fails."
+        },
+        "frysharp.run.arguments": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "markdownDescription": "Arguments passed to a script run with FrySharp."
+        },
+        "frysharp.run.saveBeforeRun": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Save the file before running it."
+        },
+        "frysharp.run.showEditorButton": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Show a Run button in the editor title for C#, Python and JavaScript files."
+        },
+        "frysharp.scratchpad.shiftEnter": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Shift+Enter sends the selection of a C#, Python or JavaScript file to the scratchpad."
+        },
+        "frysharp.notebook.liveDiagnostics": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Mark the errors of C# cells (and directives that are not one) as you type, with the cells before in scope."
+        }
+      }
+    },
+    "viewsContainers": {
+      "panel": [
+        {
+          "id": "frysharp",
+          "title": "FrySharp",
+          "icon": "$(symbol-variable)"
+        }
+      ]
+    },
+    "views": {
+      "frysharp": [
+        {
+          "id": "frysharp.variables",
+          "name": "Variables",
+          "when": "frysharp.notebookActive"
+        },
+        {
+          "id": "frysharp.results",
+          "name": "Results",
+          "type": "webview"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "frysharp.runScript",
+        "key": "ctrl+alt+r",
+        "mac": "cmd+alt+r",
+        "when": "editorTextFocus && resourceLangId in frysharp.runnableLanguages"
+      },
+      {
+        "command": "frysharp.stopRun",
+        "key": "shift+f5",
+        "when": "frysharp.runActive && !inDebugMode"
+      },
+      {
+        "command": "frysharp.sendToScratchpad",
+        "key": "shift+enter",
+        "when": "editorTextFocus && editorHasSelection && resourceLangId in frysharp.runnableLanguages && !notebookEditorFocused && config.frysharp.scratchpad.shiftEnter"
+      }
+    ],
+    "notebookRenderer": [
+      {
+        "id": "frysharp-output",
+        "displayName": "FrySharp Output",
+        "entrypoint": "./dist/renderer.js",
+        "mimeTypes": [
+          "application/vnd.fry.table+json",
+          "application/vnd.fry.inspector+json",
+          "application/vnd.fry.cell-output+json",
+          "text/html"
+        ],
+        "requiresMessaging": "optional"
+      }
+    ],
+    "grammars": [
+      {
+        "scopeName": "frysharp.directives.injection",
+        "path": "./syntaxes/frysharp-directives.injection.json",
+        "injectTo": [
+          "source.cs",
+          "source.python",
+          "source.js",
+          "source.fsharp",
+          "source.java",
+          "source.rust",
+          "source.go",
+          "source.cpp",
+          "source.sql"
+        ]
+      }
+    ],
+    "snippets": [
+      {
+        "language": "csharp",
+        "path": "./snippets/csharp.json"
+      },
+      {
+        "language": "python",
+        "path": "./snippets/python.json"
+      },
+      {
+        "language": "javascript",
+        "path": "./snippets/javascript.json"
+      },
+      {
+        "language": "sql",
+        "path": "./snippets/sql.json"
+      },
+      {
+        "language": "fsharp",
+        "path": "./snippets/fsharp.json"
+      },
+      {
+        "language": "java",
+        "path": "./snippets/java.json"
+      },
+      {
+        "language": "rust",
+        "path": "./snippets/rust.json"
+      },
+      {
+        "language": "go",
+        "path": "./snippets/go.json"
+      },
+      {
+        "language": "cpp",
+        "path": "./snippets/cpp.json"
+      }
+    ],
+    "walkthroughs": [
+      {
+        "id": "frysharp.start",
+        "title": "Get started with FrySharp",
+        "description": "Polyglot notebooks and script runs for C#, F#, Java, Rust, Go, C++, Python, JavaScript and SQL.",
+        "steps": [
+          {
+            "id": "run",
+            "title": "Run a cell",
+            "description": "Open a notebook and run C# with Shift+Enter.\n[New Polyglot Notebook](command:frysharp.newNotebook)",
+            "media": {
+              "markdown": "media/walkthrough/run-a-cell.md"
+            },
+            "completionEvents": [
+              "onCommand:frysharp.newNotebook"
+            ]
+          },
+          {
+            "id": "mix",
+            "title": "Mix languages",
+            "description": "Run a cell in Python or JavaScript and share variables between kernels with #!share.",
+            "media": {
+              "markdown": "media/walkthrough/mix-languages.md"
+            }
+          },
+          {
+            "id": "output",
+            "title": "Show a table or a chart",
+            "description": "Display.Table, charts, 3D, ECharts, images and HTML, in your theme.",
+            "media": {
+              "markdown": "media/walkthrough/show-output.md"
+            }
+          },
+          {
+            "id": "script",
+            "title": "Run a script, or keep a scratchpad",
+            "description": "Run a file in a terminal with input and clickable errors.\n[New Scratchpad](command:frysharp.newScratchpad)",
+            "media": {
+              "markdown": "media/walkthrough/run-a-script.md"
+            },
+            "completionEvents": [
+              "onCommand:frysharp.newScratchpad",
+              "onCommand:frysharp.runScript"
+            ]
+          }
+        ]
+      }
+    ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "build": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "typecheck": "tsc -p . --noEmit && tsc -p src/renderer --noEmit && tsc -p test --noEmit",
+    "lint": "eslint src test",
+    "test": "tsc -p test && node --test \"out-test/test/unit/*.test.js\"",
+    "vscode:prepublish": "npm run typecheck && node esbuild.js --production",
+    "test:integration": "node esbuild.js && tsc -p test && node out-test/test/integration/runTests.js"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^20.14.0",
     "@types/vscode": "^1.90.0",
-    "typescript": "^5.4.5"
+    "@vscode/test-electron": "^3.1.0",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.12.0",
+    "typescript": "^5.4.5",
+    "typescript-eslint": "^8.71.2",
+    "vscode-oniguruma": "^2.0.1",
+    "vscode-textmate": "^9.2.0"
   },
   "dependencies": {
     "vscode-jsonrpc": "^8.2.0"
+  },
+  "extensionKind": [
+    "workspace"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "FrySharp runs the code of notebooks and scripts. Until the workspace is trusted, notebooks open but nothing runs.",
+      "restrictedConfigurations": [
+        "frysharp.dotnetPath",
+        "frysharp.sidecarPath"
+      ]
+    },
+    "virtualWorkspaces": {
+      "supported": false,
+      "description": "FrySharp runs code on the files of a real folder, which a virtual workspace does not have."
+    }
   }
 }

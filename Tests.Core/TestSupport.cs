@@ -43,7 +43,7 @@ public static class Headless
 {
     private static readonly RoslynCompilerService Compiler = new();
 
-    public static async Task<(CSharpRunResult Result, string Output, List<RichCellOutput> Displays)> RunAsync(string code, TimeSpan? timeout = null, CancellationToken ct = default)
+    public static async Task<(CSharpRunResult Result, string Output, List<RichCellOutput> Displays)> RunAsync(string code, TimeSpan? timeout = null, CancellationToken ct = default, Action<string>? observe = null)
     {
         var output = new System.Text.StringBuilder();
         var displays = new List<RichCellOutput>();
@@ -51,7 +51,11 @@ public static class Headless
         limit.CancelAfter(timeout ?? TimeSpan.FromMinutes(1));
         var result = await new InProcessCSharpRunner(Compiler).RunAsync(
             code,
-            text => { lock (output) output.Append(text); },
+            text =>
+            {
+                lock (output) output.Append(text);
+                observe?.Invoke(text);
+            },
             display => { lock (displays) displays.Add(display); },
             stdin: null,
             limit.Token);

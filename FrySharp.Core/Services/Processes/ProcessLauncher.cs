@@ -16,6 +16,13 @@ public sealed record ProcessStartSpec
     /// <summary>Variables to set on top of the studio's own environment; a null value removes one.</summary>
     public IReadOnlyDictionary<string, string?> Environment { get; init; } = NoEnvironmentChanges;
 
+    /// <summary>
+    /// Sends the program's error output down the same pipe as its output, so the two arrive in the order the program wrote them
+    /// (two pipes are read by two threads, and a line to stderr can overtake one printed before it). Where it can't be done
+    /// (Windows has no <c>exec</c> to ask a shell for it) the two stay separate. The program's error text then arrives as output.
+    /// </summary>
+    public bool MergeStandardError { get; init; }
+
     /// <summary>How the command reads in a terminal, for messages.</summary>
     public string CommandLine => string.Join(" ", new[] { FileName }.Concat(Arguments).Select(Quote));
 
@@ -63,9 +70,11 @@ public sealed class ProcessLauncher : IProcessLauncher
 {
     public IManagedProcess Start(ProcessStartSpec spec, Action<string> onStandardOutput, Action<string> onStandardError)
     {
+        // Run through the shell only to join the two streams: the shell replaces itself with the program, so the process id is the program's.
+        var merge = spec.MergeStandardError && !OperatingSystem.IsWindows() && File.Exists("/bin/sh");
         var startInfo = new ProcessStartInfo
         {
-            FileName = spec.FileName,
+            FileName = merge ? "/bin/sh" : spec.FileName,
             UseShellExecute = false,
             CreateNoWindow = true,
             RedirectStandardInput = true,
@@ -75,6 +84,13 @@ public sealed class ProcessLauncher : IProcessLauncher
             StandardInputEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
             WorkingDirectory = spec.WorkingDirectory ?? string.Empty
         };
+        if (merge)
+        {
+            startInfo.ArgumentList.Add("-c");
+            startInfo.ArgumentList.Add("exec \"$0\" \"$@\" 2>&1");
+            startInfo.ArgumentList.Add(spec.FileName);
+        }
+
         foreach (var argument in spec.Arguments) startInfo.ArgumentList.Add(argument);
         foreach (var (name, value) in spec.Environment)
         {
@@ -119,8 +135,8 @@ public sealed class ProcessLauncher : IProcessLauncher
             _process = process;
             Id = process.Id;
             ProcessRegistry.Add(this);
-            _stdout = Pump(process.StandardOutput.BaseStream, onStandardOutput);
-            _stderr = Pump(process.StandardError.BaseStream, onStandardError);
+            _stdout = Pump(process.StandardOutput.BaseStream, onStandardOutput, $"stdout of {process.Id}");
+            _stderr = Pump(process.StandardError.BaseStream, onStandardError, $"stderr of {process.Id}");
             _ = FinishAsync();
         }
 
@@ -180,30 +196,44 @@ public sealed class ProcessLauncher : IProcessLauncher
             _ = _completion.Task.ContinueWith(_ => _process.Dispose(), TaskScheduler.Default);
         }
 
-        private static Task Pump(Stream stream, Action<string> sink) => Task.Run(async () =>
+        // Each stream is read on a thread of its own, not a thread-pool task: the pool of a busy host (a test run full of blocked
+        // threads, a studio with a lot going on) can have no free thread for seconds, and the couple of seconds a program's
+        // output is given after it ends would pass with its output still unread (it ended with 0 and said nothing).
+        private static Task Pump(Stream stream, Action<string> sink, string name)
         {
-            // Decoding the raw bytes keeps a character split across two reads intact and delivers text as soon as it's
-            // written, without waiting for the end of a line (a prompt printed with end="", a progress bar).
-            var decoder = new UTF8Encoding(false).GetDecoder();
-            var bytes = new byte[8192];
-            var chars = new char[Encoding.UTF8.GetMaxCharCount(bytes.Length)];
-            try
+            var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var thread = new Thread(() =>
             {
-                int read;
-                while ((read = await stream.ReadAsync(bytes)) > 0)
+                // Decoding the raw bytes keeps a character split across two reads intact and delivers text as soon as it's
+                // written, without waiting for the end of a line (a prompt printed with end="", a progress bar).
+                var decoder = new UTF8Encoding(false).GetDecoder();
+                var bytes = new byte[8192];
+                var chars = new char[Encoding.UTF8.GetMaxCharCount(bytes.Length)];
+                try
                 {
-                    var count = decoder.GetChars(bytes, 0, read, chars, 0, flush: false);
-                    if (count > 0) Deliver(sink, new string(chars, 0, count));
-                }
+                    int read;
+                    while ((read = stream.Read(bytes, 0, bytes.Length)) > 0)
+                    {
+                        var count = decoder.GetChars(bytes, 0, read, chars, 0, flush: false);
+                        if (count > 0) Deliver(sink, new string(chars, 0, count));
+                    }
 
-                var rest = decoder.GetChars(Array.Empty<byte>(), 0, 0, chars, 0, flush: true);
-                if (rest > 0) Deliver(sink, new string(chars, 0, rest));
-            }
-            catch (Exception ex) when (ex is IOException or ObjectDisposedException or InvalidOperationException)
-            {
-                // The pipe closed under the reader: the process was killed or disposed.
-            }
-        });
+                    var rest = decoder.GetChars(Array.Empty<byte>(), 0, 0, chars, 0, flush: true);
+                    if (rest > 0) Deliver(sink, new string(chars, 0, rest));
+                }
+                catch (Exception ex) when (ex is IOException or ObjectDisposedException or InvalidOperationException)
+                {
+                    // The pipe closed under the reader: the process was killed or disposed.
+                }
+                finally
+                {
+                    done.TrySetResult();
+                }
+            })
+            { IsBackground = true, Name = name };
+            thread.Start();
+            return done.Task;
+        }
 
         private static void Deliver(Action<string> sink, string text)
         {

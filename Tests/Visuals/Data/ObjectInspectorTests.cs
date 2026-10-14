@@ -95,6 +95,9 @@ public class ObjectInspectorTests
         Assert.True(anotherProp.IsComplexChild);
         Assert.NotNull(anotherProp.ChildNode);
         Assert.Equal("TestPeople", anotherProp.ChildNode.HeaderTitle);
+
+        // The desktop shows the cycle unrolled: levels one to four list their members, the fifth is a title. Every other language matches this.
+        InspectorChain.AssertFiveLevels(node, "Another", ["Name", "Class", "Numbers", "Another"]);
     }
 
     [Fact]

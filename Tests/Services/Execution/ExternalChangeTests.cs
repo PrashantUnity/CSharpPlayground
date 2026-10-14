@@ -30,13 +30,19 @@ public class ExternalChangeTests : IDisposable
         }
     }
 
-    private CSharpCodeStudioViewModel CreateStudio(PdfEditorApp.Plugins.CSharpEditor.Models.ScriptDocumentItem script) => new(
-        script,
-        _storage,
-        new RoslynCompilerService(),
-        new ScriptExecutionEngine(),
-        backToHubAction: () => { },
-        backToHomeAction: () => { });
+    // A studio lists its folder in the background when it is made: wait for the listing, so the Explorer has its files.
+    private async Task<CSharpCodeStudioViewModel> CreateStudioAsync(PdfEditorApp.Plugins.CSharpEditor.Models.ScriptDocumentItem script)
+    {
+        var studio = new CSharpCodeStudioViewModel(
+            script,
+            _storage,
+            new RoslynCompilerService(),
+            new ScriptExecutionEngine(),
+            backToHubAction: () => { },
+            backToHomeAction: () => { });
+        await studio.RefreshExplorerAsync();
+        return studio;
+    }
 
     [Theory]
     [InlineData("/work/.git/config", true)]
@@ -97,7 +103,7 @@ public class ExternalChangeTests : IDisposable
         var folder = await _storage.CreateFolderAsync(null, "Kept");
         await _storage.CreateNewScriptAsync("Inside", folderPath: folder);
         var loose = await _storage.CreateNewScriptAsync("Loose");
-        var studio = CreateStudio(loose);
+        var studio = await CreateStudioAsync(loose);
         studio.ExplorerRootItems.Single(i => i.IsDirectory).IsExpanded = true;
 
         await studio.RefreshExplorerAsync();

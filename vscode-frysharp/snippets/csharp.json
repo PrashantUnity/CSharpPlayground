@@ -1,0 +1,32 @@
+{
+  "FrySharp table": {
+    "prefix": "frytable",
+    "body": ["Display.Table(${1:rows}, \"${2:Title}\");"],
+    "description": "Show a collection as a sortable, filterable table"
+  },
+  "FrySharp line chart": {
+    "prefix": "frylinechart",
+    "body": ["Display.LineChart(${1:values}, \"${2:Title}\");"],
+    "description": "Show numbers as a line chart"
+  },
+  "FrySharp bar chart": {
+    "prefix": "frybarchart",
+    "body": ["Display.BarChart(${1:values}, \"${2:Title}\");"],
+    "description": "Show numbers as a bar chart"
+  },
+  "FrySharp markdown": {
+    "prefix": "frymarkdown",
+    "body": ["Display.Markdown(\"${1:# Heading}\");"],
+    "description": "Show Markdown"
+  },
+  "FrySharp HTML": {
+    "prefix": "fryhtml",
+    "body": ["Display.Html(\"${1:<b>Hello</b>}\");"],
+    "description": "Show HTML"
+  },
+  "FrySharp share from another language": {
+    "prefix": "fryshare",
+    "body": ["#!share --from ${1|python,javascript,csharp|} ${2:name}"],
+    "description": "Copy a variable of another language's kernel into this cell"
+  }
+}

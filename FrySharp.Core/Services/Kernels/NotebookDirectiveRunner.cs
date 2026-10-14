@@ -63,8 +63,9 @@ public sealed class NotebookDirectiveRunner(ILanguageCatalog languages, Notebook
         var result = await packages.RunAsync(command, toolchain, write, ct);
         if (result.Message is { Length: > 0 } message) write((result.Success ? "" : "❌ ") + message.TrimEnd() + "\n");
 
-        // A new environment only takes over when the kernel next starts; until then the running one looks there too.
-        if (result.Success && result.AddedSearchPath is { } searchPath && kernel is ISearchPathKernel searchable && kernel.IsSessionActive)
+        // A new environment only takes over when the kernel next starts; until then the running one looks there too. A kernel
+        // that is not running yet (this is the first cell) keeps the path and has it as soon as it is.
+        if (result.Success && result.AddedSearchPath is { } searchPath && kernel is ISearchPathKernel searchable)
         {
             await searchable.AddSearchPathAsync(searchPath, ct);
         }

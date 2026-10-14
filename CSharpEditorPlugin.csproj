@@ -63,18 +63,8 @@
   <ItemGroup>
     <None Include="plugin.json" CopyToOutputDirectory="PreserveNewest" />
     <AvaloniaResource Include="Assets\**" />
-    <!-- The notebook's Java kernel program, written out next to the plugin's data when a Java cell first runs. -->
-    <EmbeddedResource Include="Services/Languages/Java/Kernel/*.java" LogicalName="JavaKernel.%(Filename)%(Extension)" />
-    <EmbeddedResource Include="Services/Languages/Java/Runtime/*.java" LogicalName="JavaKernel.%(Filename)%(Extension)" />
-    <EmbeddedResource Include="Services/Languages/Java/Runtime/*.java" LogicalName="JavaRuntime.%(Filename)%(Extension)" />
     <!-- The Go display and visual runtime package -->
-    <EmbeddedResource Include="Services/Languages/Go/Runtime/*.go" LogicalName="GoRuntime.%(Filename)%(Extension)" />
-    <!-- The Rust display and visual runtime package -->
-    <EmbeddedResource Include="Services/Languages/Rust/Runtime/*.*" LogicalName="RustRuntime.%(Filename)%(Extension)" />
     <!-- The C++ display and visual runtime header -->
-    <EmbeddedResource Include="Services/Languages/Cpp/Runtime/*.hpp" LogicalName="CppRuntime.%(Filename)%(Extension)" />
-    <!-- The F# display and visual runtime script -->
-    <EmbeddedResource Include="Services/Languages/FSharp/Runtime/*.fsx" LogicalName="FSharpRuntime.%(Filename)%(Extension)" />
   </ItemGroup>
 
   <!-- Packaging into .fryplugin distribution archive -->

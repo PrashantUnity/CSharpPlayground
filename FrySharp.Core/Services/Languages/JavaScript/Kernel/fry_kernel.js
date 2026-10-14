@@ -211,7 +211,10 @@ async function handleExecute(req) {
         }
 
         if (result !== undefined && !(result && result._fry_shown)) {
-            streamOutput("stdout", util.inspect(result, { depth: 3 }) + "\n");
+            // An object opens in the Object Explorer, as a C# value does; anything else is text.
+            const inspected = fry.inspectorBundle(result);
+            if (inspected) send({ type: "display", id: req.id, data: inspected, metadata: {} });
+            else streamOutput("stdout", util.inspect(result, { depth: 3 }) + "\n");
         }
 
         send({

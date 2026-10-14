@@ -37,7 +37,7 @@ public class GoNotebookKernelTests : IDisposable
     public async Task SharedVariables_SetAndGetRoundTrip()
     {
         var context = new KernelCreationContext(() => _tempDir, () => null);
-        using var kernel = new GoNotebookKernel(_toolchain, new FakeProcessLauncher(), _host, context);
+        using var kernel = new GoNotebookKernel(_toolchain, new FakeProcessLauncher(), _host, _tempDir, new GoNotebookDependencies(_tempDir), context);
 
         await kernel.SetValueFromJsonAsync("myInt", "42", CancellationToken.None);
         await kernel.SetValueFromJsonAsync("myStr", "\"hello go\"", CancellationToken.None);
@@ -53,7 +53,7 @@ public class GoNotebookKernelTests : IDisposable
 
         var vars = await kernel.GetVariablesAsync(CancellationToken.None);
         Assert.Equal(3, vars.Count);
-        Assert.Contains(vars, v => v.Name == "myInt" && v.TypeName == "int64");
+        Assert.Contains(vars, v => v.Name == "myInt" && v.TypeName == "int");
         Assert.Contains(vars, v => v.Name == "myStr" && v.TypeName == "string");
         Assert.Contains(vars, v => v.Name == "myBool" && v.TypeName == "bool");
     }
@@ -62,7 +62,7 @@ public class GoNotebookKernelTests : IDisposable
     public async Task MissingVariable_ThrowsKernelValueException()
     {
         var context = new KernelCreationContext(() => _tempDir, () => null);
-        using var kernel = new GoNotebookKernel(_toolchain, new FakeProcessLauncher(), _host, context);
+        using var kernel = new GoNotebookKernel(_toolchain, new FakeProcessLauncher(), _host, _tempDir, new GoNotebookDependencies(_tempDir), context);
 
         await Assert.ThrowsAsync<KernelValueException>(async () =>
         {
@@ -74,7 +74,7 @@ public class GoNotebookKernelTests : IDisposable
     public async Task HardReset_ClearsVariablesAndState()
     {
         var context = new KernelCreationContext(() => _tempDir, () => null);
-        using var kernel = new GoNotebookKernel(_toolchain, new FakeProcessLauncher(), _host, context);
+        using var kernel = new GoNotebookKernel(_toolchain, new FakeProcessLauncher(), _host, _tempDir, new GoNotebookDependencies(_tempDir), context);
 
         await kernel.SetValueFromJsonAsync("count", "10", CancellationToken.None);
         Assert.True(kernel.IsSessionActive);
@@ -109,7 +109,7 @@ public class GoNotebookKernelTests : IDisposable
                 await Task.Delay(Timeout.Infinite, process.KilledToken);
             }
         };
-        using var kernel = new GoNotebookKernel(_toolchain, launcher, _host, new KernelCreationContext(() => _tempDir, () => null));
+        using var kernel = new GoNotebookKernel(_toolchain, launcher, _host, _tempDir, new GoNotebookDependencies(_tempDir), new KernelCreationContext(() => _tempDir, () => null));
         using var cts = new CancellationTokenSource();
 
         var running = kernel.ExecuteAsync(new KernelExecutionRequest { Code = "fmt.Println(1)" }, cts.Token);
@@ -139,7 +139,7 @@ public class GoNotebookKernelTests : IDisposable
                 await Task.Delay(Timeout.Infinite, process.KilledToken);
             }
         };
-        using var kernel = new GoNotebookKernel(_toolchain, launcher, _host, new KernelCreationContext(() => _tempDir, () => null));
+        using var kernel = new GoNotebookKernel(_toolchain, launcher, _host, _tempDir, new GoNotebookDependencies(_tempDir), new KernelCreationContext(() => _tempDir, () => null));
         using var cts = new CancellationTokenSource();
 
         var running = kernel.ExecuteAsync(new KernelExecutionRequest { Code = "for {}" }, cts.Token);
@@ -165,7 +165,7 @@ public class GoNotebookKernelTests : IDisposable
                 process.Exit(0);
             }
         };
-        using var kernel = new GoNotebookKernel(_toolchain, launcher, _host, new KernelCreationContext(() => _tempDir, () => null));
+        using var kernel = new GoNotebookKernel(_toolchain, launcher, _host, _tempDir, new GoNotebookDependencies(_tempDir), new KernelCreationContext(() => _tempDir, () => null));
 
         var running = kernel.ExecuteAsync(new KernelExecutionRequest { Code = "fmt.Println(1)" }, CancellationToken.None);
         await Task.Delay(200);

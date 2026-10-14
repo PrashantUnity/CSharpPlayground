@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using CSharpEditorPlugin.Tests.TestSupport;
+using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
@@ -60,6 +61,61 @@ public class JavaScriptKernelTests : IDisposable
             OnRichOutput = rich.Enqueue
         }, ct).WaitAsync(Patience);
         return new Run(result, string.Concat(chunks), rich.ToList(), chunks.ToList());
+    }
+
+    [JavaScriptFact]
+    public async Task LastExpression_AnObject_OpensInTheObjectExplorer_LikeACSharpValue()
+    {
+        var kernel = Kernel();
+
+        var run = await Execute(kernel, """
+            class People {
+                constructor() {
+                    this.name = 'Prashant';
+                    this.numbers = [1, 34, 45, 235, 25];
+                    this.another = this;
+                }
+                get shout() { return this.name.toUpperCase(); }
+            }
+            const person = new People();
+            person
+            """);
+
+        Assert.True(run.Result.Success, run.Console);
+        Assert.DoesNotContain("People {", run.Console);
+        var node = Assert.IsType<ObjectInspectorNode>(Assert.Single(run.Rich, r => r.Kind == CellOutputKind.ObjectInspector).InspectorNode);
+        Assert.Equal("People", node.HeaderTitle);
+        Assert.Equal(["name", "numbers", "another", "shout"], node.Properties.Select(p => p.Name));
+        Assert.Equal("Prashant", node.Properties[0].SimpleValueText);
+        Assert.True(node.Properties[0].IsString);
+        Assert.Equal("[ 1, 34, 45, 235, 25 ]", node.Properties[1].SimpleValueText);
+        Assert.True(node.Properties[2].ChildNode!.IsCircularReference);
+        Assert.Equal("PRASHANT", node.Properties[3].SimpleValueText);
+        InspectorChain.AssertFiveLevels(node, "another", ["name", "numbers", "another", "shout"]);
+    }
+
+    [JavaScriptFact]
+    public async Task LastExpression_ObjectsMapsAndArraysOfObjects_AreInspected_ScalarsStayText()
+    {
+        var kernel = Kernel();
+
+        var plain = await Execute(kernel, "({ a: 1, b: { c: [1, 2] } })");
+        var map = await Execute(kernel, "new Map([['k', { v: 1 }], ['z', 2]])"); // a Map of the notebook's own vm context
+        var scalar = await Execute(kernel, "40 + 2");
+        var numbers = await Execute(kernel, "[1, 2, 3]");
+
+        var top = Assert.Single(plain.Rich).InspectorNode!;
+        Assert.Equal(["a", "b"], top.Properties.Select(p => p.Name));
+        Assert.Equal("c", top.Properties[1].ChildNode!.Properties.Single().Name);
+
+        var entries = Assert.Single(map.Rich).InspectorNode!;
+        Assert.Equal("Map", entries.HeaderTitle);
+        Assert.Equal(["k", "z"], entries.Properties.Select(p => p.Name));
+
+        Assert.Empty(scalar.Rich);
+        Assert.Equal("42\n", scalar.Console);
+        Assert.Empty(numbers.Rich);
+        Assert.Equal("[ 1, 2, 3 ]\n", numbers.Console);
     }
 
     [JavaScriptFact]

@@ -1,0 +1,18 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "..",
+    "outDir": "../out-test",
+    "sourceMap": false
+  },
+  "include": [
+    "./**/*.ts",
+    "../src/notebook/format/**/*.ts",
+    "../src/renderer/tableModel.ts",
+    "../src/renderer/inspectorModel.ts",
+    "../src/renderer/htmlPrepare.ts",
+    "../src/renderer/chooseMime.ts",
+    "../src/language/cellContext.ts",
+    "../src/language/directives.ts"
+  ]
+}

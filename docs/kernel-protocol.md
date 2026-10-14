@@ -1,6 +1,6 @@
 # The Fry kernel protocol
 
-A notebook language that runs as its own program (Python today) talks to the studio with this protocol. The studio side is `Services/Kernels/ProtocolKernel.cs`. The Python side is `Services/Languages/Python/Kernel/fry_kernel.py`, which is a working reference for any new kernel. To give a language notebook cells, write a program that speaks this protocol and an `IKernelLauncher` that starts it. [adding-a-language.md](adding-a-language.md) has the rest of the checklist.
+A notebook language that runs as its own program (Python, JavaScript, F# and Java today) talks to the studio with this protocol. The studio side is `FrySharp.Core/Services/Kernels/ProtocolKernel.cs`. The Python side is `FrySharp.Core/Services/Languages/Python/Kernel/fry_kernel.py`, which is a working reference for any new kernel; `…/Java/Kernel/FryKernel.java` (a JShell program run as `java FryKernel.java`) and `…/FSharp/Kernel/fry_kernel.fsx` are others, for a compiled language whose compiler can be hosted: it runs the F# compiler's own evaluation session (`FsiEvaluationSession`, which ships in the .NET SDK) inside `dotnet fsi`, so the cells of a notebook are one session. To give a language notebook cells, write a program that speaks this protocol and an `IKernelLauncher` that starts it. [adding-a-language.md](adding-a-language.md) has the rest of the checklist.
 
 It is deliberately small next to Jupyter's: no ZeroMQ and no connection files, just two pipes. A Jupyter kernel could still be supported later through an adapter that implements `INotebookKernel`.
 
@@ -23,7 +23,7 @@ It is deliberately small next to Jupyter's: no ZeroMQ and no connection files, j
 | `variables` | `id` | List the variables, for the Variables panel. |
 | `get_value` | `id`, `name` | A variable's value as JSON, for `#!share`. |
 | `set_value` | `id`, `name`, `json` | Set (or create) a variable from JSON, for `#!share`. |
-| `add_search_path` | `id`, `path` | Add a folder to the import path while running. This lets a package just installed into a new environment work without a restart. Optional: implement it only if the language has one. |
+| `add_search_path` | `id`, `path` | Add a folder to the import path (a jar to the classpath) while running. This lets a package just installed work without a restart. The studio sends it for every path it was asked to add, when the kernel starts and again after a restart, so a package line in the first cell of a notebook works. Optional: implement it only if the language has one. |
 | `event` | `id`, `display_id`, `event` | The user clicked, selected or stepped in a visual the program listens to (`subscribe`). Run the callbacks registered for it, with their output sent under this `id`: it goes to the cell that showed the visual. `event` is `{"event": "click", "target", "modifiers"}`, `{"event": "select", "targets"}` or `{"event": "step", "index"}` ([visual-protocol.md](visual-protocol.md#updates-and-events)). |
 | `shutdown` | — | Exit now. Optional, because closing stdin means the same. |
 
@@ -39,7 +39,7 @@ The studio sends one request at a time for each notebook, and each `execute` fin
 | `update_display` | `id`, `data`, `metadata`, `transient` | Redraw the output named `transient.display_id` where it is, with this bundle. An id never shown is shown as a new output. |
 | `subscribe` / `unsubscribe` | `id`, `display_id`, `events` | Start (or stop) hearing about `click`, `select` and `step` events on that output; every kind when `events` is left out. |
 | `input_request` | `id`, `prompt`, `password` | The cell asks for a line of input. Wait for `input_reply`. The studio echoes the prompt and the answer into the cell's output. |
-| `error` | `id`, `ename`, `evalue`, `traceback`, `line`, `missingModule`, `missingName` | The cell failed. `traceback` is the text to show. `line` is the failing line in the cell, if it's known. `missingModule` (e.g. `"cv2"`) makes the cell offer to install the package. `missingName` makes it offer to run the cells above. |
+| `error` | `id`, `ename`, `evalue`, `traceback`, `line`, `diagnostics`, `missingModule`, `missingName` | The cell failed. `traceback` is the text to show. `line` is the failing line in the cell, if it's known. `diagnostics`, when the language has a compiler that says where, is a list of `{line, column, endLine, endColumn, severity, code, message}` (1-based, on the cell's own lines and columns) that the notebook underlines and lists in Problems. `missingModule` (e.g. `"cv2"`) makes the cell offer to install the package. `missingName` makes it offer to run the cells above. |
 | `reply` | `id`, `status`, … | Ends a request. `status` is `ok`, `error` (with `message` for requests other than `execute`) or `interrupted`. An `execute` reply carries `executionCount`, a `variables` reply `variables` (`[{name, type, value, kind}]`), and a `get_value` reply `json`. |
 
 Send everything that belongs to an execution before its `reply`: flush buffered output, then any pending `display`. The reply is what ends the cell in the studio.
@@ -50,6 +50,7 @@ Send everything that belongs to an execution before its `reply`: flush buffered 
 
 1. `application/vnd.fry.table+json`: the studio's own table (column sorting, number alignment). The shape is `{"title", "columns": [...], "numeric": [bool...], "rows": [[...]], "totalRows", "totalColumns"}`. Send at most about 1,000 rows. The studio notes "showing the first N of M rows" when `totalRows` is larger.
    The studio's charts, 3D plots and visualizers come the same way, as `application/vnd.fry.chart.v1+json`, `application/vnd.fry.plot3d.v1+json` and `application/vnd.fry.visualizer.v1+json`: see [visual-protocol.md](visual-protocol.md).
+   `application/vnd.fry.inspector+json` shows an object as the studio's Object Explorer, as a C# value is: `{"title": "People", "properties": [{"name": "name", "value": "Code", "isString": true}, {"name": "another", "child": {"title": "People", "circular": true, "properties": [{"name": "name", "value": "Code", "isString": true}]}}]}`. A row is a scalar (`value`, with `isNull` / `isString` for its colour) or a nested object (`child`); `circular` marks an object already on the way down. It is listed like any other object (the desktop's C# inspector does the same), so a self-referencing value unrolls until the depth limit: the members of the top object and of three levels below it, then a fifth level that is a title with no `properties`. `circular` only flags the node (the chip is `↻`, and it starts closed). A kernel sends it for the last expression of a cell when that is an object (not a scalar, and not a short collection of scalars, which is one text line `[ 1, 2, 3 ]`), and keeps `text/plain` for hosts that cannot draw it. The studio reads at most 6 levels.
 2. `image/png` or `image/jpeg`, base64. `metadata["image/png"] = {"width", "height"}` gives its size in pixels.
 3. `image/svg+xml`, drawn by the HTML view.
 4. `text/html`.
@@ -68,7 +69,7 @@ An error `reply` for `get_value` or `set_value` should explain in its `message` 
 
 ## Programs that aren't kernels
 
-A program run from Code Studio, and a Go, Rust, C++ or F# notebook cell, owns its stdin and stdout: its user types into one and reads the other. It sends the same `display`, `update_display`, `subscribe` and `unsubscribe` messages as lines on stdout, each after the marker `__FRY_DISPLAY__ ` (the marker may be left out for a line that starts `{"type":` with one of those types). Its events come another way, over a loopback socket:
+A program run from Code Studio, and a Go, Rust or C++ notebook cell, owns its stdin and stdout: its user types into one and reads the other. It sends the same `display`, `update_display`, `subscribe` and `unsubscribe` messages as lines on stdout, each after the marker `__FRY_DISPLAY__ ` (the marker may be left out for a line that starts `{"type":` with one of those types). Its events come another way, over a loopback socket:
 
 - The studio sets two environment variables for the program (not for its build steps): `FRY_EVENTS`, the address (`127.0.0.1:port`), and `FRY_EVENTS_TOKEN`, a token of its own.
 - When its code first listens to a visual, the program connects to that address and sends `{"type": "hello", "token": "…"}` as its first line. A connection without a token the studio gave out is closed.

@@ -30,7 +30,7 @@ public class CppNotebookKernelTests : IDisposable
         var settings = new ToolchainSettingsStore(Path.Combine(_baseDir, "toolchains.json"));
         var toolchain = new CppToolchainProvider(host, processes, settings, Path.Combine(_baseDir, "cpp"));
         var context = new KernelCreationContext(() => host.HomeDirectory);
-        using var kernel = new CppNotebookKernel(toolchain, processes, host, context);
+        using var kernel = new CppNotebookKernel(toolchain, processes, host, Path.Combine(_baseDir, "cpp"), context);
 
         Assert.Equal(LanguageIds.Cpp, kernel.LanguageId);
         Assert.True(kernel.CanForceStop);
@@ -45,7 +45,7 @@ public class CppNotebookKernelTests : IDisposable
         var settings = new ToolchainSettingsStore(Path.Combine(_baseDir, "toolchains.json"));
         var toolchain = new CppToolchainProvider(host, processes, settings, Path.Combine(_baseDir, "cpp"));
         var context = new KernelCreationContext(() => host.HomeDirectory);
-        using var kernel = new CppNotebookKernel(toolchain, processes, host, context);
+        using var kernel = new CppNotebookKernel(toolchain, processes, host, Path.Combine(_baseDir, "cpp"), context);
 
         await kernel.SetValueFromJsonAsync("count", "42", default);
         await kernel.SetValueFromJsonAsync("pi", "3.14159", default);
@@ -71,7 +71,7 @@ public class CppNotebookKernelTests : IDisposable
         var settings = new ToolchainSettingsStore(Path.Combine(_baseDir, "toolchains.json"));
         var toolchain = new CppToolchainProvider(host, processes, settings, Path.Combine(_baseDir, "cpp"));
         var context = new KernelCreationContext(() => host.HomeDirectory);
-        using var kernel = new CppNotebookKernel(toolchain, processes, host, context);
+        using var kernel = new CppNotebookKernel(toolchain, processes, host, Path.Combine(_baseDir, "cpp"), context);
 
         await kernel.SetValueFromJsonAsync("x", "100", default);
         Assert.True(kernel.IsSessionActive);
@@ -90,7 +90,7 @@ public class CppNotebookKernelTests : IDisposable
         var settings = new ToolchainSettingsStore(Path.Combine(_baseDir, "toolchains.json"));
         var toolchain = new CppToolchainProvider(host, processes, settings, Path.Combine(_baseDir, "cpp"));
         var context = new KernelCreationContext(() => host.HomeDirectory);
-        using var kernel = new CppNotebookKernel(toolchain, processes, host, context);
+        using var kernel = new CppNotebookKernel(toolchain, processes, host, Path.Combine(_baseDir, "cpp"), context);
 
         await Assert.ThrowsAsync<KernelValueException>(() => kernel.GetValueJsonAsync("non_existent", default));
     }
@@ -103,7 +103,7 @@ public class CppNotebookKernelTests : IDisposable
         var settings = new ToolchainSettingsStore(Path.Combine(_baseDir, "toolchains.json"));
         var toolchain = new CppToolchainProvider(host, processes, settings, Path.Combine(_baseDir, "cpp"));
         var context = new KernelCreationContext(() => host.HomeDirectory);
-        using var kernel = new CppNotebookKernel(toolchain, processes, host, context);
+        using var kernel = new CppNotebookKernel(toolchain, processes, host, Path.Combine(_baseDir, "cpp"), context);
 
         var result = await kernel.ExecuteAsync(new KernelExecutionRequest
         {

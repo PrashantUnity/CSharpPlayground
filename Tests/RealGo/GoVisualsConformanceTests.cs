@@ -111,7 +111,7 @@ public class GoVisualsConformanceTests : IDisposable
         var go = TestGo.Require();
         var services = TestGo.Services(Path.Combine(_dir, ".studio"));
         var language = (GoLanguage)services.Registry.Get(LanguageIds.Go)!;
-        var plan = await language.ScriptRunner.PlanAsync(new ScriptRunContext(path, Path.GetDirectoryName(path)!, go));
+        var plan = await language.Engine.ScriptRunner.PlanAsync(new ScriptRunContext(path, Path.GetDirectoryName(path)!, go));
         var console = new List<string>();
         var outputs = new List<RichCellOutput>();
         var processor = new ExternalOutputProcessor(console.Add, outputs.Add, visuals: session?.Visuals);
@@ -129,7 +129,7 @@ public class GoVisualsConformanceTests : IDisposable
         var services = new StudioLanguageServices(Path.Combine(_dir, "services"));
         var go = (GoLanguage)services.Registry.Get(LanguageIds.Go)!;
         go.GoToolchain.Select(TestGo.Require().ExecutablePath);
-        var kernel = go.NotebookKernels.Create(new KernelCreationContext(() => _dir));
+        var kernel = go.Engine.NotebookKernels.Create(new KernelCreationContext(() => _dir));
         _kernels.Add(kernel);
         return kernel;
     }

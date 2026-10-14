@@ -1,6 +1,12 @@
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.CSharp;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Cpp;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.FSharp;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Go;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Java;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.JavaScript;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Python;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Rust;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Sql;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
@@ -24,6 +30,12 @@ public static class HeadlessLanguages
         registry.Register(new CSharpEngine());
         registry.Register(new PythonEngine(services));
         registry.Register(new JavaScriptEngine(services));
+        registry.Register(new SqlEngine(services));
+        registry.Register(new FSharpEngine(services));
+        registry.Register(new JavaEngine(services));
+        registry.Register(new RustEngine(services));
+        registry.Register(new GoEngine(services));
+        registry.Register(new CppEngine(services));
         return registry;
     }
 

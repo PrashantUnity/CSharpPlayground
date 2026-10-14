@@ -2,18 +2,23 @@
 
 A value is shown the way Jupyter would show it, as a MIME bundle, using the first of these it has:
 _repr_mimebundle_, a pandas DataFrame/Series (as the studio's own table), _repr_png_ / _repr_jpeg_, _repr_svg_,
-_repr_html_, a matplotlib Figure (as a PNG), and otherwise its repr. Also turns values into JSON for #!share.
+_repr_html_, a matplotlib Figure (as a PNG), an object or dict (as the Object Explorer's tree), and otherwise its repr. Also turns values into JSON for #!share.
 """
 
 import base64
+import collections
 import dataclasses
 import datetime
 import decimal
+import enum
 import io
 import json
 import math
+import pathlib
 import pprint
 import sys
+import types
+import uuid
 
 MAX_TEXT = 100_000
 MAX_IMAGE_BYTES = 20 * 1024 * 1024
@@ -22,6 +27,12 @@ MAX_COLUMNS = 100
 MAX_CELL_TEXT = 200
 
 TABLE_MIME = "application/vnd.fry.table+json"
+INSPECTOR_MIME = "application/vnd.fry.inspector+json"
+
+# The Object Explorer: levels of objects shown below the first, items of a collection listed, scalars on one line
+MAX_INSPECT_DEPTH = 3
+MAX_INSPECT_ITEMS = 100
+MAX_INSPECT_INLINE = 50
 
 _publisher = None
 
@@ -97,6 +108,10 @@ def to_mime(obj):
 
     if _is_figure(obj):
         return figure_bundle(obj, close=True)
+
+    node = inspector(obj)
+    if node is not None:
+        return {INSPECTOR_MIME: node, "text/plain": _text(obj)}, {}
 
     return {"text/plain": _text(obj)}, {}
 
@@ -263,6 +278,136 @@ def _cell(value):
             pass
     text = str(value)
     return text if len(text) <= MAX_CELL_TEXT else text[:MAX_CELL_TEXT - 1] + "…"
+
+
+def inspector(obj):
+    """The Object Explorer's tree for an object, as the studio shows a C# value: {title, properties: [{name, value,
+    isString, isNull, child}]}. None for a value that reads best as text: a scalar, a function or class, a short
+    list of scalars, or an object with nothing to list."""
+    if _is_scalar(obj) or callable(obj) or isinstance(obj, (type, types.ModuleType)):
+        return None
+    if _inline(obj) is not None:
+        return None
+    try:
+        node = _inspect_node(obj, 0, {id(obj)})
+    except Exception:
+        return None
+    return node if node["properties"] else None
+
+
+def _is_scalar(value):
+    if value is None or isinstance(value, (bool, int, float, complex, str, bytes, bytearray, range,
+                                           decimal.Decimal, datetime.date, datetime.time, datetime.timedelta,
+                                           enum.Enum, uuid.UUID, pathlib.PurePath)):
+        return True
+    numpy = sys.modules.get("numpy")
+    return numpy is not None and isinstance(value, numpy.generic)
+
+
+def _scalar_text(value):
+    if isinstance(value, float):
+        if math.isnan(value):
+            return "NaN"
+        if math.isinf(value):
+            return "∞" if value > 0 else "-∞"
+    if isinstance(value, enum.Enum):
+        return value.name
+    return str(value)
+
+
+def _inline(value):
+    """One line for a list, tuple or set whose items are all scalars (or None), as '[ 1, 2, 3 ]'; else None."""
+    if not isinstance(value, (list, tuple, set, frozenset, collections.deque)) or hasattr(value, "_fields"):
+        return None
+    parts = []
+    for index, item in enumerate(value):
+        if index > MAX_INSPECT_INLINE:
+            parts.append("...")
+            break
+        if item is None:
+            parts.append("<null>")
+        elif _is_scalar(item):
+            parts.append(_scalar_text(item))
+        else:
+            return None
+    return "[ " + ", ".join(parts) + " ]"
+
+
+def _inspect_node(obj, depth, path, circular=False):
+    node = {"title": type(obj).__name__, "properties": []}
+    if circular:
+        node["circular"] = True  # a reference back to an object above: its members are listed again, down to the depth limit
+    rows = node["properties"]
+    for index, (name, value) in enumerate(_members(obj)):
+        if index >= MAX_INSPECT_ITEMS:
+            rows.append({"name": "...", "value": f"({index}+ items truncated)"})
+            break
+        rows.append(_inspect_row(name, value, depth + 1, path))
+    return node
+
+
+def _inspect_row(name, value, depth, path):
+    row = {"name": name}
+    if isinstance(value, _MemberError):
+        row["value"] = f"<Error: {value.message}>"
+    elif value is None:
+        row["value"] = "<null>"
+        row["isNull"] = True
+    elif _is_scalar(value):
+        row["value"] = _scalar_text(value)
+        row["isString"] = isinstance(value, str)
+    elif callable(value) or isinstance(value, (type, types.ModuleType)):
+        row["value"] = _text(value)
+    elif (inline := _inline(value)) is not None:
+        row["value"] = inline
+    elif depth > MAX_INSPECT_DEPTH:
+        row["child"] = {"title": type(value).__name__, "properties": []}
+    else:
+        circular = id(value) in path
+        if not circular:
+            path.add(id(value))
+        try:
+            row["child"] = _inspect_node(value, depth, path, circular)
+        finally:
+            if not circular:
+                path.discard(id(value))
+    return row
+
+
+class _MemberError:
+    def __init__(self, error):
+        self.message = str(error)
+
+
+def _members(obj):
+    """(name, value) pairs an object lists: a dict's items, a collection's items by index, otherwise its public
+    attributes (a namedtuple's or dataclass's fields, __dict__, __slots__) and the properties of its class."""
+    if isinstance(obj, dict):
+        return [(str(key), value) for key, value in obj.items()]
+    if isinstance(obj, tuple) and hasattr(obj, "_fields"):
+        return list(zip(obj._fields, obj))
+    if isinstance(obj, (list, tuple, set, frozenset, collections.deque)):
+        return [(f"[{index}]", item) for index, item in enumerate(obj)]
+
+    members = {}
+    if dataclasses.is_dataclass(obj) and not isinstance(obj, type):
+        for field in dataclasses.fields(obj):
+            members[field.name] = getattr(obj, field.name, None)
+    for name, value in getattr(obj, "__dict__", {}).items():
+        if not name.startswith("_"):
+            members.setdefault(name, value)
+    for klass in type(obj).__mro__:
+        slots = klass.__dict__.get("__slots__", ())
+        for name in ((slots,) if isinstance(slots, str) else slots):
+            if not name.startswith("_") and name not in members and hasattr(obj, name):
+                members[name] = getattr(obj, name)
+        for name, attribute in klass.__dict__.items():
+            if isinstance(attribute, property) and not name.startswith("_") and name not in members:
+                try:
+                    members[name] = getattr(obj, name)
+                except Exception as error:
+                    members[name] = _MemberError(error)
+    return list(members.items())
 
 
 def _text(obj):

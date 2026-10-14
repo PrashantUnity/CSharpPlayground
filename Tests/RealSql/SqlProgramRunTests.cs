@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using CSharpEditorPlugin.Tests.TestSupport;
+using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Sql;
@@ -43,9 +44,9 @@ public class SqlProgramRunTests : IDisposable
         var sqlite = TestSql.Require();
         var services = TestSql.Services(Path.Combine(_dir, ".studio"));
         var language = (SqlLanguage)services.Registry.Get(LanguageIds.Sql)!;
-        var plan = await language.ScriptRunner.PlanAsync(new ScriptRunContext(path, Path.GetDirectoryName(path)!, sqlite));
+        var plan = await language.Engine.ScriptRunner.PlanAsync(new ScriptRunContext(path, Path.GetDirectoryName(path)!, sqlite));
         var output = new ConcurrentQueue<string>();
-        var session = new ScriptRunExecutor(services.Processes).Start(plan, path, language.RunDiagnostics, output.Enqueue);
+        var session = new ScriptRunExecutor(services.Processes).Start(plan, path, language.Engine.RunDiagnostics, output.Enqueue);
         return (session, output);
     }
 
@@ -146,9 +147,10 @@ public class SqlProgramRunTests : IDisposable
         var language = (SqlLanguage)services.Registry.Get(LanguageIds.Sql)!;
 
         var context = new KernelCreationContext(() => _dir, () => null);
-        using var kernel = (SqlNotebookKernel)language.NotebookKernels.Create(context);
+        using var kernel = (SqlNotebookKernel)language.Engine.NotebookKernels.Create(context);
 
-        var consoleOut = new List<string>();
+        // A query's rows arrive as a table, not as text.
+        var tables = new List<DumpTableResult>();
         var req1 = new KernelExecutionRequest
         {
             Code = """
@@ -161,15 +163,17 @@ public class SqlProgramRunTests : IDisposable
                 INSERT INTO products (name, qty) VALUES ('Bananas', 30);
                 SELECT name, qty FROM products ORDER BY name;
                 """,
-            OnConsole = s => consoleOut.Add(s)
+            OnConsole = _ => { },
+            OnRichOutput = output => tables.Add(output.TableResult!)
         };
 
         var res = await kernel.ExecuteAsync(req1, CancellationToken.None);
 
         Assert.True(res.Success, res.ErrorMessage ?? res.ConsoleOutput);
-        var joined = string.Join("", consoleOut);
-        Assert.Contains("Apples", joined);
-        Assert.Contains("Bananas", joined);
+        var table = Assert.Single(tables);
+        Assert.Equal(new[] { "name", "qty" }, table.Columns.Select(c => c.Header));
+        Assert.Equal(new[] { "Apples", "Bananas" }, table.Rows.Select(r => r.Cells[0].DisplayText));
+        Assert.Equal(new[] { "50", "30" }, table.Rows.Select(r => r.Cells[1].DisplayText));
     }
 
     [SqlFact]
@@ -180,7 +184,7 @@ public class SqlProgramRunTests : IDisposable
         var language = (SqlLanguage)services.Registry.Get(LanguageIds.Sql)!;
 
         var context = new KernelCreationContext(() => _dir, () => null);
-        using var kernel = (SqlNotebookKernel)language.NotebookKernels.Create(context);
+        using var kernel = (SqlNotebookKernel)language.Engine.NotebookKernels.Create(context);
 
         // Cell 1: create + insert
         var req1 = new KernelExecutionRequest
@@ -195,16 +199,17 @@ public class SqlProgramRunTests : IDisposable
         Assert.True(res1.Success, res1.ErrorMessage);
 
         // Cell 2: query from the same DB session
-        var consoleOut = new List<string>();
+        var tables = new List<DumpTableResult>();
         var req2 = new KernelExecutionRequest
         {
             Code = "SELECT val FROM accumtest;",
-            OnConsole = s => consoleOut.Add(s)
+            OnConsole = _ => { },
+            OnRichOutput = output => tables.Add(output.TableResult!)
         };
         var res2 = await kernel.ExecuteAsync(req2, CancellationToken.None);
 
         Assert.True(res2.Success, res2.ErrorMessage);
-        Assert.Contains("100", string.Join("", consoleOut));
+        Assert.Equal("100", Assert.Single(Assert.Single(tables).Rows).Cells[0].DisplayText);
     }
 
     [SqlFact]
@@ -215,7 +220,7 @@ public class SqlProgramRunTests : IDisposable
         var language = (SqlLanguage)services.Registry.Get(LanguageIds.Sql)!;
 
         var context = new KernelCreationContext(() => _dir, () => null);
-        using var kernel = (SqlNotebookKernel)language.NotebookKernels.Create(context);
+        using var kernel = (SqlNotebookKernel)language.Engine.NotebookKernels.Create(context);
 
         // Create a table to share
         await kernel.ExecuteAsync(new KernelExecutionRequest

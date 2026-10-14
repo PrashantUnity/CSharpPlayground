@@ -69,7 +69,7 @@ public class RustProgramRunTests : IClassFixture<RustStudioFixture>, IDisposable
     {
         var rust = TestRust.Require();
         var language = (RustLanguage)_studio.Services.Registry.Get(LanguageIds.Rust)!;
-        var plan = await language.ScriptRunner.PlanAsync(new ScriptRunContext(path, Path.GetDirectoryName(path)!, rust));
+        var plan = await language.Engine.ScriptRunner.PlanAsync(new ScriptRunContext(path, Path.GetDirectoryName(path)!, rust));
         var output = new ConcurrentQueue<string>();
         var session = new ScriptRunExecutor(_studio.Services.Processes).Start(plan, path, language.RunDiagnostics, output.Enqueue);
         return (session, output);

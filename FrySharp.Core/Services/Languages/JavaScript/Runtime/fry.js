@@ -16,6 +16,7 @@ const CHART_MIME = 'application/vnd.fry.chart.v1+json';
 const PLOT3D_MIME = 'application/vnd.fry.plot3d.v1+json';
 const VISUALIZER_MIME = 'application/vnd.fry.visualizer.v1+json';
 const TABLE_MIME = 'application/vnd.fry.table+json';
+const INSPECTOR_MIME = 'application/vnd.fry.inspector+json';
 const DISPLAY_MARKER = '__FRY_DISPLAY__';
 
 // ---------------------------------------------------------------------------------------------------------- channel
@@ -955,6 +956,118 @@ class CanvasVisualizer {
     }
 }
 
+// ------------------------------------------------------------------------------------------------- Object Explorer
+// What the last expression of a notebook cell shows when it is an object, the way the studio shows a C# value: a tree
+// of its own properties and the getters of its class (a Map's entries, a collection's items), each nested object a
+// node that opens. {title, properties: [{name, value, isString, isNull, child}]}; null for what reads best as text.
+const MAX_INSPECT_DEPTH = 3;    // levels of objects below the one shown, as the C# inspector
+const MAX_INSPECT_ITEMS = 100;  // items of a collection listed
+const MAX_INSPECT_INLINE = 50;  // scalars of an array on one line
+
+function isScalarValue(v) {
+    if (v === null || v === undefined) return true;
+    const type = typeof v;
+    if (type !== 'object') return true; // number, string, boolean, bigint, symbol, and functions (shown as text)
+    // util.types, not instanceof: a cell's values come from the notebook's vm context, which has its own Map and Date.
+    return util.types.isDate(v) || util.types.isRegExp(v) || util.types.isNativeError(v) || util.types.isPromise(v) ||
+        util.types.isBoxedPrimitive(v) || util.types.isAnyArrayBuffer(v) || ArrayBuffer.isView(v);
+}
+
+function scalarText(v) {
+    if (typeof v === 'string') return v;
+    if (typeof v === 'number') {
+        if (Number.isNaN(v)) return 'NaN';
+        if (!Number.isFinite(v)) return v > 0 ? '∞' : '-∞';
+        return String(v);
+    }
+    return util.inspect(v);
+}
+
+// "[ 1, 2, 3 ]" for an array whose items are all scalars; null for any other value.
+function inlineScalars(v) {
+    if (!Array.isArray(v)) return null;
+    const parts = [];
+    for (let i = 0; i < v.length; i++) {
+        if (i > MAX_INSPECT_INLINE) { parts.push('...'); break; }
+        const item = v[i];
+        if (item === null || item === undefined) parts.push('<null>');
+        else if (isScalarValue(item) && typeof item !== 'function') parts.push(scalarText(item));
+        else return null;
+    }
+    return '[ ' + parts.join(', ') + ' ]';
+}
+
+function inspectMembers(obj) {
+    if (util.types.isMap(obj)) return [...obj.entries()].map(([k, v]) => [String(k), v]);
+    if (util.types.isSet(obj) || Array.isArray(obj)) return [...obj].map((v, i) => ['[' + i + ']', v]);
+
+    const members = new Map();
+    for (const key of Object.keys(obj)) {
+        let value;
+        try { value = obj[key]; } catch (e) { value = { error: e }; }
+        if (typeof value !== 'function') members.set(key, value);
+    }
+    // The getters of its class, as properties are in C#.
+    for (let proto = Object.getPrototypeOf(obj); proto && proto !== Object.prototype; proto = Object.getPrototypeOf(proto)) {
+        for (const name of Object.getOwnPropertyNames(proto)) {
+            if (name === 'constructor' || name === '__proto__' || members.has(name)) continue;
+            const descriptor = Object.getOwnPropertyDescriptor(proto, name);
+            if (!descriptor || !descriptor.get) continue;
+            try { members.set(name, obj[name]); } catch (e) { members.set(name, { error: e }); }
+        }
+    }
+    return [...members.entries()];
+}
+
+function inspectNode(obj, depth, path, circular) {
+    const title = (obj && obj.constructor && obj.constructor.name) || 'Object';
+    const node = { title, properties: [] };
+    if (circular) node.circular = true; // a reference back to an object above: its members are listed again, down to the depth limit
+    const rows = node.properties;
+    inspectMembers(obj).forEach(([name, value], index) => {
+        if (index === MAX_INSPECT_ITEMS) rows.push({ name: '...', value: `(${index}+ items truncated)` });
+        else if (index < MAX_INSPECT_ITEMS) rows.push(inspectRow(name, value, depth + 1, path));
+    });
+    return node;
+}
+
+function inspectRow(name, value, depth, path) {
+    const row = { name };
+    if (value !== null && typeof value === 'object' && util.types.isNativeError(value.error) && Object.keys(value).length === 1) {
+        row.value = `<Error: ${value.error.message}>`;
+    } else if (value === null || value === undefined) {
+        row.value = '<null>';
+        row.isNull = true;
+    } else if (typeof value === 'function') {
+        row.value = util.inspect(value);
+    } else if (isScalarValue(value)) {
+        row.value = scalarText(value);
+        row.isString = typeof value === 'string';
+    } else if (inlineScalars(value) !== null) {
+        row.value = inlineScalars(value);
+    } else if (depth > MAX_INSPECT_DEPTH) {
+        row.child = { title: (value.constructor && value.constructor.name) || 'Object', properties: [] };
+    } else {
+        const circular = path.has(value);
+        path.add(value);
+        try { row.child = inspectNode(value, depth, path, circular); } finally { if (!circular) path.delete(value); }
+    }
+    return row;
+}
+
+// The display bundle for the last expression of a cell, or null when its value is text.
+function inspectorBundle(value) {
+    if (isScalarValue(value) || inlineScalars(value) !== null) return null;
+    let node;
+    try {
+        node = inspectNode(value, 0, new Set([value]), false);
+    } catch (e) {
+        return null;
+    }
+    if (node.properties.length === 0) return null;
+    return { [INSPECTOR_MIME]: node, 'text/plain': util.inspect(value, { depth: 3 }) };
+}
+
 function dump(obj, title) { return Display.dump(obj, title); }
 function display(...objects) { for (const o of objects) Display.dump(o); }
 
@@ -963,6 +1076,7 @@ module.exports = {
     DisplayHandle,
     dump,
     display,
+    inspectorBundle,
     setChannel,
     postEvent,
     runPendingEvents,

@@ -2,71 +2,22 @@ using AvaloniaEdit;
 using AvaloniaEdit.Highlighting;
 using AvaloniaEdit.Indentation;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging;
-using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
-using PdfEditorApp.Plugins.CSharpEditor.Services.Packages;
-using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
-using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Go;
 
 /// <summary>
-/// Go, compiled with the official Go toolchain (go build / go run) and executed natively for source files,
-/// supporting two-phase compilation, structured compiler diagnostics in Problems, interactive standard input,
-/// and interactive polyglot notebook cells.
+/// Go in the studio: <see cref="GoEngine"/> (builds, scripts, the notebook kernel and packages) with the editor's syntax highlighting,
+/// static completion and hover, folding and indentation, and the Delve debugger.
 /// </summary>
-public sealed class GoLanguage : LanguageDefinition
+public sealed class GoLanguage : EngineLanguageDefinition<GoEngine>
 {
-    private static readonly string[] GoAliases = ["go", "golang"];
-    private static readonly string[] GoExtensions = [".go"];
-
     public GoLanguage(StudioLanguageServices services)
+        : base(new GoEngine(services.Engines))
     {
-        var toolchain = new GoToolchainProvider(
-            services.Host,
-            services.Processes,
-            services.ToolchainSettings,
-            Path.Combine(services.BaseDirectory, "go"));
-        GoToolchain = toolchain;
-        ScriptRunner = new GoBuildAndRunScriptRunner(services.Host);
-        Packages = new GoPackageManager(toolchain, services.Processes, services.Host);
-        Debugger = new GoDebuggerProvider(toolchain, services.Processes, services.Host, services.AdapterManager);
-        NotebookKernels = new DelegateKernelFactory(context =>
-            new GoNotebookKernel(toolchain, services.Processes, services.Host, context));
+        Debugger = new GoDebuggerProvider(Engine.GoToolchain, services.Processes, services.Host, services.AdapterManager);
     }
 
-    public GoToolchainProvider GoToolchain { get; }
-
-    public override string Id => LanguageIds.Go;
-    public override string DisplayName => "Go";
-    public override JupyterLanguageInfo Jupyter { get; } = new("go", "Go", "go", "go", ".go", "text/x-gosrc");
-    public override string ShortName => "GO";
-    public override IReadOnlyList<string> Aliases => GoAliases;
-    public override IReadOnlyList<string> FileExtensions => GoExtensions;
-    public override LanguageStorageKind Storage => LanguageStorageKind.SourceFile;
-    public override bool IsCompiled => true;
-
-    public override LanguageCapabilities Capabilities =>
-        LanguageCapabilities.StandardInput |
-        LanguageCapabilities.QuickInfo |
-        LanguageCapabilities.Completion |
-        LanguageCapabilities.Debugging |
-        LanguageCapabilities.Breakpoints |
-        LanguageCapabilities.NotebookCells |
-        LanguageCapabilities.ValueSharing |
-        LanguageCapabilities.Packages;
-
-    public override string IconKind => "LanguageGo";
-    public override string AccentHex => "#00ADD8";
-    public override string LineCommentPrefix => "//";
-    public override string RuntimeDescription => "Go (gc / go toolchain)";
-
-    public override string NewFileTemplate =>
-        "// Runs with the Go toolchain installed on this computer (F5).\n" +
-        "package main\n\n" +
-        "import \"fmt\"\n\n" +
-        "func main() {\n" +
-        "    fmt.Println(\"Hello from Go!\")\n" +
-        "}\n";
+    public GoToolchainProvider GoToolchain => Engine.GoToolchain;
 
     public override IEditorAssistantFactory EditorAssistants { get; } = GoEditorAssistantFactory.Instance;
 
@@ -76,10 +27,5 @@ public sealed class GoLanguage : LanguageDefinition
 
     public override ILanguageFolding Folding { get; } = new GoFoldingStrategy();
 
-    public override IToolchainProvider Toolchain => GoToolchain;
-    public override IScriptRunner ScriptRunner { get; }
-    public override IDebuggerProvider? Debugger { get; }
-    public override IDiagnosticParser RunDiagnostics { get; } = new GoCompilerDiagnosticParser();
-    public override IPackageManager Packages { get; }
-    public override INotebookKernelFactory NotebookKernels { get; }
+    public override IDebuggerProvider Debugger { get; }
 }

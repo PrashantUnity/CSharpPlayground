@@ -1,0 +1,7 @@
+{
+  "FrySharp share from another language": {
+    "prefix": "fryshare",
+    "body": ["#!share --from ${1|csharp,python,javascript|} ${2:name}"],
+    "description": "Copy a variable of another language's kernel into this cell as a table (a list becomes its rows)"
+  }
+}

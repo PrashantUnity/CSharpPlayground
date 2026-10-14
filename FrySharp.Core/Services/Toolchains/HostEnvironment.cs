@@ -125,8 +125,10 @@ public sealed class HostEnvironment : IHostEnvironment
         // Nothing is typed into a probe: a program waiting for input sees end-of-file instead of hanging.
         try { process.StandardInput.Close(); } catch (IOException) { }
 
-        var stdout = process.StandardOutput.ReadToEndAsync(CancellationToken.None);
-        var stderr = process.StandardError.ReadToEndAsync(CancellationToken.None);
+        // Each stream is read on a thread of its own, not a thread-pool task: the pool of a busy host (a test run full of blocked
+        // threads, a studio with a lot going on) can have no free thread for seconds, and a compiler's messages must not be lost to that.
+        var stdout = ReadToEndOnAThread(process.StandardOutput);
+        var stderr = ReadToEndOnAThread(process.StandardError);
 
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeoutCts.CancelAfter(timeout);
@@ -142,6 +144,9 @@ public sealed class HostEnvironment : IHostEnvironment
 
         return new CommandResult(process.ExitCode, await Settle(stdout), await Settle(stderr), false);
     }
+
+    private static Task<string> ReadToEndOnAThread(StreamReader reader) =>
+        Task.Factory.StartNew(reader.ReadToEnd, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 
     // Output of a killed process may never finish reading (a grandchild can hold the pipe): give up after a moment.
     private static async Task<string> Settle(Task<string> read)

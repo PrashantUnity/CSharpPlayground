@@ -42,6 +42,7 @@ public class RustPackagesPanelTests : IDisposable
             backToHubAction: () => { },
             blindProgress: new LocalBlindProgressService(Path.Combine(_baseDir, "progress")),
             languages: _languages);
+        await studio.RefreshExplorerAsync(); // the studio lists its folder in the background: wait for it
         await studio.SwitchToScriptAsync(Flatten(studio.ExplorerRootItems).Single(i => i.Name == fileName));
         return studio;
     }

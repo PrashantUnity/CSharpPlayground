@@ -42,7 +42,7 @@ public class JavaProgramRunTests : IDisposable
         var java = TestJava.Require();
         var services = TestJava.Services(Path.Combine(_dir, ".studio"));
         var language = (JavaLanguage)services.Registry.Get(LanguageIds.Java)!;
-        var plan = await language.ScriptRunner.PlanAsync(new ScriptRunContext(path, Path.GetDirectoryName(path)!, java));
+        var plan = await language.Engine.ScriptRunner.PlanAsync(new ScriptRunContext(path, Path.GetDirectoryName(path)!, java));
         var output = new ConcurrentQueue<string>();
         var session = new ScriptRunExecutor(services.Processes).Start(plan, path, language.RunDiagnostics, output.Enqueue);
         return (session, output);

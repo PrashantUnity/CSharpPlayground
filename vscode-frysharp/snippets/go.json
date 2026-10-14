@@ -1,0 +1,42 @@
+{
+  "FrySharp table": {
+    "prefix": "frytable",
+    "body": ["fry.Table(\"${1:Title}\", ${2:rows})"],
+    "description": "Show a list of structs (or maps) as a sortable, filterable table"
+  },
+  "FrySharp line chart": {
+    "prefix": "frylinechart",
+    "body": ["fry.LineChart(${1:values}, fry.Title(\"${2:Title}\"))"],
+    "description": "Show numbers as a line chart"
+  },
+  "FrySharp bar chart": {
+    "prefix": "frybarchart",
+    "body": ["fry.BarChart(${1:values}, fry.Title(\"${2:Title}\"))"],
+    "description": "Show numbers as a bar chart"
+  },
+  "FrySharp markdown": {
+    "prefix": "frymarkdown",
+    "body": ["fry.Markdown(\"${1:# Heading}\")"],
+    "description": "Show Markdown"
+  },
+  "FrySharp input": {
+    "prefix": "fryinput",
+    "body": ["${1:answer}, ${2:ok} := fry.Input(\"${3:Prompt: }\")"],
+    "description": "Ask the notebook for a line of input (false is the end of input)"
+  },
+  "FrySharp module": {
+    "prefix": "frygoget",
+    "body": ["%go get ${1:github.com/user/module}"],
+    "description": "Add a Go module: it is downloaded, and cells can import it"
+  },
+  "FrySharp share a value": {
+    "prefix": "fryshareout",
+    "body": ["fry.Share(\"${1:name}\", ${2:value})"],
+    "description": "Offer a value to other languages' cells (#!share --from go name)"
+  },
+  "FrySharp share from another language": {
+    "prefix": "fryshare",
+    "body": ["#!share --from ${1|csharp,python,javascript,fsharp,java,rust,sql|} ${2:name}"],
+    "description": "Copy a variable of another language's kernel into this cell"
+  }
+}

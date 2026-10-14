@@ -155,6 +155,9 @@ public class StudioLoadingOverlayTests
             var activities = new RecordingActivities();
             var studio = new CSharpCodeStudioViewModel(first, storage, new RoslynCompilerService(), new ScriptExecutionEngine(),
                 backToHubAction: () => { }, backToHomeAction: () => { }, activities: activities);
+            // A studio lists its folder in the background when it is made, and says so: that is not what is being measured.
+            await studio.RefreshExplorerAsync();
+            activities.Started.Clear();
 
             await studio.SwitchToScriptAsync(new ExplorerItemViewModel { Name = "Script 2.frycs", DocumentId = second.Id, FileExtension = ".frycs" });
             var open = Assert.Single(activities.Started);

@@ -49,6 +49,8 @@ public static class TestRust
         var scratch = Path.Combine(Path.GetTempPath(), "FryPDF_TestRust_" + Guid.NewGuid().ToString("N"));
         try
         {
+            // (the smoke test below writes its source here: a folder that isn't there made every machine "have no toolchain")
+            Directory.CreateDirectory(scratch);
             var services = new StudioLanguageServices(scratch);
             var rust = (RustLanguage)services.Registry.Get(LanguageIds.Rust)!;
             var explicitPath = Environment.GetEnvironmentVariable("FRY_TEST_RUST");

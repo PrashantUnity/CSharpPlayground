@@ -43,9 +43,9 @@ public class FSharpProgramRunTests : IDisposable
         var fs = TestFSharp.Require();
         var services = TestFSharp.Services(Path.Combine(_dir, ".studio"));
         var language = (FSharpLanguage)services.Registry.Get(LanguageIds.FSharp)!;
-        var plan = await language.ScriptRunner.PlanAsync(new ScriptRunContext(path, Path.GetDirectoryName(path)!, fs));
+        var plan = await language.Engine.ScriptRunner.PlanAsync(new ScriptRunContext(path, Path.GetDirectoryName(path)!, fs));
         var output = new ConcurrentQueue<string>();
-        var session = new ScriptRunExecutor(services.Processes).Start(plan, path, language.RunDiagnostics, output.Enqueue);
+        var session = new ScriptRunExecutor(services.Processes).Start(plan, path, language.Engine.RunDiagnostics, output.Enqueue);
         return (session, output);
     }
 
@@ -101,17 +101,17 @@ public class FSharpProgramRunTests : IDisposable
     }
 
     [FSharpFact]
-    public async Task NotebookKernel_ExecutesCellAndAccumulatesDefinitions()
+    public async Task NotebookKernel_KeepsWhatACellDefines_ForTheNextCell()
     {
         var fs = TestFSharp.Require();
         var services = TestFSharp.Services(Path.Combine(_dir, ".studio"));
         var language = (FSharpLanguage)services.Registry.Get(LanguageIds.FSharp)!;
 
         var context = new KernelCreationContext(() => _dir, () => null);
-        using var kernel = (FSharpNotebookKernel)language.NotebookKernels.Create(context);
+        using var kernel = language.Engine.NotebookKernels.Create(context);
 
         var consoleOut = new List<string>();
-        var req1 = new KernelExecutionRequest
+        var first = await kernel.ExecuteAsync(new KernelExecutionRequest
         {
             Code = """
                 let add a b = a + b
@@ -119,11 +119,19 @@ public class FSharpProgramRunTests : IDisposable
                 printfn "RESULT_1=%d" res1
                 """,
             OnConsole = s => consoleOut.Add(s)
-        };
+        }, CancellationToken.None);
+        Assert.True(first.Success, first.ErrorMessage ?? first.ConsoleOutput);
 
-        var res = await kernel.ExecuteAsync(req1, CancellationToken.None);
+        // a second cell sees what the first one defined: it is one session, as in `dotnet fsi`
+        var second = await kernel.ExecuteAsync(new KernelExecutionRequest
+        {
+            Code = "printfn \"RESULT_2=%d\" (add res1 12)",
+            OnConsole = s => consoleOut.Add(s)
+        }, CancellationToken.None);
 
-        Assert.True(res.Success, res.ErrorMessage ?? res.ConsoleOutput);
-        Assert.Contains("RESULT_1=30", string.Join("", consoleOut));
+        Assert.True(second.Success, second.ErrorMessage ?? second.ConsoleOutput);
+        var joined = string.Join("", consoleOut);
+        Assert.Contains("RESULT_1=30", joined);
+        Assert.Contains("RESULT_2=42", joined);
     }
 }

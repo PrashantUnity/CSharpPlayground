@@ -19,6 +19,10 @@ public sealed class SidecarHarness : IAsyncDisposable
     public JsonRpc ClientRpc { get; }
     public JsonRpc ServerRpc { get; }
     public List<(string Method, object? Payload)> Notifications { get; }
+
+    /// <summary>What the client answers when a cell asks for input; the requests it got.</summary>
+    public Func<InputRequest, string?> InputAnswer { get; set; } = _ => null;
+    public List<InputRequest> InputRequests { get; } = [];
  
     private SidecarHarness(TempFolder workspace, JsonRpc clientRpc, JsonRpc serverRpc, List<(string Method, object? Payload)> notifications)
     {
@@ -58,6 +62,7 @@ public sealed class SidecarHarness : IAsyncDisposable
             languages,
             runs,
             notebooks,
+            new EngineInfoService(languages, workspaceService),
             NullLogger.Instance);
 
         serverRpc.AddLocalRpcTarget(sidecarTarget);
@@ -67,10 +72,15 @@ public sealed class SidecarHarness : IAsyncDisposable
         var clientHandler = new HeaderDelimitedMessageHandler(clientStream, clientStream, new JsonMessageFormatter());
         var clientRpc = new JsonRpc(clientHandler);
 
-        clientRpc.AddLocalRpcTarget(new ClientReceiver(harnessNotifications));
+        SidecarHarness? created = null;
+        clientRpc.AddLocalRpcTarget(new ClientReceiver(harnessNotifications, request =>
+        {
+            created!.InputRequests.Add(request);
+            return created.InputAnswer(request);
+        }));
         clientRpc.StartListening();
 
-        var harness = new SidecarHarness(workspace, clientRpc, serverRpc, harnessNotifications);
+        var harness = created = new SidecarHarness(workspace, clientRpc, serverRpc, harnessNotifications);
 
         // Perform initialize handshake
         await clientRpc.InvokeWithParameterObjectAsync<InitializeResult>("fry/initialize", new InitializeParams("test-client"));
@@ -85,13 +95,16 @@ public sealed class SidecarHarness : IAsyncDisposable
         Workspace.Dispose();
     }
 
-    private sealed class ClientReceiver(List<(string, object?)> notifications)
+    private sealed class ClientReceiver(List<(string, object?)> notifications, Func<InputRequest, string?> onInput)
     {
+        [JsonRpcMethod(ClientMethods.InputRequest, UseSingleObjectParameterDeserialization = true)]
+        public string? OnInputRequest(InputRequest request) => onInput(request);
+
         [JsonRpcMethod(ClientMethods.NotebookOutput, UseSingleObjectParameterDeserialization = true)]
-        public void OnNotebookOutput(NotebookOutputNotification n) => notifications.Add((ClientMethods.NotebookOutput, n));
+        public void OnNotebookOutput(NotebookOutputNotification n) { lock (notifications) notifications.Add((ClientMethods.NotebookOutput, n)); }
 
         [JsonRpcMethod(ClientMethods.NotebookCellState, UseSingleObjectParameterDeserialization = true)]
-        public void OnNotebookCellState(CellStateNotification n) => notifications.Add((ClientMethods.NotebookCellState, n));
+        public void OnNotebookCellState(CellStateNotification n) { lock (notifications) notifications.Add((ClientMethods.NotebookCellState, n)); }
 
         [JsonRpcMethod(ClientMethods.RunOutput, UseSingleObjectParameterDeserialization = true)]
         public void OnRunOutput(RunOutputNotification n) => notifications.Add((ClientMethods.RunOutput, n));

@@ -1,0 +1,361 @@
+{
+  "SchemaVersion": "1.0",
+  "Type": "notebook",
+  "Id": "fixture-notebook",
+  "Title": "Desktop fixture",
+  "Description": "",
+  "Category": "Interactive",
+  "Kernel": "csharp",
+  "Cells": [
+    {
+      "Id": "intro",
+      "Type": 1,
+      "Source": "# Desktop fixture\nEvery kind of output.",
+      "OutputText": "",
+      "ExecutionCount": null,
+      "IsExecuting": false,
+      "ExecutionTimeText": "",
+      "HasError": false,
+      "IsMarkdownPreviewMode": true,
+      "IsInputCollapsed": false,
+      "IsOutputCollapsed": false,
+      "IsOutputScrolled": false,
+      "ImageBytes": null,
+      "ImageFormat": null,
+      "ImageWidth": null,
+      "ImageHeight": null,
+      "HtmlContent": null,
+      "TableSnapshot": null,
+      "InspectorSnapshot": null,
+      "HadInteractiveControl": false,
+      "HasImage": false,
+      "HasHtml": false,
+      "HasOutput": false,
+      "IsCodeCell": false,
+      "IsMarkdownCell": true
+    },
+    {
+      "Id": "text",
+      "Type": 0,
+      "Source": "Console.WriteLine(\"hi\");",
+      "OutputText": "hi\n",
+      "ExecutionCount": 1,
+      "IsExecuting": false,
+      "ExecutionTimeText": "3 ms",
+      "HasError": false,
+      "IsMarkdownPreviewMode": false,
+      "IsInputCollapsed": false,
+      "IsOutputCollapsed": false,
+      "IsOutputScrolled": false,
+      "ImageBytes": null,
+      "ImageFormat": null,
+      "ImageWidth": null,
+      "ImageHeight": null,
+      "HtmlContent": null,
+      "TableSnapshot": null,
+      "InspectorSnapshot": null,
+      "HadInteractiveControl": false,
+      "HasImage": false,
+      "HasHtml": false,
+      "HasOutput": true,
+      "IsCodeCell": true,
+      "IsMarkdownCell": false
+    },
+    {
+      "Id": "failed",
+      "Type": 0,
+      "Source": "throw new Exception(\"boom\");",
+      "OutputText": "❌ boom\n",
+      "ExecutionCount": 2,
+      "IsExecuting": false,
+      "ExecutionTimeText": "",
+      "HasError": true,
+      "IsMarkdownPreviewMode": false,
+      "IsInputCollapsed": false,
+      "IsOutputCollapsed": false,
+      "IsOutputScrolled": false,
+      "ImageBytes": null,
+      "ImageFormat": null,
+      "ImageWidth": null,
+      "ImageHeight": null,
+      "HtmlContent": null,
+      "TableSnapshot": null,
+      "InspectorSnapshot": null,
+      "HadInteractiveControl": false,
+      "HasImage": false,
+      "HasHtml": false,
+      "HasOutput": true,
+      "IsCodeCell": true,
+      "IsMarkdownCell": false
+    },
+    {
+      "Id": "table",
+      "Type": 0,
+      "Source": "people.Dump();",
+      "OutputText": "before the table\n",
+      "ExecutionCount": 3,
+      "IsExecuting": false,
+      "ExecutionTimeText": "",
+      "HasError": false,
+      "IsMarkdownPreviewMode": false,
+      "IsInputCollapsed": false,
+      "IsOutputCollapsed": false,
+      "IsOutputScrolled": false,
+      "ImageBytes": null,
+      "ImageFormat": null,
+      "ImageWidth": null,
+      "ImageHeight": null,
+      "HtmlContent": "<div class=\"fry-tbl-container\" id=\"fry_tbl_277494a8\" style=\"font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--vscode-editor-background,#0d1117);border:1px solid var(--vscode-widget-border,#30363d);border-radius:8px;margin:10px 0;max-width:960px;box-shadow:0 4px 16px rgba(0,0,0,0.35);overflow:hidden;\">\n  <style>\n    #fry_tbl_277494a8 .fry-tbl-header {\n      display: flex; align-items: center; justify-content: space-between; gap: 8px;\n      padding: 8px 12px; background: var(--vscode-sideBar-background, #161b22);\n      border-bottom: 1px solid var(--vscode-widget-border, #30363d);\n    }\n    #fry_tbl_277494a8 .fry-tbl-toggle-btn {\n      display: flex; align-items: center; gap: 8px; background: transparent;\n      border: none; color: var(--vscode-foreground, #c9d1d9); cursor: pointer;\n      padding: 0; font-size: 13px; font-weight: 600; text-align: left;\n    }\n    #fry_tbl_277494a8 .fry-tbl-pill {\n      font-size: 11px; font-weight: 500; color: var(--vscode-descriptionForeground, #8b949e);\n      background: var(--vscode-badge-background, #21262d); border: 1px solid var(--vscode-widget-border, #30363d);\n      padding: 2px 8px; border-radius: 12px;\n    }\n    #fry_tbl_277494a8 .fry-tbl-actions {\n      display: flex; align-items: center; gap: 8px;\n    }\n    #fry_tbl_277494a8 .fry-tbl-search-wrap {\n      position: relative; display: flex; align-items: center;\n    }\n    #fry_tbl_277494a8 .fry-tbl-search-input {\n      background: var(--vscode-input-background, #0d1117);\n      border: 1px solid var(--vscode-input-border, #30363d);\n      color: var(--vscode-input-foreground, #c9d1d9);\n      padding: 3px 8px 3px 24px; border-radius: 4px; font-size: 11.5px;\n      width: 140px; transition: border-color 0.2s, width 0.2s;\n    }\n    #fry_tbl_277494a8 .fry-tbl-search-input:focus {\n      outline: none; border-color: var(--vscode-focusBorder, #58a6ff); width: 180px;\n    }\n    #fry_tbl_277494a8 .fry-tbl-search-icon {\n      position: absolute; left: 7px; font-size: 11px; opacity: 0.6; pointer-events: none;\n    }\n    #fry_tbl_277494a8 .fry-tbl-btn {\n      background: var(--vscode-button-secondaryBackground, #21262d);\n      color: var(--vscode-button-secondaryForeground, #c9d1d9);\n      border: 1px solid var(--vscode-widget-border, #30363d);\n      border-radius: 4px; padding: 3px 8px; font-size: 11px; font-weight: 500;\n      cursor: pointer; transition: background 0.15s;\n    }\n    #fry_tbl_277494a8 .fry-tbl-btn:hover {\n      background: var(--vscode-button-secondaryHoverBackground, #30363d);\n    }\n    #fry_tbl_277494a8 .fry-tbl-scroll {\n      max-height: 420px; overflow-y: auto; overflow-x: auto;\n    }\n    #fry_tbl_277494a8 table.fry-tbl-grid {\n      width: 100%; border-collapse: collapse; text-align: left; font-size: 12px;\n    }\n    #fry_tbl_277494a8 thead th {\n      position: sticky; top: 0; z-index: 5; background: var(--vscode-sideBar-background, #161b22);\n      padding: 8px 12px; border-bottom: 2px solid var(--vscode-widget-border, #30363d);\n      font-weight: 600; color: var(--vscode-foreground, #c9d1d9); user-select: none;\n    }\n    #fry_tbl_277494a8 thead th.sortable:hover {\n      background: var(--vscode-list-hoverBackground, #21262d);\n    }\n    #fry_tbl_277494a8 tbody tr.fry-data-row {\n      border-bottom: 1px solid rgba(255, 255, 255, 0.06);\n      transition: background 0.12s;\n    }\n    #fry_tbl_277494a8 tbody tr.fry-data-row:hover {\n      background: var(--vscode-list-hoverBackground, rgba(56, 139, 253, 0.08)) !important;\n    }\n    #fry_tbl_277494a8 td {\n      padding: 7px 12px; vertical-align: middle;\n    }\n    #fry_tbl_277494a8 .fry-num {\n      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;\n      text-align: right; color: #79c0ff;\n    }\n    #fry_tbl_277494a8 .fry-badge {\n      display: inline-block; padding: 2px 7px; border-radius: 12px;\n      font-size: 11px; font-weight: 500; letter-spacing: 0.2px;\n    }\n    #fry_tbl_277494a8 .fry-badge-green {\n      background: rgba(35, 134, 54, 0.2); color: #3fb950; border: 1px solid rgba(63, 185, 80, 0.4);\n    }\n    #fry_tbl_277494a8 .fry-badge-amber {\n      background: rgba(187, 128, 9, 0.2); color: #d29922; border: 1px solid rgba(210, 153, 34, 0.4);\n    }\n    #fry_tbl_277494a8 .fry-badge-red {\n      background: rgba(218, 54, 51, 0.2); color: #f85149; border: 1px solid rgba(248, 81, 73, 0.4);\n    }\n    #fry_tbl_277494a8 .fry-badge-blue {\n      background: rgba(31, 111, 235, 0.2); color: #58a6ff; border: 1px solid rgba(88, 166, 255, 0.4);\n    }\n    #fry_tbl_277494a8 .fry-expander-btn {\n      background: transparent; border: none; cursor: pointer;\n      color: var(--vscode-textLink-foreground, #58a6ff); font-size: 10px;\n      padding: 3px 5px; border-radius: 4px; transition: transform 0.15s;\n    }\n    #fry_tbl_277494a8 .fry-expander-btn:hover {\n      background: rgba(255,255,255,0.1);\n    }\n    #fry_tbl_277494a8 tr.fry-detail-row {\n      background: rgba(0, 0, 0, 0.28);\n    }\n    #fry_tbl_277494a8 .fry-prop-grid {\n      display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; margin-top: 6px;\n    }\n    #fry_tbl_277494a8 .fry-prop-card {\n      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);\n      border-radius: 4px; padding: 6px 10px;\n    }\n    #fry_tbl_277494a8 .fry-prop-key {\n      font-size: 10px; font-weight: 600; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px;\n    }\n    #fry_tbl_277494a8 .fry-prop-val {\n      font-size: 12px; color: #c9d1d9; margin-top: 2px; word-break: break-word;\n    }\n    #fry_tbl_277494a8 .fry-tbl-footer {\n      display: flex; align-items: center; justify-content: space-between;\n      padding: 6px 12px; font-size: 11px; color: var(--vscode-descriptionForeground, #8b949e);\n      background: var(--vscode-sideBar-background, #161b22);\n      border-top: 1px solid var(--vscode-widget-border, #30363d);\n    }\n  </style>\n\n  <div class=\"fry-tbl-header\">\n    <button type=\"button\" class=\"fry-tbl-toggle-btn\" onclick=\"fryTblToggle('fry_tbl_277494a8')\" title=\"Click to collapse/expand table\">\n      <span class=\"fry-tbl-chevron\" style=\"color:#58a6ff;\">▼</span>\n      <span>📊 AnonymousType[2]</span>\n      <span class=\"fry-tbl-pill\">2 rows × 3 cols</span>\n    </button>\n    <div class=\"fry-tbl-actions\">\n      <div class=\"fry-tbl-search-wrap\">\n        <span class=\"fry-tbl-search-icon\">🔍</span>\n        <input type=\"text\" class=\"fry-tbl-search-input\" placeholder=\"Filter rows...\" oninput=\"fryTblFilter('fry_tbl_277494a8', this.value)\" />\n      </div>\n      <button type=\"button\" class=\"fry-tbl-btn\" onclick=\"fryTblCopy('fry_tbl_277494a8', 'csv')\" title=\"Copy as CSV\">CSV</button>\n      <button type=\"button\" class=\"fry-tbl-btn\" onclick=\"fryTblCopy('fry_tbl_277494a8', 'json')\" title=\"Copy as JSON\">JSON</button>\n    </div>\n  </div>\n\n  <div class=\"fry-tbl-scroll\">\n    <table class=\"fry-tbl-grid\">\n      <thead>\n        <tr>\n          <th style=\"width:36px;text-align:center;padding:8px 4px;\"></th>\n          <th class=\"sortable\" onclick=\"fryTblSort('fry_tbl_277494a8', 0, false)\" style=\"text-align:left;cursor:pointer;\" title=\"Sort by Name\">\n  Name <span class=\"fry-sort-ind\" style=\"opacity:0.35;font-size:10px;margin-left:3px;\">↕</span>\n</th><th class=\"sortable\" onclick=\"fryTblSort('fry_tbl_277494a8', 1, true)\" style=\"text-align:right;cursor:pointer;\" title=\"Sort by Age\">\n  Age <span class=\"fry-sort-ind\" style=\"opacity:0.35;font-size:10px;margin-left:3px;\">↕</span>\n</th><th class=\"sortable\" onclick=\"fryTblSort('fry_tbl_277494a8', 2, false)\" style=\"text-align:left;cursor:pointer;\" title=\"Sort by Active\">\n  Active <span class=\"fry-sort-ind\" style=\"opacity:0.35;font-size:10px;margin-left:3px;\">↕</span>\n</th>\n        </tr>\n      </thead>\n      <tbody>\n        <tr class=\"fry-data-row\" data-row=\"0\" style=\"background:rgba(255,255,255,0.015);\">\n  <td style=\"text-align:center;padding:6px 4px;\">\n    <button type=\"button\" class=\"fry-expander-btn\" onclick=\"fryTblToggleRow('fry_tbl_277494a8', 0)\" title=\"Toggle row details\">▶</button>\n  </td>\n  <td style=\"text-align:left;\" class=\"\">Ada</td><td style=\"text-align:right;\" class=\"fry-num\">36</td><td style=\"text-align:left;\" class=\"\"><span class=\"fry-badge fry-badge-green\">True</span></td>\n</tr>\n<tr class=\"fry-detail-row\" id=\"fry_tbl_277494a8_detail_0\" style=\"display:none;\">\n  <td colspan=\"4\" style=\"padding:10px 14px;border-bottom:1px solid var(--vscode-widget-border,#30363d);\">\n    <div style=\"background:var(--vscode-editor-background,#0d1117);border:1px solid var(--vscode-widget-border,#30363d);border-radius:6px;padding:10px 14px;\">\n      <div style=\"display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;\">\n        <div style=\"font-size:11.5px;font-weight:600;color:#58a6ff;\">🔍 Row #1 Inspector</div>\n        <div style=\"font-size:10.5px;color:#8b949e;\">3 properties</div>\n      </div>\n      <div class=\"fry-prop-grid\">\n        <div class=\"fry-prop-card\">\n  <div class=\"fry-prop-key\">Name</div>\n  <div class=\"fry-prop-val\">Ada</div>\n</div><div class=\"fry-prop-card\">\n  <div class=\"fry-prop-key\">Age</div>\n  <div class=\"fry-prop-val\">36</div>\n</div><div class=\"fry-prop-card\">\n  <div class=\"fry-prop-key\">Active</div>\n  <div class=\"fry-prop-val\"><span class=\"fry-badge fry-badge-green\">True</span></div>\n</div>\n      </div>\n      \n    </div>\n  </td>\n</tr><tr class=\"fry-data-row\" data-row=\"1\" style=\"background:transparent;\">\n  <td style=\"text-align:center;padding:6px 4px;\">\n    <button type=\"button\" class=\"fry-expander-btn\" onclick=\"fryTblToggleRow('fry_tbl_277494a8', 1)\" title=\"Toggle row details\">▶</button>\n  </td>\n  <td style=\"text-align:left;\" class=\"\">Grace</td><td style=\"text-align:right;\" class=\"fry-num\">45</td><td style=\"text-align:left;\" class=\"\"><span class=\"fry-badge fry-badge-red\">False</span></td>\n</tr>\n<tr class=\"fry-detail-row\" id=\"fry_tbl_277494a8_detail_1\" style=\"display:none;\">\n  <td colspan=\"4\" style=\"padding:10px 14px;border-bottom:1px solid var(--vscode-widget-border,#30363d);\">\n    <div style=\"background:var(--vscode-editor-background,#0d1117);border:1px solid var(--vscode-widget-border,#30363d);border-radius:6px;padding:10px 14px;\">\n      <div style=\"display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;\">\n        <div style=\"font-size:11.5px;font-weight:600;color:#58a6ff;\">🔍 Row #2 Inspector</div>\n        <div style=\"font-size:10.5px;color:#8b949e;\">3 properties</div>\n      </div>\n      <div class=\"fry-prop-grid\">\n        <div class=\"fry-prop-card\">\n  <div class=\"fry-prop-key\">Name</div>\n  <div class=\"fry-prop-val\">Grace</div>\n</div><div class=\"fry-prop-card\">\n  <div class=\"fry-prop-key\">Age</div>\n  <div class=\"fry-prop-val\">45</div>\n</div><div class=\"fry-prop-card\">\n  <div class=\"fry-prop-key\">Active</div>\n  <div class=\"fry-prop-val\"><span class=\"fry-badge fry-badge-red\">False</span></div>\n</div>\n      </div>\n      \n    </div>\n  </td>\n</tr>\n      </tbody>\n    </table>\n  </div>\n\n  <div class=\"fry-tbl-footer\">\n    <span id=\"fry_tbl_277494a8_counter\">Showing 2 of 2 rows</span>\n    <span style=\"opacity:0.6;font-size:10.5px;\">FrySharp Polyglot Data</span>\n  </div>\n\n  <script>\n    (function() {\n      if (window.__fryTblInit) return;\n      window.__fryTblInit = true;\n\n      window.fryTblToggle = function(id) {\n        var el = document.getElementById(id);\n        if (!el) return;\n        var body = el.querySelector('.fry-tbl-scroll');\n        var footer = el.querySelector('.fry-tbl-footer');\n        var chevron = el.querySelector('.fry-tbl-chevron');\n        var isHidden = body.style.display === 'none';\n        body.style.display = isHidden ? 'block' : 'none';\n        footer.style.display = isHidden ? 'flex' : 'none';\n        if (chevron) chevron.textContent = isHidden ? '▼' : '▶';\n      };\n\n      window.fryTblToggleRow = function(id, rowIdx) {\n        var drawer = document.getElementById(id + '_detail_' + rowIdx);\n        var el = document.getElementById(id);\n        if (!drawer || !el) return;\n        var btn = el.querySelector('tr[data-row=\"' + rowIdx + '\"] .fry-expander-btn');\n        var isOpen = drawer.style.display !== 'none';\n        drawer.style.display = isOpen ? 'none' : 'table-row';\n        if (btn) btn.textContent = isOpen ? '▶' : '▼';\n      };\n\n      window.fryTblFilter = function(id, query) {\n        var el = document.getElementById(id);\n        if (!el) return;\n        var q = (query || '').toLowerCase().trim();\n        var rows = el.querySelectorAll('tbody tr.fry-data-row');\n        var count = 0;\n        rows.forEach(function(row) {\n          var rIdx = row.getAttribute('data-row');\n          var drawer = document.getElementById(id + '_detail_' + rIdx);\n          var match = !q || row.innerText.toLowerCase().indexOf(q) !== -1;\n          row.style.display = match ? '' : 'none';\n          if (!match && drawer) drawer.style.display = 'none';\n          if (match) count++;\n        });\n        var cnt = document.getElementById(id + '_counter');\n        if (cnt) {\n          cnt.textContent = q ? ('Showing ' + count + ' of ' + rows.length + ' rows (filtered)') : ('Showing ' + rows.length + ' of ' + rows.length + ' rows');\n        }\n      };\n\n      window.fryTblSort = function(id, colIdx, isNum) {\n        var el = document.getElementById(id);\n        if (!el) return;\n        var tbody = el.querySelector('tbody');\n        var rows = Array.from(el.querySelectorAll('tbody tr.fry-data-row'));\n        var th = el.querySelectorAll('thead th')[colIdx + 1];\n        var dir = th.getAttribute('data-sort-dir') === 'asc' ? 'desc' : 'asc';\n\n        el.querySelectorAll('thead th').forEach(function(h) {\n          h.removeAttribute('data-sort-dir');\n          var s = h.querySelector('.fry-sort-ind');\n          if (s) s.textContent = '↕';\n        });\n\n        th.setAttribute('data-sort-dir', dir);\n        var ind = th.querySelector('.fry-sort-ind');\n        if (ind) ind.textContent = dir === 'asc' ? '▲' : '▼';\n\n        rows.sort(function(a, b) {\n          var vA = a.children[colIdx + 1]?.innerText?.trim() || '';\n          var vB = b.children[colIdx + 1]?.innerText?.trim() || '';\n          if (isNum) {\n            var nA = parseFloat(vA.replace(/[^0-9.-]/g, '')) || 0;\n            var nB = parseFloat(vB.replace(/[^0-9.-]/g, '')) || 0;\n            return dir === 'asc' ? nA - nB : nB - nA;\n          }\n          return dir === 'asc' ? vA.localeCompare(vB) : vB.localeCompare(vA);\n        });\n\n        rows.forEach(function(r) {\n          var rIdx = r.getAttribute('data-row');\n          var drawer = document.getElementById(id + '_detail_' + rIdx);\n          tbody.appendChild(r);\n          if (drawer) tbody.appendChild(drawer);\n        });\n      };\n\n      window.fryTblCopy = function(id, format) {\n        var el = document.getElementById(id);\n        if (!el) return;\n        var ths = Array.from(el.querySelectorAll('thead th')).slice(1);\n        var headers = ths.map(function(h) { return h.innerText.replace(/[↕▲▼]/g, '').trim(); });\n        var rows = Array.from(el.querySelectorAll('tbody tr.fry-data-row'));\n        var data = rows.map(function(r) {\n          return Array.from(r.children).slice(1).map(function(c) { return c.innerText.trim(); });\n        });\n\n        var payload = '';\n        if (format === 'json') {\n          var list = data.map(function(r) {\n            var o = {};\n            headers.forEach(function(h, idx) { o[h] = r[idx]; });\n            return o;\n          });\n          payload = JSON.stringify(list, null, 2);\n        } else {\n          payload = headers.join(',') + '\\n' + data.map(function(r) {\n            return r.map(function(val) { return '\"' + val.replace(/\"/g, '\"\"') + '\"'; }).join(',');\n          }).join('\\n');\n        }\n\n        navigator.clipboard.writeText(payload).then(function() {\n          var btn = el.querySelector('.fry-tbl-btn[onclick*=\"' + format + '\"]');\n          if (btn) {\n            var prev = btn.textContent;\n            btn.textContent = '✓ Copied!';\n            setTimeout(function() { btn.textContent = prev; }, 1500);\n          }\n        });\n      };\n    })();\n  </script>\n</div>",
+      "TableSnapshot": {
+        "Title": "AnonymousType[2]",
+        "Label": "People",
+        "Columns": [
+          {
+            "Header": "Name",
+            "IsNumeric": false
+          },
+          {
+            "Header": "Age",
+            "IsNumeric": true
+          },
+          {
+            "Header": "Active",
+            "IsNumeric": false
+          }
+        ],
+        "Rows": [
+          {
+            "Cells": [
+              {
+                "DisplayText": "Ada",
+                "IsNumeric": false,
+                "IsBoolean": false,
+                "IsNull": false
+              },
+              {
+                "DisplayText": "36",
+                "IsNumeric": true,
+                "IsBoolean": false,
+                "IsNull": false
+              },
+              {
+                "DisplayText": "True",
+                "IsNumeric": false,
+                "IsBoolean": true,
+                "IsNull": false
+              }
+            ]
+          },
+          {
+            "Cells": [
+              {
+                "DisplayText": "Grace",
+                "IsNumeric": false,
+                "IsBoolean": false,
+                "IsNull": false
+              },
+              {
+                "DisplayText": "45",
+                "IsNumeric": true,
+                "IsBoolean": false,
+                "IsNull": false
+              },
+              {
+                "DisplayText": "False",
+                "IsNumeric": false,
+                "IsBoolean": true,
+                "IsNull": false
+              }
+            ]
+          }
+        ]
+      },
+      "InspectorSnapshot": null,
+      "HadInteractiveControl": false,
+      "HasImage": false,
+      "HasHtml": true,
+      "HasOutput": true,
+      "IsCodeCell": true,
+      "IsMarkdownCell": false
+    },
+    {
+      "Id": "inspector",
+      "Type": 0,
+      "Source": "obj",
+      "OutputText": "",
+      "ExecutionCount": 4,
+      "IsExecuting": false,
+      "ExecutionTimeText": "",
+      "HasError": false,
+      "IsMarkdownPreviewMode": false,
+      "IsInputCollapsed": false,
+      "IsOutputCollapsed": false,
+      "IsOutputScrolled": false,
+      "ImageBytes": null,
+      "ImageFormat": null,
+      "ImageWidth": null,
+      "ImageHeight": null,
+      "HtmlContent": "<div class=\"fry-inspector-card\" style=\"font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--vscode-editor-background,#0d1117);border:1px solid var(--vscode-widget-border,#30363d);border-radius:8px;padding:12px;margin:8px 0;max-width:840px;box-shadow:0 4px 14px rgba(0,0,0,0.3);\">\n  <div style=\"display:flex;align-items:center;gap:8px;margin-bottom:10px;\">\n    <span style=\"font-size:13.5px;font-weight:600;color:#58a6ff;\">🔬 &lt;&gt;f__AnonymousType1&lt;String, Int32[], &lt;&gt;f__AnonymousType2&lt;Int32, String&gt;&gt;</span>\n  </div>\n  <div style=\"display:flex;flex-direction:column;gap:5px;\"><div style=\"display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:rgba(255,255,255,0.02);border-radius:4px;font-size:12px;\">\n  <span style=\"font-weight:600;color:#8b949e;\">Name</span>\n  <span><span style=\"color:#a5d6ff;\">\"Code\"</span></span>\n</div><div style=\"display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:rgba(255,255,255,0.02);border-radius:4px;font-size:12px;\">\n  <span style=\"font-weight:600;color:#8b949e;\">Numbers</span>\n  <span>[ 1, 2, 3 ]</span>\n</div><details open style=\"border:1px solid rgba(255,255,255,0.06);border-radius:5px;padding:6px 10px;background:rgba(255,255,255,0.015);\">\n  <summary style=\"cursor:pointer;font-size:12px;font-weight:600;color:#58a6ff;\">Inner: <span style=\"font-weight:normal;color:#8b949e;\"></span></summary>\n  <div style=\"margin-left:14px;margin-top:6px;border-left:2px solid #30363d;padding-left:10px;\">\n    <div style=\"display:flex;flex-direction:column;gap:5px;\"><div style=\"display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:rgba(255,255,255,0.02);border-radius:4px;font-size:12px;\">\n  <span style=\"font-weight:600;color:#8b949e;\">X</span>\n  <span>1</span>\n</div><div style=\"display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:rgba(255,255,255,0.02);border-radius:4px;font-size:12px;\">\n  <span style=\"font-weight:600;color:#8b949e;\">Y</span>\n  <span><span style=\"color:#a5d6ff;\">\"two\"</span></span>\n</div></div>\n  </div>\n</details></div>\n</div>",
+      "TableSnapshot": null,
+      "InspectorSnapshot": {
+        "HeaderTitle": "<>f__AnonymousType1<String, Int32[], <>f__AnonymousType2<Int32, String>>",
+        "IsExpandable": true,
+        "IsCircularReference": false,
+        "Properties": [
+          {
+            "Name": "Name",
+            "SimpleValueText": "Code",
+            "IsNull": false,
+            "IsComplexChild": false,
+            "ChildNode": null
+          },
+          {
+            "Name": "Numbers",
+            "SimpleValueText": "[ 1, 2, 3 ]",
+            "IsNull": false,
+            "IsComplexChild": false,
+            "ChildNode": null
+          },
+          {
+            "Name": "Inner",
+            "SimpleValueText": "",
+            "IsNull": false,
+            "IsComplexChild": true,
+            "ChildNode": {
+              "HeaderTitle": "<>f__AnonymousType2<Int32, String>",
+              "IsExpandable": true,
+              "IsCircularReference": false,
+              "Properties": [
+                {
+                  "Name": "X",
+                  "SimpleValueText": "1",
+                  "IsNull": false,
+                  "IsComplexChild": false,
+                  "ChildNode": null
+                },
+                {
+                  "Name": "Y",
+                  "SimpleValueText": "two",
+                  "IsNull": false,
+                  "IsComplexChild": false,
+                  "ChildNode": null
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "HadInteractiveControl": false,
+      "HasImage": false,
+      "HasHtml": true,
+      "HasOutput": true,
+      "IsCodeCell": true,
+      "IsMarkdownCell": false
+    },
+    {
+      "Id": "chart",
+      "Type": 0,
+      "Source": "Display.LineChart(sales);",
+      "OutputText": "",
+      "ExecutionCount": 5,
+      "IsExecuting": false,
+      "ExecutionTimeText": "",
+      "HasError": false,
+      "IsMarkdownPreviewMode": false,
+      "IsInputCollapsed": false,
+      "IsOutputCollapsed": false,
+      "IsOutputScrolled": false,
+      "ImageBytes": null,
+      "ImageFormat": null,
+      "ImageWidth": null,
+      "ImageHeight": null,
+      "HtmlContent": "<div class=\"fry-visual-card\" style=\"font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0d1117;border:1px solid #30363d;border-radius:10px;padding:14px;margin:8px 0;max-width:840px;box-shadow:0 4px 16px rgba(0,0,0,0.35);overflow-x:auto;\"><div style=\"display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:12px;\"><div><div style=\"font-weight:600;font-size:13.5px;color:#58a6ff;letter-spacing:0.2px;\">📊 Sales</div></div><div style=\"font-size:10.5px;font-weight:600;color:#8b949e;background:#161b22;padding:3px 9px;border-radius:12px;border:1px solid #30363d;letter-spacing:0.5px;\">LINE</div></div><svg viewBox=\"0 0 760 360\" width=\"100%\" height=\"auto\" style=\"display:block;border-radius:6px;background:#161b22;\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"area-grad-0\" x1=\"0%\" y1=\"0%\" x2=\"0%\" y2=\"100%\"><stop offset=\"0%\" stop-color=\"#58a6ff\" stop-opacity=\"0.35\"/><stop offset=\"100%\" stop-color=\"#58a6ff\" stop-opacity=\"0.02\"/></linearGradient></defs><line x1=\"60\" y1=\"30.0\" x2=\"720\" y2=\"30.0\" stroke=\"#21262d\" stroke-width=\"1\" stroke-dasharray=\"3,3\"/><text x=\"52\" y=\"34.0\" fill=\"#8b949e\" font-size=\"10.5\" font-family=\"monospace\" text-anchor=\"end\">3</text><line x1=\"60\" y1=\"84.0\" x2=\"720\" y2=\"84.0\" stroke=\"#21262d\" stroke-width=\"1\" stroke-dasharray=\"3,3\"/><text x=\"52\" y=\"88.0\" fill=\"#8b949e\" font-size=\"10.5\" font-family=\"monospace\" text-anchor=\"end\">2.6</text><line x1=\"60\" y1=\"138.0\" x2=\"720\" y2=\"138.0\" stroke=\"#21262d\" stroke-width=\"1\" stroke-dasharray=\"3,3\"/><text x=\"52\" y=\"142.0\" fill=\"#8b949e\" font-size=\"10.5\" font-family=\"monospace\" text-anchor=\"end\">2.2</text><line x1=\"60\" y1=\"192.0\" x2=\"720\" y2=\"192.0\" stroke=\"#21262d\" stroke-width=\"1\" stroke-dasharray=\"3,3\"/><text x=\"52\" y=\"196.0\" fill=\"#8b949e\" font-size=\"10.5\" font-family=\"monospace\" text-anchor=\"end\">1.8</text><line x1=\"60\" y1=\"246.0\" x2=\"720\" y2=\"246.0\" stroke=\"#21262d\" stroke-width=\"1\" stroke-dasharray=\"3,3\"/><text x=\"52\" y=\"250.0\" fill=\"#8b949e\" font-size=\"10.5\" font-family=\"monospace\" text-anchor=\"end\">1.4</text><line x1=\"60\" y1=\"300.0\" x2=\"720\" y2=\"300.0\" stroke=\"#21262d\" stroke-width=\"1\" stroke-dasharray=\"3,3\"/><text x=\"52\" y=\"304.0\" fill=\"#8b949e\" font-size=\"10.5\" font-family=\"monospace\" text-anchor=\"end\">1</text><path d=\"M 60.0 300.0 L 390.0 30.0 L 720.0 165.0 \" fill=\"none\" stroke=\"#58a6ff\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><circle cx=\"60.0\" cy=\"300.0\" r=\"3.5\" fill=\"#58a6ff\" stroke=\"#161b22\" stroke-width=\"1.5\"><title>Sales: 1.00 (#1)</title></circle><circle cx=\"390.0\" cy=\"30.0\" r=\"3.5\" fill=\"#58a6ff\" stroke=\"#161b22\" stroke-width=\"1.5\"><title>Sales: 3.00 (#2)</title></circle><circle cx=\"720.0\" cy=\"165.0\" r=\"3.5\" fill=\"#58a6ff\" stroke=\"#161b22\" stroke-width=\"1.5\"><title>Sales: 2.00 (#3)</title></circle><line x1=\"60\" y1=\"300\" x2=\"720\" y2=\"300\" stroke=\"#30363d\" stroke-width=\"1.5\"/><circle cx=\"65.0\" cy=\"335\" r=\"4.5\" fill=\"#58a6ff\"/><text x=\"74.0\" y=\"338.5\" fill=\"#8b949e\" font-size=\"11\" font-family=\"system-ui,sans-serif\">Sales</text></svg></div>",
+      "TableSnapshot": null,
+      "InspectorSnapshot": null,
+      "Visuals": [
+        {
+          "MimeType": "application/vnd.fry.chart.v1+json",
+          "Data": {
+            "kind": "line",
+            "series": [
+              {
+                "name": "Sales",
+                "y": [
+                  1,
+                  3,
+                  2
+                ]
+              }
+            ],
+            "title": "Sales"
+          },
+          "Title": "Sales"
+        }
+      ],
+      "HadInteractiveControl": false,
+      "HasImage": false,
+      "HasHtml": true,
+      "HasOutput": true,
+      "IsCodeCell": true,
+      "IsMarkdownCell": false
+    },
+    {
+      "Id": "image",
+      "Type": 0,
+      "Source": "Display.Image(png);",
+      "OutputText": "",
+      "ExecutionCount": 6,
+      "IsExecuting": false,
+      "ExecutionTimeText": "",
+      "HasError": false,
+      "IsMarkdownPreviewMode": false,
+      "IsInputCollapsed": false,
+      "IsOutputCollapsed": false,
+      "IsOutputScrolled": false,
+      "ImageBytes": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==",
+      "ImageFormat": "PNG",
+      "ImageWidth": 1,
+      "ImageHeight": 1,
+      "HtmlContent": "<div class=\"fry-img-card\"><img src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==\" /></div>",
+      "TableSnapshot": null,
+      "InspectorSnapshot": null,
+      "HadInteractiveControl": false,
+      "HasImage": true,
+      "HasHtml": true,
+      "HasOutput": true,
+      "IsCodeCell": true,
+      "IsMarkdownCell": false
+    },
+    {
+      "Id": "collapsed",
+      "Type": 0,
+      "Language": "python",
+      "Source": "print('python')",
+      "OutputText": "python\n",
+      "ExecutionCount": 7,
+      "IsExecuting": false,
+      "ExecutionTimeText": "12 ms",
+      "HasError": false,
+      "IsMarkdownPreviewMode": false,
+      "IsInputCollapsed": true,
+      "IsOutputCollapsed": true,
+      "IsOutputScrolled": true,
+      "ImageBytes": null,
+      "ImageFormat": null,
+      "ImageWidth": null,
+      "ImageHeight": null,
+      "HtmlContent": null,
+      "TableSnapshot": null,
+      "InspectorSnapshot": null,
+      "HadInteractiveControl": true,
+      "HasImage": false,
+      "HasHtml": false,
+      "HasOutput": true,
+      "IsCodeCell": true,
+      "IsMarkdownCell": false
+    }
+  ],
+  "Created": "2026-10-13T08:00:00Z",
+  "LastModified": "2026-10-14T09:00:00.000Z",
+  "ExecutionCount": 7
+}

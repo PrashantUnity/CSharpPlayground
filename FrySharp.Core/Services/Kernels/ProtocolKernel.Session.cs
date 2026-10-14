@@ -27,6 +27,9 @@ public sealed partial class ProtocolKernel
         public string? ErrorSummary;
         public string? MissingDependency;
         public string? MissingName;
+        public string? ErrorName;
+        public int? ErrorLine;
+        public IReadOnlyList<DiagnosticItem>? Diagnostics;
 
         public string Output
         {
@@ -217,6 +220,9 @@ public sealed partial class ProtocolKernel
                             var name = Text(message, "ename");
                             var value = Text(message, "evalue");
                             target.ErrorSummary = value.Length > 0 ? $"{name}: {value}" : name;
+                            target.ErrorName = name.Length > 0 ? name : null;
+                            target.ErrorLine = message.TryGetProperty("line", out var errorLine) && errorLine.ValueKind == JsonValueKind.Number && errorLine.TryGetInt32(out var lineNumber) && lineNumber > 0 ? lineNumber : null;
+                            target.Diagnostics = Diagnostics(message);
                             target.MissingDependency = Text(message, "missingModule") is { Length: > 0 } module ? module : null;
                             target.MissingName = Text(message, "missingName") is { Length: > 0 } missing ? missing : null;
                             target.Write(Text(message, "traceback"));

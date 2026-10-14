@@ -29,6 +29,13 @@ public static class MimeOutputMapper
             return new KernelOutput(null, new RichCellOutput { Kind = CellOutputKind.Table, TableResult = Table(table) });
         }
 
+        // An object a kernel inspected itself (Java, Python and JavaScript have no .NET object to hand over): the same
+        // inspector the desktop builds for a C# value.
+        if (data.TryGetProperty(RichOutputMime.InspectorMime, out var inspector) && inspector.ValueKind == JsonValueKind.Object)
+        {
+            return new KernelOutput(null, new RichCellOutput { Kind = CellOutputKind.ObjectInspector, InspectorNode = InspectorBundle.Read(inspector) });
+        }
+
         foreach (var mime in VisualMimeTypes.VisualTypes)
         {
             if (data.TryGetProperty(mime, out var spec) && VisualMimeTypes.TryGetFamily(mime, out var family))

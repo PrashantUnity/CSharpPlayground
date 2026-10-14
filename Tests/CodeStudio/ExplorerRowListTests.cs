@@ -245,13 +245,19 @@ public class ExplorerRowListStudioTests : IDisposable
         }
     }
 
-    private CSharpCodeStudioViewModel CreateStudio(PdfEditorApp.Plugins.CSharpEditor.Models.ScriptDocumentItem script) => new(
-        script,
-        _storage,
-        new RoslynCompilerService(),
-        new ScriptExecutionEngine(),
-        backToHubAction: () => { },
-        backToHomeAction: () => { });
+    // A studio lists its folder in the background when it is made: wait for the listing, so the Explorer has its files.
+    private async Task<CSharpCodeStudioViewModel> CreateStudioAsync(PdfEditorApp.Plugins.CSharpEditor.Models.ScriptDocumentItem script)
+    {
+        var studio = new CSharpCodeStudioViewModel(
+            script,
+            _storage,
+            new RoslynCompilerService(),
+            new ScriptExecutionEngine(),
+            backToHubAction: () => { },
+            backToHomeAction: () => { });
+        await studio.RefreshExplorerAsync();
+        return studio;
+    }
 
     [Fact]
     public async Task TheStudiosRows_ListFoldersCollapsed_AndOpeningOneRevealsItsFiles()
@@ -261,7 +267,7 @@ public class ExplorerRowListStudioTests : IDisposable
         await _storage.CreateNewScriptAsync("Inside Two", folderPath: folder);
         var loose = await _storage.CreateNewScriptAsync("Loose");
 
-        var studio = CreateStudio(loose);
+        var studio = await CreateStudioAsync(loose);
 
         Assert.Equal(new[] { "Algorithms", "Loose.frycs" }, studio.ExplorerRows.Rows.Select<ExplorerItemViewModel, string>(r => r.Name));
 
@@ -276,7 +282,7 @@ public class ExplorerRowListStudioTests : IDisposable
         var folder = await _storage.CreateFolderAsync(null, "Deep");
         var inside = await _storage.CreateNewScriptAsync("Buried", folderPath: folder);
 
-        var studio = CreateStudio(inside);
+        var studio = await CreateStudioAsync(inside);
 
         Assert.Contains(studio.ExplorerRows.Rows, r => r.DocumentId == inside.Id && r.IsSelected);
     }
@@ -285,7 +291,7 @@ public class ExplorerRowListStudioTests : IDisposable
     public async Task RefreshingTheExplorer_KeepsTheRowsInStepWithTheTree()
     {
         var first = await _storage.CreateNewScriptAsync("One");
-        var studio = CreateStudio(first);
+        var studio = await CreateStudioAsync(first);
 
         await _storage.CreateNewScriptAsync("Two");
         await studio.RefreshExplorerAsync();

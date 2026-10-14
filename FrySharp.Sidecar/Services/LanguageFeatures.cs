@@ -4,7 +4,9 @@ using FrySharp.Sidecar.Sessions;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Sql;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
 using StreamJsonRpc;
 
@@ -43,14 +45,16 @@ public sealed class LanguageFeatures
         if (!IsCSharp(request.Path)) return new CompletionResult([]);
 
         var items = await Task.Run(() => _completion.GetCompletionsAsync(text, offset, ct: ct), ct).ConfigureAwait(false);
-        return new CompletionResult(items.Select(item => new CompletionItem(
-            item.DisplayText,
-            item.InsertionText,
-            item.Kind.ToString(),
-            item.Signature ?? item.ReturnType,
-            item.Documentation,
-            $"{1000 - Math.Clamp((int)item.Priority, 0, 999):D4}{item.DisplayText}")).ToList());
+        return new CompletionResult(items.Select(ToItem).ToList());
     }
+
+    private static CompletionItem ToItem(CSharpCompletionItem item) => new(
+        item.DisplayText,
+        item.InsertionText,
+        item.Kind.ToString(),
+        item.Signature ?? item.ReturnType,
+        item.Documentation,
+        $"{1000 - Math.Clamp((int)item.Priority, 0, 999):D4}{item.DisplayText}");
 
     public async Task<HoverResult?> HoverAsync(SidecarSession session, PositionParams request, CancellationToken ct)
     {
@@ -58,8 +62,11 @@ public sealed class LanguageFeatures
         if (!IsCSharp(request.Path)) return null;
 
         var info = await Task.Run(() => _quickInfo.GetQuickInfoAsync(text, offset, ct), ct).ConfigureAwait(false);
-        if (info == null) return null;
+        return info == null ? null : ToHover(info);
+    }
 
+    private static HoverResult? ToHover(CSharpQuickInfo info)
+    {
         var parts = new List<string>();
         var signature = string.Concat(info.Signature.Select(s => s.Text));
         if (signature.Length > 0) parts.Add($"```csharp\n{signature}\n```");
@@ -70,6 +77,92 @@ public sealed class LanguageFeatures
             if (summary.Length > 0) parts.Add(summary);
         }
         return parts.Count == 0 ? null : new HoverResult(parts);
+    }
+
+    public static bool IsCSharpLanguage(string language) => string.Equals(language, LanguageIds.CSharp, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>The languages this server has completion, hover and live checks for in a notebook cell.</summary>
+    public static bool CanCompleteCells(string language) => IsCSharpLanguage(language) || IsSqlLanguage(language);
+
+    public static bool IsSqlLanguage(string language) => string.Equals(language, LanguageIds.Sql, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Completions for a notebook cell: its text after the earlier cells, so what they define is offered.</summary>
+    public async Task<CompletionResult> CompleteCellAsync(CellPositionParams request, CancellationToken ct)
+    {
+        if (IsSqlLanguage(request.Language))
+        {
+            // the tables and views the cells before create are offered too: they are the same text to the completer
+            var joined = string.Concat((request.Context ?? []).Select(cell => cell + "\n"));
+            var sqlItems = SqlCompletions.Get(joined + request.Source, joined.Length + request.Offset);
+            // a dot-command is offered after the dot that was typed: it inserts its name, not a second dot
+            return new CompletionResult(sqlItems.Select(item => ToItem(item) with { InsertText = item.DisplayText.StartsWith('.') ? item.InsertionText[1..] : item.InsertionText }).ToList());
+        }
+
+        if (!IsCSharpLanguage(request.Language)) return new CompletionResult([]);
+        var (text, offset, _) = CellScript.Compose(request.Context, request.Source, request.Offset);
+
+        var items = await Task.Run(() => _completion.GetCompletionsAsync(text, offset, ct: ct), ct).ConfigureAwait(false);
+        return new CompletionResult(items.Select(ToItem).ToList());
+    }
+
+    /// <summary>What the symbol under the caret of a notebook cell is, as markdown.</summary>
+    public async Task<HoverResult?> HoverCellAsync(CellPositionParams request, CancellationToken ct)
+    {
+        if (IsSqlLanguage(request.Language))
+        {
+            var symbol = SqlQuickInfoProvider.ExtractSymbol(request.Source, request.Offset);
+            if (symbol is null || SqlQuickInfoProvider.Lookup(symbol) is not { } entry) return null;
+            var parts = new List<string> { $"```sql\n{entry.Signature}\n```" };
+            if (!string.IsNullOrEmpty(entry.Module)) parts.Add($"*{entry.Module}*");
+            parts.Add(entry.Summary);
+            return new HoverResult(parts);
+        }
+
+        if (!IsCSharpLanguage(request.Language)) return null;
+        var (text, offset, _) = CellScript.Compose(request.Context, request.Source, request.Offset);
+
+        var info = await Task.Run(() => _quickInfo.GetQuickInfoAsync(text, offset, ct), ct).ConfigureAwait(false);
+        return info == null ? null : ToHover(info);
+    }
+
+    // What only joining cells in one text makes wrong is not the cell's: a name two cells both declare (the kernel allows it,
+    // the later one wins, and a cell is run again), which the joined text calls a duplicate (CS0128, CS0102...) and then
+    // an ambiguity (CS0229) at every use; and statements after a type (CS8803).
+    private static readonly HashSet<string> JoinedTextCodes = ["CS0128", "CS0102", "CS0111", "CS0101", "CS0100", "CS0136", "CS0229", "CS0121", "CS8803", "CS8805"];
+
+    /// <summary>
+    /// Where a notebook cell goes wrong, in the cell's own lines: its directives (<c>#!python</c>, <c>#!share</c>) in any language,
+    /// and for C# what the compiler finds with the earlier cells before it.
+    /// </summary>
+    public async Task<CellDiagnosticsResult> DiagnoseCellAsync(CellDiagnosticsParams request, CancellationToken ct)
+    {
+        var diagnostics = new List<DiagnosticDto>();
+
+        var directives = NotebookCellDirectives.Parse(request.Source, _languages, request.Language);
+        foreach (var error in directives.Errors)
+        {
+            // "Line 3: "#!pyton" isn't a directive. ..."
+            var match = System.Text.RegularExpressions.Regex.Match(error, @"^Line (\d+): (.*)$");
+            var line = match.Success ? int.Parse(match.Groups[1].Value) : 1;
+            var message = match.Success ? match.Groups[2].Value : error;
+            var lineText = request.Source.Replace("\r\n", "\n").Split('\n').ElementAtOrDefault(line - 1) ?? string.Empty;
+            diagnostics.Add(new DiagnosticDto("error", "FRY0001", message, line, 1, line, Math.Max(2, lineText.Length + 1)));
+        }
+
+        if (IsCSharpLanguage(directives.LanguageId ?? request.Language) && directives.Errors.Count == 0)
+        {
+            var (text, _, prefixLines) = CellScript.Compose(request.Context, request.Source, 0);
+            var found = await Task.Run(() => _compiler.CheckDiagnostics(text), ct).ConfigureAwait(false);
+            ct.ThrowIfCancellationRequested();
+            diagnostics.AddRange(found
+                .Where(d => d.Severity != DiagnosticSeverity.Hidden && d.Line > prefixLines && !JoinedTextCodes.Contains(d.Id))
+                .Select(d => ToDto(d) with
+                {
+                    StartLine = d.Line - prefixLines,
+                    EndLine = Math.Max(d.Line, d.EndLine) - prefixLines
+                }));
+        }
+        return new CellDiagnosticsResult(diagnostics);
     }
 
     public void DocumentChanged(SidecarSession session, OpenDocument document)

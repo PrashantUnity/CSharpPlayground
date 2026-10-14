@@ -85,9 +85,14 @@ public sealed class InProcessCSharpRunnerTests
     [Fact]
     public async Task CodeThatIgnoresStop_IsAbandonedAfterTheGracePeriod()
     {
-        using var stop = new CancellationTokenSource(TimeSpan.FromMilliseconds(300));
+        // Stop is pressed once the code is running (on a busy machine the first compile can take longer than any fixed wait, and a Stop
+        // that arrives before the code starts is a cancellation, not code that ignores it).
+        using var stop = new CancellationTokenSource();
         var clock = System.Diagnostics.Stopwatch.StartNew();
-        var (result, _, _) = await Headless.RunAsync("System.Threading.Thread.Sleep(60_000);", ct: stop.Token);
+        var (result, _, _) = await Headless.RunAsync("Console.WriteLine(\"started\");\nSystem.Threading.Thread.Sleep(60_000);", ct: stop.Token, observe: text =>
+        {
+            if (text.Contains("started")) stop.Cancel();
+        });
 
         Assert.True(result.WasAbandoned);
         Assert.Equal(130, result.ExitCode);

@@ -3,3 +3,14 @@
 src/**
 tsconfig.json
 **/*.map
+out-test/**
+test/**
+node_modules/**
+out/**
+esbuild.js
+eslint.config.mjs
+bin/sidecar/*.pdb
+bin/sidecar/*.xml
+bin/sidecar/frysharp-sidecar
+bin/sidecar/frysharp-sidecar.exe
+preview/**

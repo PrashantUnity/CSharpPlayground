@@ -52,6 +52,14 @@ public class CSharpNotebookStudioTabTests : IDisposable
             backToHubAction: () => { },
             backToHomeAction: () => { });
     }
+    // A studio lists its folder in the background when it is made: wait for the listing, so the Explorer has its files.
+    private async Task<CSharpNotebookStudioViewModel> CreateListedStudioAsync(NotebookDocumentItem? notebook = null)
+    {
+        var studio = CreateStudio(notebook);
+        await studio.RefreshExplorerAsync();
+        return studio;
+    }
+
     private ExplorerItemViewModel EnsureSecondNotebookItem(CSharpNotebookStudioViewModel studio, string name = "Second_Notebook.frynb")
     {
         var existing = studio.ExplorerRootItems.FirstOrDefault(x => x.Name == name);
@@ -87,7 +95,7 @@ public class CSharpNotebookStudioTabTests : IDisposable
     [Fact]
     public async Task OpenDocument_MultipleFiles_DisplaysMultipleTabs()
     {
-        var studio = CreateStudio();
+        var studio = await CreateListedStudioAsync();
 
         var secondFile = EnsureSecondNotebookItem(studio);
 
@@ -104,7 +112,7 @@ public class CSharpNotebookStudioTabTests : IDisposable
     public async Task OpenDocument_SameFileTwice_DoesNotDuplicateTabs()
     {
         // Saved in the workspace (the library, in these tests), so it is one of the Explorer's files.
-        var studio = CreateStudio(await _testStorage.CreateNewNotebookAsync("Document Automation Notebook"));
+        var studio = await CreateListedStudioAsync(await _testStorage.CreateNewNotebookAsync("Document Automation Notebook"));
 
         var docFile = studio.ExplorerRootItems.FirstOrDefault(x => x.Name == "Document Automation Notebook.frynb");
         Assert.NotNull(docFile);
@@ -119,7 +127,7 @@ public class CSharpNotebookStudioTabTests : IDisposable
     public async Task SelectTab_SwitchesActiveTab_AndUpdatesExplorerSelection()
     {
         // The first notebook is a file of the workspace (the Explorer lists nothing else).
-        var studio = CreateStudio(await _testStorage.CreateNewNotebookAsync("Document Automation Notebook"));
+        var studio = await CreateListedStudioAsync(await _testStorage.CreateNewNotebookAsync("Document Automation Notebook"));
 
         var secondFile = EnsureSecondNotebookItem(studio);
         await studio.OpenDocumentAsync(secondFile);
@@ -140,7 +148,7 @@ public class CSharpNotebookStudioTabTests : IDisposable
     [Fact]
     public async Task CloseTab_SwitchesToAdjacentTab()
     {
-        var studio = CreateStudio();
+        var studio = await CreateListedStudioAsync();
 
         var secondFile = EnsureSecondNotebookItem(studio);
         await studio.OpenDocumentAsync(secondFile);
@@ -238,7 +246,7 @@ public class CSharpNotebookStudioTabTests : IDisposable
     [Fact]
     public async Task NewNotebookTab_CreatesATab_ThatTheExplorerListsOnlyOnceSaved()
     {
-        var studio = CreateStudio();
+        var studio = await CreateListedStudioAsync();
 
         var initialCount = studio.Tabs.Count;
         await studio.NewNotebookTab();
@@ -256,7 +264,7 @@ public class CSharpNotebookStudioTabTests : IDisposable
     [Fact]
     public async Task DeleteExplorerItem_ClosesOpenTab()
     {
-        var studio = CreateStudio();
+        var studio = await CreateListedStudioAsync();
 
         var secondFile = EnsureSecondNotebookItem(studio);
         await studio.OpenDocumentAsync(secondFile);
@@ -272,7 +280,7 @@ public class CSharpNotebookStudioTabTests : IDisposable
     [Fact]
     public async Task NewFolder_PersistsAcrossRefresh()
     {
-        var studio = CreateStudio();
+        var studio = await CreateListedStudioAsync();
 
         await studio.NewFolder();
 
@@ -290,7 +298,7 @@ public class CSharpNotebookStudioTabTests : IDisposable
     {
         // The Explorer shows file names: a rename used to change only the title inside, so the old name stayed.
         var doc = await _testStorage.CreateNewNotebookAsync("Draft");
-        var studio = CreateStudio(doc);
+        var studio = await CreateListedStudioAsync(doc);
         var item = studio.ExplorerRootItems.Single(x => x.DocumentId == doc.Id);
         var folder = Path.GetDirectoryName(_testStorage.GetWorkspaceRelativePath(doc.Id) is { } rel
             ? Path.Combine(_testStorage.ActiveWorkspaceRootPath, rel)
@@ -311,7 +319,7 @@ public class CSharpNotebookStudioTabTests : IDisposable
     [Fact]
     public async Task RenameFolder_UpdatesDescendantPaths_AndPersistsAcrossRefresh()
     {
-        var studio = CreateStudio();
+        var studio = await CreateListedStudioAsync();
 
         await studio.NewFolder();
         var folder = studio.ExplorerRootItems.First(x => x.IsDirectory);
@@ -336,7 +344,7 @@ public class CSharpNotebookStudioTabTests : IDisposable
     [Fact]
     public async Task DeleteFolder_CascadesToChildrenAndClosesTabs()
     {
-        var studio = CreateStudio();
+        var studio = await CreateListedStudioAsync();
 
         await studio.NewFolder();
         var folder = studio.ExplorerRootItems.First(x => x.IsDirectory);
@@ -789,9 +797,9 @@ Console.WriteLine(""should not be reached"");";
     }
 
     [Fact]
-    public void UpdateActiveNotebook_OpensATab_ButListsOnlyTheFoldersFiles()
+    public async Task UpdateActiveNotebook_OpensATab_ButListsOnlyTheFoldersFiles()
     {
-        var studio = CreateStudio();
+        var studio = await CreateListedStudioAsync();
 
         var customNb = new NotebookDocumentItem
         {
@@ -812,7 +820,7 @@ Console.WriteLine(""should not be reached"");";
     [Fact]
     public async Task OpenDocument_WhenSavedInStorage_LoadsSavedCells()
     {
-        var studio = CreateStudio();
+        var studio = await CreateListedStudioAsync();
 
         var uniqueTitle = $"StorageTest_{Guid.NewGuid():N}";
         var newNb = new NotebookDocumentItem
@@ -848,7 +856,7 @@ Console.WriteLine(""should not be reached"");";
     [Fact]
     public async Task DuplicateExplorerItem_CreatesClonedDocumentInStorageAndExplorer()
     {
-        var studio = CreateStudio(await _testStorage.CreateNewNotebookAsync("Document Automation Notebook"));
+        var studio = await CreateListedStudioAsync(await _testStorage.CreateNewNotebookAsync("Document Automation Notebook"));
 
         var docFile = studio.ExplorerRootItems.First(x => x.Name == "Document Automation Notebook.frynb");
 
@@ -982,7 +990,7 @@ Console.WriteLine(""should not be reached"");";
         {
             var doc = await _testStorage.CreateNewNotebookAsync("External Doc", folderPath: externalDir);
 
-            var studio = CreateStudio(doc);
+            var studio = await CreateListedStudioAsync(doc);
 
             Assert.DoesNotContain(studio.ExplorerRootItems, x => x.Name == "External Doc.frynb");
         }
@@ -1008,7 +1016,7 @@ Console.WriteLine(""should not be reached"");";
             File.WriteAllText(Path.Combine(externalDir, "Interactive C# Notebook (2).frynb"), System.Text.Json.JsonSerializer.Serialize(copy));
             await _testStorage.OpenExternalProjectAsync(externalDir);
 
-            var studio = CreateStudio(first);
+            var studio = await CreateListedStudioAsync(first);
             await studio.RefreshExplorer();
 
             var names = studio.ExplorerRootItems.Where(x => !x.IsDirectory).Select(x => x.Name).ToList();
@@ -1036,7 +1044,7 @@ Console.WriteLine(""should not be reached"");";
             await _testStorage.OpenExternalProjectAsync(externalDir);
             var subFolder = await _testStorage.CreateFolderAsync(null, "SubFolder");
             var doc = await _testStorage.CreateNewNotebookAsync("Inside", folderPath: subFolder);
-            var studio = CreateStudio(doc);
+            var studio = await CreateListedStudioAsync(doc);
 
             var folderNode = studio.ExplorerRootItems.Single(x => x.IsDirectory);
 
@@ -1060,7 +1068,7 @@ Console.WriteLine(""should not be reached"");";
         {
             await _testStorage.OpenExternalProjectAsync(externalDir);
             var doc = await _testStorage.CreateNewNotebookAsync("Original");
-            var studio = CreateStudio(doc);
+            var studio = await CreateListedStudioAsync(doc);
             var originalItem = studio.ExplorerRootItems.Single(x => !x.IsDirectory);
 
             await studio.DuplicateExplorerItemAsync(originalItem);
@@ -1086,7 +1094,7 @@ Console.WriteLine(""should not be reached"");";
             var helloDoc = await _testStorage.CreateNewNotebookAsync("h", folderPath: helloDir);
             await _testStorage.CreateNewNotebookAsync("New I", folderPath: iGuessDir);
 
-            var studio = CreateStudio(helloDoc);
+            var studio = await CreateListedStudioAsync(helloDoc);
 
             // Neither folder is the active workspace root, so neither notebook is listed (not even the open one).
             Assert.DoesNotContain(studio.ExplorerRootItems, x => x.Name is "h.frynb" or "New I.frynb");
@@ -1106,7 +1114,7 @@ Console.WriteLine(""should not be reached"");";
     {
         var folder = await _testStorage.CreateFolderAsync(null, "SoloFolder");
         var doc = await _testStorage.CreateNewNotebookAsync("Only Doc", folderPath: folder);
-        var studio = CreateStudio(doc);
+        var studio = await CreateListedStudioAsync(doc);
         var folderNode = studio.ExplorerRootItems.Single(x => x.IsDirectory && x.Name == "SoloFolder");
         var docItem = folderNode.Children.Single();
 
@@ -1126,7 +1134,7 @@ Console.WriteLine(""should not be reached"");";
             var first = await _testStorage.CreateNewNotebookAsync("First");
             await _testStorage.CreateNewNotebookAsync("Second");
 
-            var studio = CreateStudio(first);
+            var studio = await CreateListedStudioAsync(first);
             Assert.Equal(2, studio.ExplorerRootItems.Count(x => !x.IsDirectory));
             var firstItem = studio.ExplorerRootItems.Single(c => c.Name == "First.frynb");
 

@@ -14,4 +14,9 @@
     </PackageReference>
     <ProjectReference Include="..\FrySharp.Core\FrySharp.Core.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- What every language's Object Explorer shows for a deep or self-referencing value is asserted by one helper, shared with the desktop's tests. -->
+    <Compile Include="..\Tests\Visuals\Data\InspectorChain.cs" Link="InspectorChain.cs" />
+  </ItemGroup>
 </Project>

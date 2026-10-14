@@ -6,6 +6,8 @@
     <Description>Headless stdio sidecar for FrySharp: powers the VS Code extension over JSON-RPC 2.0</Description>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Roslyn's translated messages are most of a published folder; the engine's messages are English. -->
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
 
   <ItemGroup>

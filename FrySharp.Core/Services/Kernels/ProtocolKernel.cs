@@ -138,6 +138,9 @@ public sealed partial class ProtocolKernel : INotebookKernel, ISearchPathKernel
                     ConsoleOutput = execution.Output,
                     MissingDependency = execution.MissingDependency,
                     MissingName = execution.MissingName,
+                    ErrorName = execution.ErrorName,
+                    ErrorLine = execution.ErrorLine,
+                    Diagnostics = execution.Diagnostics ?? Array.Empty<DiagnosticItem>(),
                     Elapsed = clock.Elapsed
                 };
             }
@@ -241,8 +244,17 @@ public sealed partial class ProtocolKernel : INotebookKernel, ISearchPathKernel
         }
     }
 
+    // Folders a package command asked to be added to the kernel's import path or classpath. They are kept, so a kernel that is
+    // not running yet (the first cell of a notebook is a package line) or that restarts gets them as soon as it is ready.
+    private readonly List<string> _searchPaths = [];
+
     public async Task AddSearchPathAsync(string path, CancellationToken ct = default)
     {
+        lock (_searchPaths)
+        {
+            if (!_searchPaths.Contains(path)) _searchPaths.Add(path);
+        }
+
         if (CurrentSession is not { IsAlive: true } session || !session.Ready.IsCompletedSuccessfully) return;
         await _gate.WaitAsync(ct);
         try
@@ -313,6 +325,21 @@ public sealed partial class ProtocolKernel : INotebookKernel, ISearchPathKernel
             throw new KernelUnavailableException(ex.Message);
         }
 
+        // what package commands added to the path before this kernel was running
+        string[] paths;
+        lock (_searchPaths) paths = [.. _searchPaths];
+        foreach (var path in paths)
+        {
+            try
+            {
+                await RequestAsync(session, id => new { type = "add_search_path", id, path }, ct);
+            }
+            catch (Exception ex) when (ex is KernelStoppedException or TimeoutException)
+            {
+                Debug.WriteLine($"[CSharpEditorPlugin] Couldn't add '{path}' to {DisplayName}: {ex.Message}");
+            }
+        }
+
         _executed = false;
         bool noteLostState;
         lock (_sessionLock)
@@ -368,6 +395,42 @@ public sealed partial class ProtocolKernel : INotebookKernel, ISearchPathKernel
         element.ValueKind == JsonValueKind.Object && element.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.String
             ? value.GetString() ?? string.Empty
             : string.Empty;
+
+    // Where a failed cell went wrong, when the kernel says: "diagnostics": [{line, column, endLine, endColumn, severity, code,
+    // message}] on the cell's own lines and columns (1-based), e.g. an F# compile error. Without it the kernel's "line" is all
+    // there is.
+    private static IReadOnlyList<DiagnosticItem>? Diagnostics(JsonElement error)
+    {
+        if (error.ValueKind != JsonValueKind.Object || !error.TryGetProperty("diagnostics", out var list) || list.ValueKind != JsonValueKind.Array) return null;
+
+        int Number(JsonElement item, string property, int fallback) =>
+            item.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var n) && n > 0 ? n : fallback;
+
+        var items = new List<DiagnosticItem>();
+        foreach (var item in list.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object) continue;
+            var line = Number(item, "line", 1);
+            var column = Number(item, "column", 1);
+            items.Add(new DiagnosticItem
+            {
+                Id = Text(item, "code"),
+                Message = Text(item, "message"),
+                Severity = Text(item, "severity") switch
+                {
+                    "warning" => Microsoft.CodeAnalysis.DiagnosticSeverity.Warning,
+                    "info" => Microsoft.CodeAnalysis.DiagnosticSeverity.Info,
+                    _ => Microsoft.CodeAnalysis.DiagnosticSeverity.Error
+                },
+                Line = line,
+                Column = column,
+                EndLine = Number(item, "endLine", line),
+                EndColumn = Number(item, "endColumn", column + 1)
+            });
+        }
+
+        return items.Count == 0 ? null : items;
+    }
 
     private sealed class KernelStoppedException(string message) : Exception(message);
 }

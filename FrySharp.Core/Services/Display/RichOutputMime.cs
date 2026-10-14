@@ -147,7 +147,9 @@ public static class RichOutputMime
             });
         }
 
-        return new JsonObject { ["title"] = node.HeaderTitle, ["properties"] = properties };
+        var result = new JsonObject { ["title"] = node.HeaderTitle, ["properties"] = properties };
+        if (node.IsCircularReference) result["circular"] = true;
+        return result;
     }
 
     private static string InspectorText(ObjectInspectorNode node) =>

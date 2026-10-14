@@ -33,6 +33,19 @@
     <EmbeddedResource Include="Services/Languages/JavaScript/Kernel/*.js" LogicalName="JavaScriptKernel.%(Filename)%(Extension)" />
     <EmbeddedResource Include="Services/Languages/JavaScript/Runtime/*.js" LogicalName="JavaScriptKernel.%(Filename)%(Extension)" />
     <EmbeddedResource Include="Services/Languages/JavaScript/Runtime/*.js" LogicalName="JavaScriptRuntime.%(Filename)%(Extension)" />
+    <!-- The Rust display and visual runtime: the `fry` crate a script or a cell is built with. -->
+    <EmbeddedResource Include="Services/Languages/Rust/Runtime/*.*" LogicalName="RustRuntime.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Services/Languages/Go/Runtime/*.go" LogicalName="GoRuntime.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Services/Languages/Cpp/Runtime/*.hpp" LogicalName="CppRuntime.%(Filename)%(Extension)" />
+    <!-- The Java notebook kernel (a JShell program started with `java FryKernel.java`) and the display runtime sources a Java
+         program or cell compiles in. -->
+    <EmbeddedResource Include="Services/Languages/Java/Kernel/*.java" LogicalName="JavaKernel.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Services/Languages/Java/Runtime/*.java" LogicalName="JavaKernel.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Services/Languages/Java/Runtime/*.java" LogicalName="JavaRuntime.%(Filename)%(Extension)" />
+    <!-- The F# notebook kernel (a script run by dotnet fsi) and the display runtime scripts a script or a cell loads. -->
+    <EmbeddedResource Include="Services/Languages/FSharp/Kernel/*.fsx" LogicalName="FSharpKernel.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Services/Languages/FSharp/Runtime/*.fsx" LogicalName="FSharpKernel.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Services/Languages/FSharp/Runtime/*.fsx" LogicalName="FSharpRuntime.%(Filename)%(Extension)" />
   </ItemGroup>
 
   <!-- Core runs where there is no UI (web server, CLI, tests), so a UI package here is a build error, not a review comment. -->
