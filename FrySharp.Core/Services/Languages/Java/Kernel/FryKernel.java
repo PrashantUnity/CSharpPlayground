@@ -17,7 +17,7 @@ public class FryKernel {
     // Where each snippet of the running cell begins (1-based line of the cell), by JShell's snippet id, so that a stack frame
     // named "#3:1" can be put on the cell's own line.
     private static final Map<String, Integer> snippetStartLines = new HashMap<>();
-    private static final PrintStream protocolOut = System.out;
+    private static final PrintStream protocolOut = new PrintStream(new FileOutputStream(FileDescriptor.out), true, StandardCharsets.UTF_8);
     private static final SnippetOutputStream snippetOutStream = new SnippetOutputStream("stdout");
     private static final PrintStream snippetPs = new PrintStream(snippetOutStream, true, StandardCharsets.UTF_8);
     private static final SnippetOutputStream snippetErrStream = new SnippetOutputStream("stderr");
@@ -164,6 +164,9 @@ public class FryKernel {
         }
 
         private void line(String line) {
+            if (line.endsWith("\r")) {
+                line = line.substring(0, line.length() - 1);
+            }
             if (name.equals("stdout")) {
                 String trimmed = line.trim();
                 int at = line.indexOf("__FRY_DISPLAY__ ");
@@ -185,7 +188,11 @@ public class FryKernel {
         @Override
         public synchronized void close() {
             if (partial.size() > 0) {
-                emitText(name, partial.toString(StandardCharsets.UTF_8));
+                String text = partial.toString(StandardCharsets.UTF_8);
+                if (text.endsWith("\r")) {
+                    text = text.substring(0, text.length() - 1);
+                }
+                emitText(name, text);
                 partial.reset();
             }
         }
@@ -256,7 +263,13 @@ public class FryKernel {
             }
         }
 
-        jshell = JShell.builder().in(kernelInput).out(snippetPs).err(snippetErrPs).build();
+        jshell = JShell.builder()
+            .in(kernelInput)
+            .out(snippetPs)
+            .err(snippetErrPs)
+            .compilerOptions("-encoding", "UTF-8")
+            .remoteVMOptions("-Dfile.encoding=UTF-8", "-Dsun.jnu.encoding=UTF-8", "-Dstdout.encoding=UTF-8", "-Dstderr.encoding=UTF-8")
+            .build();
 
         // Default imports
         evalSnippet("import java.util.*;");

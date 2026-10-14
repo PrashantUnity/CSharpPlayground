@@ -82,6 +82,8 @@ public sealed class ProcessLauncher : IProcessLauncher
             RedirectStandardError = true,
             // Encoding.UTF8 would write a byte-order mark first, and the program's first input() would begin with it.
             StandardInputEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
+            StandardOutputEncoding = Encoding.UTF8,
+            StandardErrorEncoding = Encoding.UTF8,
             WorkingDirectory = spec.WorkingDirectory ?? string.Empty
         };
         if (merge)

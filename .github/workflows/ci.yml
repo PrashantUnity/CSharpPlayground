@@ -62,26 +62,26 @@ jobs:
       - name: Core tests
         run: dotnet test Tests.Core/FrySharp.Core.Tests.csproj
         env:
-          FRY_REQUIRE_SQL: ${{ matrix.os == 'windows-latest' && '' || '1' }}
+          FRY_REQUIRE_SQL: ${{ matrix.os != 'windows-latest' && '1' || '0' }}
           FRY_REQUIRE_FSHARP: '1'
           FRY_REQUIRE_JAVA: '1'
           FRY_REQUIRE_RUST: '1'
           FRY_REQUIRE_GO: '1'
           # a Windows runner's MSVC needs its own environment: the C++ tests are skipped there, with the reason
-          FRY_REQUIRE_CPP: ${{ matrix.os == 'windows-latest' && '' || '1' }}
+          FRY_REQUIRE_CPP: ${{ matrix.os != 'windows-latest' && '1' || '0' }}
           FRY_TEST_NETWORK: '1'
 
       - name: Sidecar tests
         run: dotnet test Tests.Sidecar/FrySharp.Sidecar.Tests.csproj
         env:
           FRY_REQUIRE_PYTHON: '1'
-          FRY_REQUIRE_SQL: ${{ matrix.os == 'windows-latest' && '' || '1' }}
+          FRY_REQUIRE_SQL: ${{ matrix.os != 'windows-latest' && '1' || '0' }}
           FRY_REQUIRE_FSHARP: '1'
           FRY_REQUIRE_JAVA: '1'
           FRY_REQUIRE_RUST: '1'
           FRY_REQUIRE_GO: '1'
           # a Windows runner's MSVC needs its own environment: the C++ tests are skipped there, with the reason
-          FRY_REQUIRE_CPP: ${{ matrix.os == 'windows-latest' && '' || '1' }}
+          FRY_REQUIRE_CPP: ${{ matrix.os != 'windows-latest' && '1' || '0' }}
           FRY_TEST_NETWORK: '1'
 
   extension:

@@ -11,10 +11,11 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Sql;
 public sealed partial class SqlCompilerDiagnosticParser : IDiagnosticParser
 {
     // Matches: Parse error near line 4: near "FORM": syntax error
+    // or: Parse error near line 4 of /path/file.sql: near "FORM": syntax error
     // or: Parse error at line 4, column 12: near "FORM": syntax error
     // or: Runtime error near line 8: UNIQUE constraint failed: users.id (19)
     // or: Error: near line 5: no such table: customers  (colon right after Error)
-    [GeneratedRegex(@"^(?:(?:Parse|Runtime)\s+error|Error):?\s*(?:(?:at\s+line\s+(?<line>\d+)(?:,\s*column\s+(?<col>\d+))?|near\s+line\s+(?<line>\d+))\s*:)?\s*(?<msg>.+)$", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^(?:(?:Parse|Runtime)\s+error|Error):?\s*(?:(?:at\s+line\s+(?<line>\d+)(?:,\s*column\s+(?<col>\d+))?|near\s+line\s+(?<line>\d+))(?:\s+of\s+[^:]+)?\s*:)?\s*(?<msg>.+)$", RegexOptions.IgnoreCase)]
     private static partial Regex SqliteErrorRegex();
 
     // Matches caret pointer lines: "         ^--- error here"

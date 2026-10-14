@@ -26,7 +26,7 @@ public sealed partial class CppNotebookKernel : INotebookKernel
     private static partial Regex UndeclaredName();
 
     // libstdc++: "terminate called after throwing an instance of 'std::runtime_error'" then "  what():  boom"; libc++: "libc++abi: terminating due to uncaught exception of type std::runtime_error: boom"
-    [GeneratedRegex(@"terminate called after throwing an instance of '(?<type>[^']+)'\s*(?:\r?\n\s*what\(\):\s*(?<what>.*))?|terminating due to uncaught exception of type (?<type2>[\w<>]+(?:::[\w<>]+)*)(?::\s*(?<what2>.*))?")]
+    [GeneratedRegex(@"terminate called after throwing an instance of '(?<type>[^']+)'(?:\s+what\(\):\s*(?<what>[^\r\n]*))?|terminating due to uncaught exception of type (?<type2>[\w<>]+(?:::[\w<>]+)*)(?::\s*(?<what2>[^\r\n]*))?")]
     private static partial Regex UncaughtException();
 
     private readonly CppToolchainProvider _toolchain;

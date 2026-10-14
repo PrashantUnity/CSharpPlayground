@@ -64,62 +64,62 @@ public sealed partial class SqlNotebookKernel : INotebookKernel
             workingFolder = _host.HomeDirectory;
         }
 
-        var resolution = await _toolchain.ResolveAsync(new ToolchainQuery(workingFolder, _context.WorkspaceRoot?.Invoke()), ct).ConfigureAwait(false);
-        if (!resolution.IsFound || resolution.Toolchain == null)
-        {
-            var guidance = resolution.Missing ?? SqlGuidance.NotInstalled(_host);
-            var err = guidance.ToText();
-            request.OnConsole?.Invoke(err + "\n");
-            return new KernelExecutionResult
-            {
-                Success = false,
-                ErrorMessage = guidance.Summary,
-                ConsoleOutput = err,
-                Elapsed = clock.Elapsed
-            };
-        }
-
-        var cellCode = CleanCode(request.Code);
-
-        // Prepend table definitions for any shared variables
-        var preSql = new StringBuilder();
-        foreach (var (varName, (_, jsonVal)) in _sharedVariables)
-        {
-            var tableSql = GenerateSharedTableSql(varName, jsonVal);
-            if (!string.IsNullOrEmpty(tableSql))
-            {
-                preSql.AppendLine(tableSql.TrimEnd());
-            }
-        }
-        _sharedVariables.Clear();
-
-        // The cell's own lines come after the tables it was given, and sqlite3 numbers lines from the top of the file:
-        // an error is shown on the cell's line, not on one of the generated ones.
-        var prefixLines = preSql.ToString().Count(c => c == '\n');
-        var cellScriptPath = Path.Combine(_sessionDir, $"cell_{_executionCount}.sql");
-        await File.WriteAllTextAsync(cellScriptPath, preSql + cellCode, ct).ConfigureAwait(false);
-
-        var executable = resolution.Toolchain.ExecutablePath;
-        // -json: a result set arrives as rows, to be shown as a table; the text a script prints arrives as it is.
-        var runArgs = new List<string> { "-json", _dbFilePath, $".read {cellScriptPath}" };
-
-        var stdout = new StringBuilder();
-        var stderr = new List<(int Offset, string Text)>();
-        var gate = new object();
-        var spec = new ProcessStartSpec
-        {
-            FileName = executable,
-            Arguments = runArgs,
-            WorkingDirectory = _sessionDir
-        };
-
-        using var managedProcess = _processes.Start(
-            spec,
-            onStandardOutput: text => { lock (gate) stdout.Append(text); },
-            onStandardError: text => { lock (gate) stderr.Add((stdout.Length, text)); });
-
         try
         {
+            var resolution = await _toolchain.ResolveAsync(new ToolchainQuery(workingFolder, _context.WorkspaceRoot?.Invoke()), ct).ConfigureAwait(false);
+            if (!resolution.IsFound || resolution.Toolchain == null)
+            {
+                var guidance = resolution.Missing ?? SqlGuidance.NotInstalled(_host);
+                var err = guidance.ToText();
+                request.OnConsole?.Invoke(err + "\n");
+                return new KernelExecutionResult
+                {
+                    Success = false,
+                    ErrorMessage = guidance.Summary,
+                    ConsoleOutput = err,
+                    Elapsed = clock.Elapsed
+                };
+            }
+
+            var cellCode = CleanCode(request.Code);
+
+            // Prepend table definitions for any shared variables
+            var preSql = new StringBuilder();
+            foreach (var (varName, (_, jsonVal)) in _sharedVariables)
+            {
+                var tableSql = GenerateSharedTableSql(varName, jsonVal);
+                if (!string.IsNullOrEmpty(tableSql))
+                {
+                    preSql.AppendLine(tableSql.TrimEnd());
+                }
+            }
+            _sharedVariables.Clear();
+
+            // The cell's own lines come after the tables it was given, and sqlite3 numbers lines from the top of the file:
+            // an error is shown on the cell's line, not on one of the generated ones.
+            var prefixLines = preSql.ToString().Count(c => c == '\n');
+            var cellScriptPath = Path.Combine(_sessionDir, $"cell_{_executionCount}.sql");
+            await File.WriteAllTextAsync(cellScriptPath, preSql + cellCode, ct).ConfigureAwait(false);
+
+            var executable = resolution.Toolchain.ExecutablePath;
+            // -json: a result set arrives as rows, to be shown as a table; the text a script prints arrives as it is.
+            var runArgs = new List<string> { "-json", _dbFilePath, $".read {cellScriptPath}" };
+
+            var stdout = new StringBuilder();
+            var stderr = new List<(int Offset, string Text)>();
+            var gate = new object();
+            var spec = new ProcessStartSpec
+            {
+                FileName = executable,
+                Arguments = runArgs,
+                WorkingDirectory = _sessionDir
+            };
+
+            using var managedProcess = _processes.Start(
+                spec,
+                onStandardOutput: text => { lock (gate) stdout.Append(text); },
+                onStandardError: text => { lock (gate) stderr.Add((stdout.Length, text)); });
+
             // No limit of the kernel's own: how long a cell may take is the studio's ExecutionTimeoutSeconds setting, which
             // arrives as the cancellation token.
             var exitCode = await managedProcess.WaitForExitOrKillAsync(ct).ConfigureAwait(false);
@@ -128,8 +128,8 @@ public sealed partial class SqlNotebookKernel : INotebookKernel
             List<(int Offset, string Text)> errors;
             lock (gate)
             {
-                output = stdout.ToString();
-                errors = [.. stderr];
+                output = stdout.ToString().Replace("\r\n", "\n");
+                errors = stderr.Select(e => (e.Offset, e.Text.Replace("\r\n", "\n"))).ToList();
             }
 
             var console = Present(SqlResultStream.Split(output), errors, request);

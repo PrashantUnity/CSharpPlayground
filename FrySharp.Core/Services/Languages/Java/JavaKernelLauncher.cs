@@ -30,7 +30,16 @@ public sealed class JavaKernelLauncher(JavaToolchainProvider toolchains, IHostEn
             new ProcessStartSpec
             {
                 FileName = java.ExecutablePath,
-                Arguments = [Path.Combine(kernelFolder, "FryKernel.java"), "--cwd", folder, "--kernel-dir", kernelFolder],
+                Arguments =
+                [
+                    "-Dfile.encoding=UTF-8",
+                    "-Dsun.jnu.encoding=UTF-8",
+                    "-Dstdout.encoding=UTF-8",
+                    "-Dstderr.encoding=UTF-8",
+                    Path.Combine(kernelFolder, "FryKernel.java"),
+                    "--cwd", folder,
+                    "--kernel-dir", kernelFolder
+                ],
                 WorkingDirectory = folder
             },
             java.DisplayName);

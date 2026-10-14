@@ -9,7 +9,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Services.Languages.Go;
 internal static partial class GoConsoleText
 {
     // The generated program's file, with the folder it is in (or ./ for the one the build runs in), and a line and a column.
-    [GeneratedRegex(@"(?:\./|[^\s:""]*[\\/])?main\.go(?::(?<line>\d+)(?::(?<column>\d+))?)?")]
+    [GeneratedRegex(@"(?:\./|(?:[a-zA-Z]:)?[^\s:""]*[\\/])?main\.go(?::(?<line>\d+)(?::(?<column>\d+))?)?")]
     private static partial Regex Position();
 
     [GeneratedRegex(@"\A(?:# [^\n]*\n)+")]

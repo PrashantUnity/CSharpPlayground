@@ -42,7 +42,15 @@ public sealed class AtomicFileTests
         using var folder = new TempFolder();
         var target = folder.File("real.txt", "old");
         var link = Path.Combine(folder.Path, "link.txt");
-        File.CreateSymbolicLink(link, target);
+        try
+        {
+            File.CreateSymbolicLink(link, target);
+        }
+        catch (IOException ex) when (OperatingSystem.IsWindows() && ex.Message.Contains("privilege"))
+        {
+            // Windows developer mode or elevation is required for symbolic links
+            return;
+        }
 
         await AtomicFile.WriteAllTextAsync(link, "through the link", new UTF8Encoding(false));
 

@@ -11,7 +11,21 @@ public sealed class RealRustFactAttribute : FactAttribute
     public RealRustFactAttribute()
     {
         if (Environment.GetEnvironmentVariable("FRY_REQUIRE_RUST") == "1") return;
-        if (!HasCargo()) Skip = "Needs the Rust toolchain (cargo) on the PATH or in ~/.cargo/bin (or set FRY_REQUIRE_RUST=1 to make this a failure).";
+        if (!HasWorkingRust()) Skip = "Needs the Rust toolchain (cargo and a C linker like link.exe or gcc) on the PATH or in ~/.cargo/bin (or set FRY_REQUIRE_RUST=1 to make this a failure).";
+    }
+
+    private static readonly Lazy<bool> WorkingRust = new(CheckWorkingRust);
+    private static bool HasWorkingRust() => WorkingRust.Value;
+
+    private static bool CheckWorkingRust()
+    {
+        if (!HasCargo()) return false;
+        if (!OperatingSystem.IsWindows()) return true;
+
+        var path = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
+        var names = new[] { "link.exe" };
+        return path.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)
+            .Any(folder => names.Any(name => File.Exists(Path.Combine(folder, name))));
     }
 
     private static bool HasCargo()

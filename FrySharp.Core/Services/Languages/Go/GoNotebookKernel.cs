@@ -307,19 +307,38 @@ public sealed partial class GoNotebookKernel : INotebookKernel
         // What the program printed as it printed it (a panic names the generated file: the diagnostics are read from this), and as the cell is shown it.
         var console = new StringBuilder();
         var shownConsole = new StringBuilder();
+        var pendingText = new StringBuilder();
+        void Emit(string text)
+        {
+            var shown = GoConsoleText.Positions(text, build.Program);
+            lock (console)
+            {
+                console.Append(text);
+                shownConsole.Append(shown);
+            }
+
+            request.OnConsole?.Invoke(shown);
+        }
+
         var started = new TaskCompletionSource<IManagedProcess>(TaskCreationOptions.RunContinuationsAsynchronously);
         using var visuals = new ExternalVisualSession();
         var processor = new ExternalOutputProcessor(
             onConsoleText: text =>
             {
-                var shown = GoConsoleText.Positions(text, build.Program);
-                lock (console)
+                if (pendingText.Length > 0 || (text.Contains(ProgramFileName, StringComparison.Ordinal) && !text.EndsWith('\n')))
                 {
-                    console.Append(text);
-                    shownConsole.Append(shown);
+                    pendingText.Append(text);
+                    if (text.EndsWith('\n'))
+                    {
+                        var full = pendingText.ToString();
+                        pendingText.Clear();
+                        Emit(full);
+                    }
                 }
-
-                request.OnConsole?.Invoke(shown);
+                else
+                {
+                    Emit(text);
+                }
             },
             onRichOutput: bundle => request.OnRichOutput?.Invoke(bundle),
             onShare: (name, json) =>
@@ -364,6 +383,12 @@ public sealed partial class GoNotebookKernel : INotebookKernel
 
             ct.ThrowIfCancellationRequested();
             processor.Flush();
+            if (pendingText.Length > 0)
+            {
+                Emit(pendingText.ToString());
+                pendingText.Clear();
+            }
+
             string consoleText, rawConsole;
             lock (console)
             {
@@ -388,7 +413,7 @@ public sealed partial class GoNotebookKernel : INotebookKernel
             return new KernelExecutionResult
             {
                 Success = false,
-                ConsoleOutput = consoleText,
+                ConsoleOutput = GoConsoleText.Positions(rawConsole, build.Program),
                 ErrorMessage = diagnostics.FirstOrDefault(d => d.Id == "PANIC")?.Message ?? $"The program exited with code {exitCode}",
                 Diagnostics = diagnostics,
                 Elapsed = clock.Elapsed
