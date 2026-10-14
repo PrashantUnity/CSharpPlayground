@@ -2,15 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
-using PdfEditorApp.Core.Plugins.Settings;
+using System.Threading.Tasks;
+using FryWorld.Sdk.Services;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Runner;
 
 /// <summary>
-/// Standalone file-backed implementation of IPluginSettingsStore for local runner testing.
-/// Persists preferences to csharpeditor.runner.settings.json without requiring FryPDF or any host services.
+/// Standalone file-backed implementation of ISettingsManager for local runner testing.
+/// Persists preferences to csharpeditor.runner.settings.json without requiring FryWorld or any host services.
 /// </summary>
-public class StandaloneSettingsStore : IPluginSettingsStore
+public class StandaloneSettingsStore : ISettingsManager
 {
     private readonly string _filePath;
     private readonly Dictionary<string, Dictionary<string, object>> _data;
@@ -104,6 +105,12 @@ public class StandaloneSettingsStore : IPluginSettingsStore
             }
         }
     }
+
+    public Task SaveAsync()
+    {
+        Save();
+        return Task.CompletedTask;
+    }
 }
 
 /// <summary>
@@ -111,16 +118,16 @@ public class StandaloneSettingsStore : IPluginSettingsStore
 /// </summary>
 public class StandaloneServiceProvider : IServiceProvider
 {
-    private readonly IPluginSettingsStore _settingsStore;
+    private readonly ISettingsManager _settingsStore;
 
-    public StandaloneServiceProvider(IPluginSettingsStore settingsStore)
+    public StandaloneServiceProvider(ISettingsManager settingsStore)
     {
         _settingsStore = settingsStore;
     }
 
     public object? GetService(Type serviceType)
     {
-        if (serviceType == typeof(IPluginSettingsStore))
+        if (serviceType == typeof(ISettingsManager))
         {
             return _settingsStore;
         }

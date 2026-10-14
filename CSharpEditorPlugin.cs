@@ -4,10 +4,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using CommunityToolkit.Mvvm.Input;
-using PdfEditorApp.Core.Plugins;
-using PdfEditorApp.Core.Plugins.Descriptors;
-using PdfEditorApp.Core.Plugins.Manifests;
-using PdfEditorApp.Core.Plugins.Settings;
+using FryWorld.Sdk.Descriptors;
+using FryWorld.Sdk.Models;
+using FryWorld.Sdk.Plugins;
+using FryWorld.Sdk.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
 using PdfEditorApp.Plugins.CSharpEditor.Views;
@@ -25,7 +25,7 @@ namespace PdfEditorApp.Plugins.CSharpEditor;
 /// </summary>
 public class CSharpEditorPlugin : IFryPlugin
 {
-    public string Id => "com.frypdf.plugin.csharpeditor";
+    public string Id => "com.fryworld.csharpstudio";
     public string Name => "FrySharp";
     public Version Version => new(2, 0, 5);
     public bool AutoOpenOverlay => false;
@@ -38,7 +38,7 @@ public class CSharpEditorPlugin : IFryPlugin
             {
                 Label = "Default Starter Script",
                 Description = "Initial template loaded when creating a new script.",
-                Type = "select",
+                Type = PluginSettingType.Select,
                 Options = new() { "Hello World Console", "PDF Document Automation", "LINQ Benchmark", "JSON Serializer" },
                 DefaultValue = "Hello World Console"
             },
@@ -46,28 +46,28 @@ public class CSharpEditorPlugin : IFryPlugin
             {
                 Label = "Editor Font Size (px)",
                 Description = "Code typography size in points/pixels.",
-                Type = "integer",
+                Type = PluginSettingType.Integer,
                 DefaultValue = 13
             },
             ["ShowLineNumbers"] = new()
             {
                 Label = "Show Line Numbers",
                 Description = "Display gutter line numbers along the left margin.",
-                Type = "boolean",
+                Type = PluginSettingType.Boolean,
                 DefaultValue = true
             },
             ["AutoCheckErrors"] = new()
             {
                 Label = "Live Roslyn Diagnostics",
                 Description = "Continuously analyze C# code in the background for syntax and semantic errors.",
-                Type = "boolean",
+                Type = PluginSettingType.Boolean,
                 DefaultValue = true
             },
             ["ExecutionTimeoutSeconds"] = new()
             {
                 Label = "Execution Timeout (seconds, 0 = no limit)",
                 Description = "Maximum allowed run time before script execution is automatically stopped. 0 disables the automatic limit — Stop is always available regardless.",
-                Type = "integer",
+                Type = PluginSettingType.Integer,
                 DefaultValue = 0
             }
         };
@@ -79,31 +79,34 @@ public class CSharpEditorPlugin : IFryPlugin
 
         CSharpStudioHostViewModel? activeHost = null;
 
-        void NavigateToStudio(IServiceProvider sp)
+        void NavigateToStudio()
         {
             var homeType = Type.GetType("PdfEditorApp.ViewModels.HomeViewModel, PdfEditorApp");
             if (homeType != null)
             {
-                var home = sp.GetService(homeType);
+                var home = ctx.GetService(homeType);
                 homeType.GetMethod("SelectNavSection")?.Invoke(home, ["CSharpStudio"]);
+            }
+            var fryWorldVmType = Type.GetType("FryWorld.ViewModels.MainViewModel, FryWorld");
+            if (fryWorldVmType != null)
+            {
+                var mainVm = ctx.GetService(fryWorldVmType);
+                fryWorldVmType.GetMethod("NavigateToPlugin")?.Invoke(mainVm, ["com.fryworld.csharpstudio"]);
             }
         }
 
         var navReg = ctx.RegisterNavigationItem(new NavigationItemDescriptor
         {
-            Id = "CSharpStudio",
+            Id = "com.fryworld.csharpstudio",
             Title = "FrySharp",
-            Group = "Overview",
+            Category = "Overview",
             IconKind = "CodeBraces",
-            BadgeText = "Studio",
-            BadgeColorHex = "#75D59A",
+            AccentColor = "#75D59A",
             Order = 38,
-            DisplayMode = NavigationDisplayMode.FullViewport,
-            HideTopSearchBar = true,
-            ViewFactory = sp =>
+            ViewFactory = () =>
             {
-                ctx.TryGetService<IPluginSettingsStore>(out var settingsStore);
-                var hostVm = new CSharpStudioHostViewModel(sp, settingsStore);
+                ctx.TryGetService<ISettingsManager>(out var settingsStore);
+                var hostVm = new CSharpStudioHostViewModel(ctx, settingsStore);
                 activeHost = hostVm;
                 return new CSharpStudioHostView { DataContext = hostVm };
             }
@@ -116,9 +119,8 @@ public class CSharpEditorPlugin : IFryPlugin
             Subtitle = "Launch in-app C# development studio with project manager, editor, and Roslyn runner",
             Category = "Developer Tools",
             IconKind = "CodeBraces",
-            Shortcut = "Ctrl+Alt+E",
-            Order = 85,
-            Action = NavigateToStudio
+            ShortcutKey = OperatingSystem.IsMacOS() ? "Cmd+Alt+E" : "Ctrl+Alt+E",
+            Command = new RelayCommand(NavigateToStudio)
         });
 
         var customizationManager = new PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.CustomizationManager();
@@ -146,9 +148,8 @@ public class CSharpEditorPlugin : IFryPlugin
             Subtitle = "Recompile and apply ~/.frysharp/init.csx and active themes in real time",
             Category = "Developer Tools",
             IconKind = "Refresh",
-            Shortcut = "Ctrl+Shift+R",
-            Order = 86,
-            Action = sp => { _ = customizationManager.ReloadAsync(); }
+            ShortcutKey = OperatingSystem.IsMacOS() ? "Cmd+Shift+R" : "Ctrl+Shift+R",
+            Command = new RelayCommand(() => { _ = customizationManager.ReloadAsync(); })
         });
 
         var openInitScriptCmd = ctx.RegisterCommand(new CommandPaletteDescriptor
@@ -158,10 +159,9 @@ public class CSharpEditorPlugin : IFryPlugin
             Subtitle = "Edit in-app startup script, colors, themes, commands, and hooks",
             Category = "Developer Tools",
             IconKind = "Tune",
-            Order = 87,
-            Action = sp =>
+            Command = new RelayCommand(() =>
             {
-                NavigateToStudio(sp);
+                NavigateToStudio();
                 _ = customizationManager.Storage.EnsureInitScriptExistsAsync().ContinueWith(async t =>
                 {
                     if (activeHost?.CodeStudioViewModel != null)
@@ -180,32 +180,40 @@ public class CSharpEditorPlugin : IFryPlugin
                         });
                     }
                 });
-            }
+            })
         });
 
         var statusReg = ctx.RegisterStatusBarWidget(new StatusBarWidgetDescriptor
         {
-            WidgetId = "frypdf.status.csharpeditor",
-            Alignment = StatusBarAlignment.Right,
+            Id = "frypdf.status.csharpeditor",
+            AlignRight = true,
             Order = 14,
-            ToolTip = "FrySharp & Automation Hub",
-            Factory = _ => new Button
+            Tooltip = "FrySharp & Automation Hub",
+            CustomControlFactory = () => new Button
             {
                 Content = "{ } FrySharp",
-                Classes = { "m3-tonal-btn" }
+                Classes = { "m3-tonal-btn" },
+                Command = new RelayCommand(NavigateToStudio)
             }
         });
 
-        var ribbonActionReg = ctx.RegisterRibbonAction(new RibbonActionDescriptor
+        var ribbonActionReg = ctx.RegisterRibbonTab(new RibbonTabDescriptor
         {
-            Id = "frypdf.ribbon.action.csharpeditor",
-            TabId = "plugins",
-            GroupId = "tools",
-            Label = "FrySharp",
-            Tooltip = "Open full-featured C# development studio and script automation workspace",
-            IconKind = "CodeBraces",
-            Order = 30,
-            Action = NavigateToStudio
+            Id = "plugins",
+            Header = "Plugins",
+            Actions = new List<RibbonActionDescriptor>
+            {
+                new RibbonActionDescriptor
+                {
+                    Id = "frypdf.ribbon.action.csharpeditor",
+                    GroupId = "tools",
+                    Label = "FrySharp",
+                    Tooltip = "Open full-featured C# development studio and script automation workspace",
+                    IconKind = "CodeBraces",
+                    Order = 30,
+                    Command = new RelayCommand(NavigateToStudio)
+                }
+            }
         });
 
         var shortcuts = new List<IDisposable>
@@ -213,27 +221,17 @@ public class CSharpEditorPlugin : IFryPlugin
             ctx.RegisterShortcut(new ShortcutDescriptor
             {
                 Id = "csharp.studio.launch",
-                Title = "Launch FrySharp",
                 Description = "Open in-app C# development studio and script automation workspace.",
-                Category = "Editor",
-                DefaultGesture = "Ctrl+Alt+E",
-                MacGesture = "Cmd+Alt+E",
-                Scope = ShortcutScope.Global,
-                Action = NavigateToStudio
+                KeyGesture = OperatingSystem.IsMacOS() ? "Cmd+Alt+E" : "Ctrl+Alt+E",
+                Command = new RelayCommand(NavigateToStudio)
             }),
 
             ctx.RegisterShortcut(new ShortcutDescriptor
             {
                 Id = "csharp.editor.run",
-                Title = "Run Script / Debug",
                 Description = "Execute active C# script or debug at current breakpoint.",
-                Category = "Editor",
-                DefaultGesture = "F5",
-                MacGesture = "F5",
-                Scope = ShortcutScope.Context,
-                ContextId = "CSharpStudio",
-                CanExecute = _ => activeHost?.CurrentPage is CSharpCodeStudioViewModel,
-                Action = _ =>
+                KeyGesture = "F5",
+                Command = new RelayCommand(() =>
                 {
                     if (activeHost?.CurrentPage is not CSharpCodeStudioViewModel codeVm) return;
                     if (codeVm.IsPaused)
@@ -244,21 +242,15 @@ public class CSharpEditorPlugin : IFryPlugin
                     {
                         codeVm.DebugCodeCommand.Execute(null);
                     }
-                }
+                })
             }),
 
             ctx.RegisterShortcut(new ShortcutDescriptor
             {
                 Id = "csharp.editor.stop",
-                Title = "Stop Script Execution",
                 Description = "Halt currently running C# background script, or interrupt the active notebook cell.",
-                Category = "Editor",
-                DefaultGesture = "Shift+F5",
-                MacGesture = "Shift+F5",
-                Scope = ShortcutScope.Context,
-                ContextId = "CSharpStudio",
-                CanExecute = _ => activeHost?.CurrentPage is CSharpCodeStudioViewModel or CSharpNotebookStudioViewModel,
-                Action = _ =>
+                KeyGesture = "Shift+F5",
+                Command = new RelayCommand(() =>
                 {
                     switch (activeHost?.CurrentPage)
                     {
@@ -272,21 +264,15 @@ public class CSharpEditorPlugin : IFryPlugin
                             nbVm.InterruptExecutionCommand.Execute(null);
                             break;
                     }
-                }
+                })
             }),
 
             ctx.RegisterShortcut(new ShortcutDescriptor
             {
                 Id = "csharp.editor.save",
-                Title = "Save Script / Notebook",
                 Description = "Save active C# script or notebook to local workspace storage.",
-                Category = "Editor",
-                DefaultGesture = "Ctrl+S",
-                MacGesture = "Cmd+S",
-                Scope = ShortcutScope.Context,
-                ContextId = "CSharpStudio",
-                CanExecute = _ => activeHost?.CurrentPage is CSharpCodeStudioViewModel or CSharpNotebookStudioViewModel,
-                Action = _ =>
+                KeyGesture = OperatingSystem.IsMacOS() ? "Cmd+S" : "Ctrl+S",
+                Command = new RelayCommand(() =>
                 {
                     switch (activeHost?.CurrentPage)
                     {
@@ -297,20 +283,15 @@ public class CSharpEditorPlugin : IFryPlugin
                             nbVm.SaveCommand.Execute(null);
                             break;
                     }
-                }
+                })
             }),
 
             ctx.RegisterShortcut(new ShortcutDescriptor
             {
                 Id = "csharp.editor.new",
-                Title = "New C# Script / Notebook",
                 Description = "Create a new notebook when Notebook Studio is active, otherwise a new automation script.",
-                Category = "Editor",
-                DefaultGesture = "Ctrl+N",
-                MacGesture = "Cmd+N",
-                Scope = ShortcutScope.Context,
-                ContextId = "CSharpStudio",
-                Action = sp =>
+                KeyGesture = OperatingSystem.IsMacOS() ? "Cmd+N" : "Ctrl+N",
+                Command = new RelayCommand(() =>
                 {
                     if (activeHost?.CurrentPage is CSharpNotebookStudioViewModel nbVm)
                     {
@@ -320,213 +301,149 @@ public class CSharpEditorPlugin : IFryPlugin
                     {
                         var newScriptTask = activeHost?.ManagerViewModel.CreateNewScriptAsync(null);
                     }
-                }
+                })
             }),
 
             ctx.RegisterShortcut(new ShortcutDescriptor
             {
                 Id = "csharp.editor.show_references",
-                Title = "Open NuGet Package Manager",
                 Description = "Switch to References tab and manage NuGet package dependencies.",
-                Category = "Editor",
-                DefaultGesture = "Ctrl+Shift+P",
-                MacGesture = "Cmd+Shift+P",
-                Scope = ShortcutScope.Context,
-                ContextId = "CSharpStudio",
-                CanExecute = _ => activeHost?.CurrentPage is CSharpCodeStudioViewModel,
-                Action = _ =>
+                KeyGesture = OperatingSystem.IsMacOS() ? "Cmd+Shift+P" : "Ctrl+Shift+P",
+                Command = new RelayCommand(() =>
                 {
                     if (activeHost?.CurrentPage is CSharpCodeStudioViewModel codeVm)
                     {
                         codeVm.SelectedLeftTabIndex = codeVm.SelectedLeftTabIndex == 1 ? 0 : 1;
                     }
-                }
+                })
             }),
 
             ctx.RegisterShortcut(new ShortcutDescriptor
             {
                 Id = "csharp.notebook.run_cell",
-                Title = "Run Cell and Select Next",
                 Description = "Execute current notebook code cell and advance cursor to next cell.",
-                Category = "Notebook",
-                DefaultGesture = "Shift+Enter",
-                MacGesture = "Shift+Enter",
-                Scope = ShortcutScope.Context,
-                ContextId = "CSharpStudio",
-                CanExecute = _ => activeHost?.CurrentPage is CSharpNotebookStudioViewModel,
-                Action = _ =>
+                KeyGesture = "Shift+Enter",
+                Command = new RelayCommand(() =>
                 {
                     if (activeHost?.CurrentPage is CSharpNotebookStudioViewModel nbVm)
                     {
                         nbVm.RunCellAndSelectNextCommand.Execute(null);
                     }
-                }
+                })
             }),
 
             ctx.RegisterShortcut(new ShortcutDescriptor
             {
                 Id = "csharp.notebook.run_cell_stay",
-                Title = "Run Cell In Place",
                 Description = "Execute current notebook cell without moving cursor focus.",
-                Category = "Notebook",
-                DefaultGesture = "Ctrl+Enter",
-                MacGesture = "Cmd+Enter",
-                Scope = ShortcutScope.Context,
-                ContextId = "CSharpStudio",
-                CanExecute = _ => activeHost?.CurrentPage is CSharpNotebookStudioViewModel { ActiveCell: not null },
-                Action = _ =>
+                KeyGesture = OperatingSystem.IsMacOS() ? "Cmd+Enter" : "Ctrl+Enter",
+                Command = new RelayCommand(() =>
                 {
                     if (activeHost?.CurrentPage is CSharpNotebookStudioViewModel { ActiveCell: not null } nbVm)
                     {
                         nbVm.RunSingleCellCommand.Execute(nbVm.ActiveCell);
                     }
-                }
+                })
             }),
 
             ctx.RegisterShortcut(new ShortcutDescriptor
             {
                 Id = "csharp.notebook.run_all",
-                Title = "Run All Cells",
                 Description = "Restart notebook kernel and execute all cells in sequence.",
-                Category = "Notebook",
-                DefaultGesture = "Ctrl+Shift+Enter",
-                MacGesture = "Cmd+Shift+Enter",
-                Scope = ShortcutScope.Context,
-                ContextId = "CSharpStudio",
-                CanExecute = _ => activeHost?.CurrentPage is CSharpNotebookStudioViewModel,
-                Action = _ =>
+                KeyGesture = OperatingSystem.IsMacOS() ? "Cmd+Shift+Enter" : "Ctrl+Shift+Enter",
+                Command = new RelayCommand(() =>
                 {
                     if (activeHost?.CurrentPage is CSharpNotebookStudioViewModel nbVm)
                     {
                         nbVm.RunAllCellsCommand.Execute(null);
                     }
-                }
+                })
             }),
 
             ctx.RegisterShortcut(new ShortcutDescriptor
             {
                 Id = "csharp.notebook.insert_cell_below",
-                Title = "Insert Cell Below",
                 Description = "Insert a new C# code cell below current cell.",
-                Category = "Notebook",
-                DefaultGesture = "Ctrl+Shift+B",
-                MacGesture = "Cmd+Shift+B",
-                Scope = ShortcutScope.Context,
-                ContextId = "CSharpStudio",
-                CanExecute = _ => activeHost?.CurrentPage is CSharpNotebookStudioViewModel,
-                Action = _ =>
+                KeyGesture = OperatingSystem.IsMacOS() ? "Cmd+Shift+B" : "Ctrl+Shift+B",
+                Command = new RelayCommand(() =>
                 {
                     if (activeHost?.CurrentPage is CSharpNotebookStudioViewModel nbVm)
                     {
                         nbVm.AddCodeCellCommand.Execute(nbVm.ActiveCell);
                     }
-                }
+                })
             }),
 
             ctx.RegisterShortcut(new ShortcutDescriptor
             {
                 Id = "csharp.notebook.insert_cell_above",
-                Title = "Insert Cell Above",
                 Description = "Insert a new C# code cell above current cell.",
-                Category = "Notebook",
-                DefaultGesture = "Ctrl+Shift+A",
-                MacGesture = "Cmd+Shift+A",
-                Scope = ShortcutScope.Context,
-                ContextId = "CSharpStudio",
-                CanExecute = _ => activeHost?.CurrentPage is CSharpNotebookStudioViewModel,
-                Action = _ =>
+                KeyGesture = OperatingSystem.IsMacOS() ? "Cmd+Shift+A" : "Ctrl+Shift+A",
+                Command = new RelayCommand(() =>
                 {
                     if (activeHost?.CurrentPage is CSharpNotebookStudioViewModel nbVm)
                     {
                         nbVm.AddCellAboveCommand.Execute(null);
                     }
-                }
+                })
             }),
 
             ctx.RegisterShortcut(new ShortcutDescriptor
             {
                 Id = "csharp.notebook.delete_cell",
-                Title = "Delete Active Cell",
                 Description = "Remove the selected notebook cell from document.",
-                Category = "Notebook",
-                DefaultGesture = "Ctrl+Shift+D",
-                MacGesture = "Cmd+Shift+D",
-                Scope = ShortcutScope.Context,
-                ContextId = "CSharpStudio",
-                CanExecute = _ => activeHost?.CurrentPage is CSharpNotebookStudioViewModel,
-                Action = _ =>
+                KeyGesture = OperatingSystem.IsMacOS() ? "Cmd+Shift+D" : "Ctrl+Shift+D",
+                Command = new RelayCommand(() =>
                 {
                     if (activeHost?.CurrentPage is CSharpNotebookStudioViewModel nbVm)
                     {
                         nbVm.DeleteActiveCellCommand.Execute(null);
                     }
-                }
+                })
             }),
 
             ctx.RegisterShortcut(new ShortcutDescriptor
             {
                 Id = "csharp.editor.zoom_in",
-                Title = "Zoom In",
                 Description = "Increase code canvas and terminal font size.",
-                Category = "Editor",
-                DefaultGesture = "Ctrl+=",
-                MacGesture = "Cmd+=",
-                Scope = ShortcutScope.Context,
-                ContextId = "CSharpStudio",
-                CanExecute = _ => activeHost?.CurrentPage is CSharpCodeStudioViewModel or CSharpNotebookStudioViewModel,
-                Action = _ =>
+                KeyGesture = OperatingSystem.IsMacOS() ? "Cmd+=" : "Ctrl+=",
+                Command = new RelayCommand(() =>
                 {
                     if (activeHost?.CurrentPage is CSharpCodeStudioViewModel codeVm) codeVm.ZoomInCommand.Execute(null);
                     else if (activeHost?.CurrentPage is CSharpNotebookStudioViewModel nbVm) nbVm.ZoomInCommand.Execute(null);
-                }
+                })
             }),
 
             ctx.RegisterShortcut(new ShortcutDescriptor
             {
                 Id = "csharp.editor.zoom_out",
-                Title = "Zoom Out",
                 Description = "Decrease code canvas and terminal font size.",
-                Category = "Editor",
-                DefaultGesture = "Ctrl+-",
-                MacGesture = "Cmd+-",
-                Scope = ShortcutScope.Context,
-                ContextId = "CSharpStudio",
-                CanExecute = _ => activeHost?.CurrentPage is CSharpCodeStudioViewModel or CSharpNotebookStudioViewModel,
-                Action = _ =>
+                KeyGesture = OperatingSystem.IsMacOS() ? "Cmd+-" : "Ctrl+-",
+                Command = new RelayCommand(() =>
                 {
                     if (activeHost?.CurrentPage is CSharpCodeStudioViewModel codeVm) codeVm.ZoomOutCommand.Execute(null);
                     else if (activeHost?.CurrentPage is CSharpNotebookStudioViewModel nbVm) nbVm.ZoomOutCommand.Execute(null);
-                }
+                })
             }),
 
             ctx.RegisterShortcut(new ShortcutDescriptor
             {
                 Id = "csharp.editor.zoom_reset",
-                Title = "Reset Zoom",
                 Description = "Reset typography to default 100% (13px).",
-                Category = "Editor",
-                DefaultGesture = "Ctrl+0",
-                MacGesture = "Cmd+0",
-                Scope = ShortcutScope.Context,
-                ContextId = "CSharpStudio",
-                CanExecute = _ => activeHost?.CurrentPage is CSharpCodeStudioViewModel or CSharpNotebookStudioViewModel,
-                Action = _ =>
+                KeyGesture = OperatingSystem.IsMacOS() ? "Cmd+0" : "Ctrl+0",
+                Command = new RelayCommand(() =>
                 {
                     if (activeHost?.CurrentPage is CSharpCodeStudioViewModel codeVm) codeVm.ResetZoomCommand.Execute(null);
                     else if (activeHost?.CurrentPage is CSharpNotebookStudioViewModel nbVm) nbVm.ResetZoomCommand.Execute(null);
-                }
+                })
             }),
 
             ctx.RegisterShortcut(new ShortcutDescriptor
             {
                 Id = "csharp.studio.reload_customizations",
-                Title = "Reload Customizations & Themes",
                 Description = "Recompile and apply in-app customization scripts and theme tokens.",
-                Category = "Editor",
-                DefaultGesture = "Ctrl+Shift+R",
-                MacGesture = "Cmd+Shift+R",
-                Scope = ShortcutScope.Global,
-                Action = sp => { _ = customizationManager.ReloadAsync(); }
+                KeyGesture = OperatingSystem.IsMacOS() ? "Cmd+Shift+R" : "Ctrl+Shift+R",
+                Command = new RelayCommand(() => { _ = customizationManager.ReloadAsync(); })
             })
         };
 

@@ -36,7 +36,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="FryPdf.PluginSdk" Version="0.1.0" PrivateAssets="all" />
+    <PackageReference Include="FryWorld.Sdk" Version="0.0.2" PrivateAssets="all" />
     <PackageReference Include="Markdig" Version="1.4.0" />
     <PackageReference Include="Microsoft.Extensions.AI" Version="10.10.0" />
     <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="10.10.1" />
@@ -78,22 +78,11 @@
     <MakeDir Directories="$(PluginStagingDir)" />
 
     <ItemGroup>
-      <PluginFiles Include="$(TargetDir)CSharpEditorPlugin.dll" />
+      <PluginFiles Include="$(TargetDir)*.dll"
+                   Exclude="$(TargetDir)Avalonia.dll;$(TargetDir)Avalonia.Base.dll;$(TargetDir)Avalonia.Controls.dll;$(TargetDir)Avalonia.Markup.dll;$(TargetDir)Avalonia.Markup.Xaml.dll;$(TargetDir)Avalonia.Metal.dll;$(TargetDir)Avalonia.MicroCom.dll;$(TargetDir)Avalonia.OpenGL.dll;$(TargetDir)Avalonia.Remote.Protocol.dll;$(TargetDir)Avalonia.Skia.dll;$(TargetDir)Avalonia.Vulkan.dll;$(TargetDir)Avalonia.DesignerSupport.dll;$(TargetDir)Avalonia.Dialogs.dll;$(TargetDir)CommunityToolkit.Mvvm.dll;$(TargetDir)Material.Icons.dll;$(TargetDir)Material.Icons.Avalonia.dll;$(TargetDir)FryWorld.Sdk.dll;$(TargetDir)FryPdf.PluginSdk.dll;$(TargetDir)MicroCom.Runtime.dll" />
       <PluginFiles Include="$(TargetDir)CSharpEditorPlugin.xml" Condition="Exists('$(TargetDir)CSharpEditorPlugin.xml')" />
       <PluginFiles Include="$(TargetDir)CSharpEditorPlugin.deps.json" Condition="Exists('$(TargetDir)CSharpEditorPlugin.deps.json')" />
-      <PluginFiles Include="$(TargetDir)FrySharp.Core.dll" />
       <PluginFiles Include="$(TargetDir)FrySharp.Core.xml" Condition="Exists('$(TargetDir)FrySharp.Core.xml')" />
-      <PluginFiles Include="$(TargetDir)AvaloniaEdit.dll" Condition="Exists('$(TargetDir)AvaloniaEdit.dll')" />
-      <PluginFiles Include="$(TargetDir)AvaloniaEdit.TextMate.dll" Condition="Exists('$(TargetDir)AvaloniaEdit.TextMate.dll')" />
-      <PluginFiles Include="$(TargetDir)TextMateSharp.dll" Condition="Exists('$(TargetDir)TextMateSharp.dll')" />
-      <PluginFiles Include="$(TargetDir)TextMateSharp.Grammars.dll" Condition="Exists('$(TargetDir)TextMateSharp.Grammars.dll')" />
-      <PluginFiles Include="$(TargetDir)Onigwrap.dll" Condition="Exists('$(TargetDir)Onigwrap.dll')" />
-      <PluginFiles Include="$(TargetDir)Avalonia.Controls.WebView.dll" Condition="Exists('$(TargetDir)Avalonia.Controls.WebView.dll')" />
-      <PluginFiles Include="$(TargetDir)Microsoft.CodeAnalysis.dll" Condition="Exists('$(TargetDir)Microsoft.CodeAnalysis.dll')" />
-      <PluginFiles Include="$(TargetDir)Microsoft.CodeAnalysis.CSharp.dll" Condition="Exists('$(TargetDir)Microsoft.CodeAnalysis.CSharp.dll')" />
-      <PluginFiles Include="$(TargetDir)Microsoft.CodeAnalysis.Scripting.dll" Condition="Exists('$(TargetDir)Microsoft.CodeAnalysis.Scripting.dll')" />
-      <PluginFiles Include="$(TargetDir)Microsoft.CodeAnalysis.CSharp.Scripting.dll" Condition="Exists('$(TargetDir)Microsoft.CodeAnalysis.CSharp.Scripting.dll')" />
-      <PluginFiles Include="$(TargetDir)Markdig.dll" Condition="Exists('$(TargetDir)Markdig.dll')" />
       <PluginFiles Include="$(ProjectDir)plugin.json" />
     </ItemGroup>
 

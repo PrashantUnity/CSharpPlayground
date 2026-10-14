@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
+using Microsoft.CodeAnalysis.Scripting.Hosting;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Models.Server;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
@@ -22,6 +23,7 @@ public class RoslynServerCompilationService
     private record CachedCompilation(string Source, ScriptRunner<object?> Runner);
     private readonly ConcurrentDictionary<string, CachedCompilation> _compiledDelegates = new();
     private readonly ScriptOptions _scriptOptions;
+    private readonly InteractiveAssemblyLoader _assemblyLoader;
 
     public RoslynServerCompilationService()
     {
@@ -29,9 +31,18 @@ public class RoslynServerCompilationService
 
         _scriptOptions = ScriptOptions.Default
             .WithReferences(references)
+            .AddReferences(typeof(FryServerScriptGlobals).Assembly)
             .WithImports(ScriptImports.Namespaces)
             .AddImports("PdfEditorApp.Plugins.CSharpEditor.Services.Server")
             .WithAllowUnsafe(true);
+
+        _assemblyLoader = new InteractiveAssemblyLoader();
+        _assemblyLoader.RegisterDependency(typeof(FryServerScriptGlobals).Assembly);
+        _assemblyLoader.RegisterDependency(typeof(RoslynCompilerService).Assembly);
+        foreach (var asm in ScriptHost.Profile.Assemblies)
+        {
+            _assemblyLoader.RegisterDependency(asm);
+        }
     }
 
     /// <summary>
@@ -50,7 +61,8 @@ public class RoslynServerCompilationService
             var script = CSharpScript.Create<object?>(
                 cell.Source,
                 _scriptOptions,
-                typeof(FryServerScriptGlobals));
+                typeof(FryServerScriptGlobals),
+                assemblyLoader: _assemblyLoader);
 
             var diagnostics = script.Compile(cancellationToken);
             var errors = diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).ToList();

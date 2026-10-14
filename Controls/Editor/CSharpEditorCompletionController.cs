@@ -230,6 +230,15 @@ public class CSharpEditorCompletionController : IDisposable
                         MaxWidth = 480
                     };
 
+                    try
+                    {
+                        _completionWindow.Styles.Add(new Avalonia.Markup.Xaml.Styling.StyleInclude(new Uri("avares://CSharpEditorPlugin/"))
+                        {
+                            Source = new Uri("avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml")
+                        });
+                    }
+                    catch { }
+
                     bool isDark = ThemeService.IsDark;
                     _completionWindow.CompletionList.Background = new SolidColorBrush(Color.Parse(isDark ? "#14171F" : "#FFFFFF"));
                     _completionWindow.CompletionList.Foreground = new SolidColorBrush(Color.Parse(isDark ? "#D4D4D4" : "#1F2328"));

@@ -1,7 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
-using PdfEditorApp.Core.Plugins.Settings;
+using FryWorld.Sdk.Services;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Models.Server;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Activities;
@@ -29,7 +29,7 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IDisposable
     private const int DefaultExecutionTimeoutSeconds = 0;
 
     private readonly IScriptStorageService _storageService;
-    private readonly IPluginSettingsStore? _settingsStore;
+    private readonly ISettingsManager? _settingsStore;
 
     // One progress store for the whole studio: the Blind 75 page and Code Studio (which marks a problem solved when
     // every case passes) must see each other's changes, and two stores on one file would overwrite each other.
@@ -107,7 +107,7 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IDisposable
     /// <param name="storageService">Where scripts and notebooks live; the user's library when not given.</param>
     public CSharpStudioHostViewModel(
         IServiceProvider? serviceProvider = null,
-        IPluginSettingsStore? settingsStore = null,
+        ISettingsManager? settingsStore = null,
         IBlindProgressService? blindProgress = null,
         StudioLanguageServices? languages = null,
         IScriptStorageService? storageService = null,
@@ -138,7 +138,7 @@ public partial class CSharpStudioHostViewModel : ObservableObject, IDisposable
         // IFryPluginContext.TryGetService inside CSharpEditorPlugin.ApplyAsync's ViewFactory), but
         // fall back to resolving it off the plain IServiceProvider — the standalone Runner already
         // supplies one this way via StandaloneServiceProvider/StandaloneSettingsStore.
-        _settingsStore = settingsStore ?? serviceProvider?.GetService(typeof(IPluginSettingsStore)) as IPluginSettingsStore;
+        _settingsStore = settingsStore ?? serviceProvider?.GetService(typeof(ISettingsManager)) as ISettingsManager;
 
         // ── Initialize Documentation & Learning Center page ──
         DocsViewModel = new Docs.CSharpDocsViewModel(

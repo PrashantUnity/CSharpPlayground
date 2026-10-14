@@ -1,5 +1,5 @@
-using PdfEditorApp.Core.Plugins;
-using PdfEditorApp.Core.Plugins.Descriptors;
+using FryWorld.Sdk.Descriptors;
+using FryWorld.Sdk.Plugins;
 using Xunit;
 
 namespace CSharpEditorPlugin.Tests;
@@ -31,27 +31,27 @@ public class CSharpEditorShortcutRegistrationTests
 
         var shortcuts = scopedCtx.GetRegisteredShortcuts().ToList();
 
-        Assert.Contains(shortcuts, s => s.Id == "csharp.studio.launch" && s.Scope == ShortcutScope.Global);
-        Assert.Contains(shortcuts, s => s.Id == "csharp.editor.run" && s.DefaultGesture == "F5");
-        Assert.Contains(shortcuts, s => s.Id == "csharp.editor.stop" && s.DefaultGesture == "Shift+F5");
-        Assert.Contains(shortcuts, s => s.Id == "csharp.editor.save" && s.DefaultGesture == "Ctrl+S");
-        Assert.Contains(shortcuts, s => s.Id == "csharp.editor.new" && s.DefaultGesture == "Ctrl+N");
-        Assert.Contains(shortcuts, s => s.Id == "csharp.editor.show_references" && s.DefaultGesture == "Ctrl+Shift+P");
-        Assert.Contains(shortcuts, s => s.Id == "csharp.notebook.run_cell" && s.DefaultGesture == "Shift+Enter");
-        Assert.Contains(shortcuts, s => s.Id == "csharp.notebook.run_cell_stay" && s.DefaultGesture == "Ctrl+Enter");
-        Assert.Contains(shortcuts, s => s.Id == "csharp.notebook.run_all" && s.DefaultGesture == "Ctrl+Shift+Enter");
-        Assert.Contains(shortcuts, s => s.Id == "csharp.notebook.insert_cell_below" && s.DefaultGesture == "Ctrl+Shift+B");
-        Assert.Contains(shortcuts, s => s.Id == "csharp.notebook.insert_cell_above" && s.DefaultGesture == "Ctrl+Shift+A");
-        Assert.Contains(shortcuts, s => s.Id == "csharp.notebook.delete_cell" && s.DefaultGesture == "Ctrl+Shift+D");
-        Assert.Contains(shortcuts, s => s.Id == "csharp.editor.zoom_in" && s.DefaultGesture == "Ctrl+=" && s.MacGesture == "Cmd+=");
-        Assert.Contains(shortcuts, s => s.Id == "csharp.editor.zoom_out" && s.DefaultGesture == "Ctrl+-" && s.MacGesture == "Cmd+-");
-        Assert.Contains(shortcuts, s => s.Id == "csharp.editor.zoom_reset" && s.DefaultGesture == "Ctrl+0" && s.MacGesture == "Cmd+0");
+        Assert.Contains(shortcuts, s => s.Id == "csharp.studio.launch");
+        Assert.Contains(shortcuts, s => s.Id == "csharp.editor.run" && s.KeyGesture == "F5");
+        Assert.Contains(shortcuts, s => s.Id == "csharp.editor.stop" && s.KeyGesture == "Shift+F5");
+        Assert.Contains(shortcuts, s => s.Id == "csharp.editor.save" && s.KeyGesture == (OperatingSystem.IsMacOS() ? "Cmd+S" : "Ctrl+S"));
+        Assert.Contains(shortcuts, s => s.Id == "csharp.editor.new" && s.KeyGesture == (OperatingSystem.IsMacOS() ? "Cmd+N" : "Ctrl+N"));
+        Assert.Contains(shortcuts, s => s.Id == "csharp.editor.show_references" && s.KeyGesture == (OperatingSystem.IsMacOS() ? "Cmd+Shift+P" : "Ctrl+Shift+P"));
+        Assert.Contains(shortcuts, s => s.Id == "csharp.notebook.run_cell" && s.KeyGesture == "Shift+Enter");
+        Assert.Contains(shortcuts, s => s.Id == "csharp.notebook.run_cell_stay" && s.KeyGesture == (OperatingSystem.IsMacOS() ? "Cmd+Enter" : "Ctrl+Enter"));
+        Assert.Contains(shortcuts, s => s.Id == "csharp.notebook.run_all" && s.KeyGesture == (OperatingSystem.IsMacOS() ? "Cmd+Shift+Enter" : "Ctrl+Shift+Enter"));
+        Assert.Contains(shortcuts, s => s.Id == "csharp.notebook.insert_cell_below" && s.KeyGesture == (OperatingSystem.IsMacOS() ? "Cmd+Shift+B" : "Ctrl+Shift+B"));
+        Assert.Contains(shortcuts, s => s.Id == "csharp.notebook.insert_cell_above" && s.KeyGesture == (OperatingSystem.IsMacOS() ? "Cmd+Shift+A" : "Ctrl+Shift+A"));
+        Assert.Contains(shortcuts, s => s.Id == "csharp.notebook.delete_cell" && s.KeyGesture == (OperatingSystem.IsMacOS() ? "Cmd+Shift+D" : "Ctrl+Shift+D"));
+        Assert.Contains(shortcuts, s => s.Id == "csharp.editor.zoom_in" && s.KeyGesture == (OperatingSystem.IsMacOS() ? "Cmd+=" : "Ctrl+="));
+        Assert.Contains(shortcuts, s => s.Id == "csharp.editor.zoom_out" && s.KeyGesture == (OperatingSystem.IsMacOS() ? "Cmd+-" : "Ctrl+-"));
+        Assert.Contains(shortcuts, s => s.Id == "csharp.editor.zoom_reset" && s.KeyGesture == (OperatingSystem.IsMacOS() ? "Cmd+0" : "Ctrl+0"));
 
         var saveShortcut = shortcuts.First(s => s.Id == "csharp.editor.save");
-        Assert.Equal("Cmd+S", saveShortcut.MacGesture);
+        Assert.Equal(OperatingSystem.IsMacOS() ? "Cmd+S" : "Ctrl+S", saveShortcut.KeyGesture);
 
         var launchShortcut = shortcuts.First(s => s.Id == "csharp.studio.launch");
-        Assert.Equal("Cmd+Alt+E", launchShortcut.MacGesture);
+        Assert.Equal(OperatingSystem.IsMacOS() ? "Cmd+Alt+E" : "Ctrl+Alt+E", launchShortcut.KeyGesture);
     }
 
     [Fact]

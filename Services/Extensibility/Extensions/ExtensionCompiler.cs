@@ -64,6 +64,23 @@ public class ExtensionCompiler
             }
         }
 
+        // Also include assemblies from the plugin's own directory (e.g. AvaloniaEdit, Microsoft.CodeAnalysis when hosted in an ALC)
+        var pluginDir = Path.GetDirectoryName(typeof(ExtensionCompiler).Assembly.Location);
+        if (!string.IsNullOrEmpty(pluginDir) && Directory.Exists(pluginDir) && !string.Equals(pluginDir, hostDir, StringComparison.OrdinalIgnoreCase))
+        {
+            foreach (var dll in Directory.GetFiles(pluginDir, "*.dll"))
+            {
+                try
+                {
+                    if (existingPaths.Add(dll))
+                    {
+                        allReferences.Add(MetadataReference.CreateFromFile(dll));
+                    }
+                }
+                catch { }
+            }
+        }
+
         var libDir = Path.Combine(extensionDirectory, "lib");
         if (Directory.Exists(libDir))
         {
