@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FrySharp renderer preview</title>
+<style>
+  /* the colours VS Code would give an output, for Dark+ and Light+ (a subset: what the renderer reads) */
+  body[data-vscode-theme-kind="vscode-dark"] {
+    --vscode-editor-background: #1e1e1e; --vscode-foreground: #cccccc; --vscode-sideBar-background: #252526;
+    --vscode-widget-border: #454545; --vscode-badge-background: #4d4d4d; --vscode-badge-foreground: #ffffff;
+    --vscode-input-background: #3c3c3c; --vscode-input-foreground: #cccccc; --vscode-input-border: #3c3c3c;
+    --vscode-list-hoverBackground: #2a2d2e; --vscode-descriptionForeground: #9d9d9d; --vscode-focusBorder: #007fd4;
+    --vscode-textLink-foreground: #3794ff; --vscode-button-secondaryBackground: #3a3d41; --vscode-button-secondaryForeground: #ffffff;
+    --vscode-button-secondaryHoverBackground: #45494e; --vscode-errorForeground: #f48771;
+    --vscode-debugTokenExpression-string: #ce9178; --vscode-debugTokenExpression-number: #b5cea8; --vscode-debugTokenExpression-boolean: #569cd6;
+    --vscode-debugTokenExpression-name: #c586c0; --vscode-symbolIcon-classForeground: #ee9d28; --vscode-notebook-cellEditorBackground: #252526;
+  }
+  body[data-vscode-theme-kind="vscode-light"] {
+    --vscode-editor-background: #ffffff; --vscode-foreground: #3b3b3b; --vscode-sideBar-background: #f3f3f3;
+    --vscode-widget-border: #c8c8c8; --vscode-badge-background: #c4c4c4; --vscode-badge-foreground: #333333;
+    --vscode-input-background: #ffffff; --vscode-input-foreground: #3b3b3b; --vscode-input-border: #cecece;
+    --vscode-list-hoverBackground: #e8e8e8; --vscode-descriptionForeground: #717171; --vscode-focusBorder: #005fb8;
+    --vscode-textLink-foreground: #006ab1; --vscode-button-secondaryBackground: #e5e5e5; --vscode-button-secondaryForeground: #3b3b3b;
+    --vscode-button-secondaryHoverBackground: #cccccc; --vscode-errorForeground: #a1260d;
+    --vscode-debugTokenExpression-string: #a31515; --vscode-debugTokenExpression-number: #098658; --vscode-debugTokenExpression-boolean: #0000ff;
+    --vscode-debugTokenExpression-name: #9b46b0; --vscode-symbolIcon-classForeground: #d67e00; --vscode-notebook-cellEditorBackground: #f8f8f8;
+  }
+  body { margin: 0; padding: 12px 20px 40px; font-family: -apple-system, 'Segoe UI', sans-serif; font-size: 13px; background: var(--vscode-editor-background); color: var(--vscode-foreground); }
+  h2 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--vscode-descriptionForeground); margin: 22px 0 4px; }
+  .bar { position: sticky; top: 0; padding: 6px 0; background: var(--vscode-editor-background); z-index: 5; }
+  .bar button { font: inherit; padding: 3px 10px; margin-right: 6px; }
+  .sample { max-width: 960px; }
+</style>
+</head>
+<body data-vscode-theme-kind="vscode-dark">
+<div class="bar">
+  <button id="dark">Dark+</button><button id="light">Light+</button>
+  <span id="status"></span>
+</div>
+<div id="samples"></div>
+<script type="module">
+  import { activate } from '../dist/renderer.js';
+
+  const messages = [];
+  const renderer = activate({ postMessage: (m) => messages.push(m) });
+  const container = document.getElementById('samples');
+
+  // The mime VS Code draws: of the types the renderer claims, the structured ones first (they are not in VS Code's default order), then HTML.
+  const pick = (data) => ['application/vnd.fry.table+json', 'application/vnd.fry.inspector+json', 'text/html'].find((mime) => mime in data);
+
+  async function draw() {
+    container.textContent = '';
+    messages.length = 0;
+    const samples = await (await fetch('./samples.json')).json();
+    for (const sample of samples) {
+      const heading = document.createElement('h2');
+      const mime = pick(sample.data);
+      heading.textContent = `${sample.name}  ·  ${mime ?? Object.keys(sample.data).join(', ')}`;
+      const slot = document.createElement('div');
+      slot.className = 'sample';
+      slot.dataset.sample = sample.name;
+      container.append(heading, slot);
+      if (!mime) { slot.textContent = '(no renderer for this: the host draws it)'; continue; }
+      const value = sample.data[mime];
+      await renderer.renderOutputItem({ id: sample.name, mime, text: () => String(value), json: () => (typeof value === 'string' ? JSON.parse(value) : value) }, slot);
+    }
+
+    // One cell with several kinds of output, drawn as tabs (what a cell that prints text, shows a table and a chart is): the output the extension makes.
+    const byName = (name) => samples.find((sample) => sample.name === name);
+    const packedOf = (sample) => ({ items: Object.entries(sample.data).map(([mime, value]) => ({ mime, text: typeof value === 'string' ? value : JSON.stringify(value) })) });
+    const stdout = (text) => ({ items: [{ mime: 'application/vnd.code.notebook.stdout', text }] });
+    const lines = (n) => Array.from({ length: n }, (_, i) => `row ${i + 1} \u001b[32mok\u001b[0m`).join('\n') + '\n';
+    let printed = 17;
+    const tabsHeading = document.createElement('h2');
+    tabsHeading.textContent = 'A cell with text, a table, a chart and an object  ·  application/vnd.fry.cell-output+json';
+    const tabsSlot = document.createElement('div');
+    tabsSlot.className = 'sample';
+    tabsSlot.dataset.sample = 'tabs';
+    const update = document.createElement('button');
+    update.textContent = 'More text arrives (the chart must not redraw)';
+    update.onclick = async () => { printed += 10; await drawTabs(); };
+    container.append(tabsHeading, update, tabsSlot);
+    async function drawTabs() {
+      const cell = { v: 1, outputs: [stdout('Shape:\n(8, 2)\n\u001b[1;31mwarning:\u001b[0m something \u001b[33mhappened\u001b[0m\n' + lines(printed)), packedOf(byName('Table')), packedOf(byName('Line chart')), packedOf(byName('Object Explorer')), packedOf(byName('Markdown'))] };
+      const mime = 'application/vnd.fry.cell-output+json';
+      await renderer.renderOutputItem({ id: 'tabs', mime, text: () => JSON.stringify(cell), json: () => cell }, tabsSlot);
+    }
+    await drawTabs();
+    document.getElementById('status').textContent = `${messages.filter((m) => m.type === 'rendered').length} rendered, ${messages.filter((m) => m.type === 'error').length} errors`;
+    window.__messages = messages;
+  }
+
+  for (const kind of ['dark', 'light']) {
+    document.getElementById(kind).onclick = () => { document.body.dataset.vscodeThemeKind = `vscode-${kind}`; draw(); };
+  }
+  await draw();
+  window.__ready = true;
+</script>
+</body>
+</html>

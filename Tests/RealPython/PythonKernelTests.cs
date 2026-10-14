@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using CSharpEditorPlugin.Tests.TestSupport;
+using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Display;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
@@ -42,7 +43,7 @@ public class PythonKernelTests : IDisposable
         var services = new StudioLanguageServices(Path.Combine(_baseDir, "services"));
         var python = (PythonLanguage)services.Registry.Get(LanguageIds.Python)!;
         python.PythonToolchain.Select(TestPython.Require().ExecutablePath);
-        var kernel = (ProtocolKernel)python.NotebookKernels.Create(new KernelCreationContext(() => _notebookFolder));
+        var kernel = (ProtocolKernel)python.Engine.NotebookKernels.Create(new KernelCreationContext(() => _notebookFolder));
         _kernels.Add(kernel);
         return kernel;
     }
@@ -75,6 +76,63 @@ public class PythonKernelTests : IDisposable
         Assert.True(first.Result.Success, first.Console);
         Assert.Equal("42\n", second.Console);
         Assert.StartsWith("Python 3.", kernel.DisplayName);
+    }
+
+    [PythonFact]
+    public async Task LastExpression_AnObject_OpensInTheObjectExplorer_LikeACSharpValue()
+    {
+        var kernel = Kernel();
+
+        var run = await Execute(kernel, """
+            class People:
+                def __init__(self):
+                    self.name = "Prashant"
+                    self.numbers = [1, 34, 45, 235, 25]
+                    self.another = self
+
+                @property
+                def shout(self):
+                    return self.name.upper()
+
+            person = People()
+            person
+            """);
+
+        Assert.True(run.Result.Success, run.Console);
+        Assert.DoesNotContain("<__main__", run.Console);
+        var node = Assert.IsType<ObjectInspectorNode>(Assert.Single(run.Rich, r => r.Kind == CellOutputKind.ObjectInspector).InspectorNode);
+        Assert.Equal("People", node.HeaderTitle);
+        Assert.Equal(["name", "numbers", "another", "shout"], node.Properties.Select(p => p.Name));
+        Assert.Equal("Prashant", node.Properties[0].SimpleValueText);
+        Assert.True(node.Properties[0].IsString);
+        Assert.Equal("[ 1, 34, 45, 235, 25 ]", node.Properties[1].SimpleValueText);
+        Assert.True(node.Properties[2].ChildNode!.IsCircularReference);
+        Assert.Equal("PRASHANT", node.Properties[3].SimpleValueText);
+        InspectorChain.AssertFiveLevels(node, "another", ["name", "numbers", "another", "shout"]);
+    }
+
+    [PythonFact]
+    public async Task LastExpression_DictsDataclassesAndListsOfObjects_AreInspected_ScalarsStayText()
+    {
+        var kernel = Kernel();
+
+        var dict = await Execute(kernel, "{'a': 1, 'b': {'c': [1, 2]}}");
+        var many = await Execute(kernel, "from dataclasses import dataclass\n@dataclass\nclass P:\n    x: int\n    y: int\n[P(1, 2), P(3, 4)]");
+        var scalar = await Execute(kernel, "40 + 2");
+        var numbers = await Execute(kernel, "[1, 2, 3]");
+
+        var top = Assert.Single(dict.Rich).InspectorNode!;
+        Assert.Equal(["a", "b"], top.Properties.Select(p => p.Name));
+        Assert.Equal("c", top.Properties[1].ChildNode!.Properties.Single().Name);
+
+        var list = Assert.Single(many.Rich).InspectorNode!;
+        Assert.Equal(["[0]", "[1]"], list.Properties.Select(p => p.Name));
+        Assert.Equal(["x", "y"], list.Properties[1].ChildNode!.Properties.Select(p => p.Name));
+
+        Assert.Empty(scalar.Rich);
+        Assert.Equal("42\n", scalar.Console);
+        Assert.Empty(numbers.Rich);
+        Assert.Equal("[1, 2, 3]\n", numbers.Console);
     }
 
     [PythonFact]

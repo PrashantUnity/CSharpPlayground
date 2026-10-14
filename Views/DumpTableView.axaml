@@ -104,25 +104,25 @@
                         <Button.Flyout>
                             <MenuFlyout Placement="BottomEdgeAlignedRight">
                                 <MenuItem Header="Copy as TSV (Excel / Google Sheets)"
-                                          Command="{Binding CopyTsvCommand}">
+                                          Click="OnCopyTsv">
                                     <MenuItem.Icon>
                                         <materialIcons:MaterialIcon Kind="FileExcelOutline" Width="16" Height="16" />
                                     </MenuItem.Icon>
                                 </MenuItem>
                                 <MenuItem Header="Copy as CSV"
-                                          Command="{Binding CopyCsvCommand}">
+                                          Click="OnCopyCsv">
                                     <MenuItem.Icon>
                                         <materialIcons:MaterialIcon Kind="FileDelimitedOutline" Width="16" Height="16" />
                                     </MenuItem.Icon>
                                 </MenuItem>
                                 <MenuItem Header="Copy as JSON"
-                                          Command="{Binding CopyJsonCommand}">
+                                          Click="OnCopyJson">
                                     <MenuItem.Icon>
                                         <materialIcons:MaterialIcon Kind="CodeJson" Width="16" Height="16" />
                                     </MenuItem.Icon>
                                 </MenuItem>
                                 <MenuItem Header="Copy as Markdown Table"
-                                          Command="{Binding CopyMarkdownCommand}">
+                                          Click="OnCopyMarkdown">
                                     <MenuItem.Icon>
                                         <materialIcons:MaterialIcon Kind="LanguageMarkdown" Width="16" Height="16" />
                                     </MenuItem.Icon>

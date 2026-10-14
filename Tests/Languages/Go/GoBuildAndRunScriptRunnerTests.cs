@@ -12,7 +12,7 @@ public class GoBuildAndRunScriptRunnerTests
     public async Task GeneratesTwoPhaseExecutionPlan()
     {
         var host = new FakeHostEnvironment(FakeOs.MacOS);
-        var runner = new GoBuildAndRunScriptRunner(host);
+        var runner = new GoBuildAndRunScriptRunner(host, Path.Combine(Path.GetTempPath(), "FryPDF_GoRunnerTests"));
 
         var toolchain = new ToolchainInfo
         {
@@ -51,7 +51,7 @@ public class GoBuildAndRunScriptRunnerTests
     public async Task OnWindows_GeneratesExeExtension()
     {
         var host = new FakeHostEnvironment(FakeOs.Windows);
-        var runner = new GoBuildAndRunScriptRunner(host);
+        var runner = new GoBuildAndRunScriptRunner(host, Path.Combine(Path.GetTempPath(), "FryPDF_GoRunnerTests"));
 
         var toolchain = new ToolchainInfo
         {

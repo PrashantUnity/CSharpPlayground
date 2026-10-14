@@ -298,7 +298,7 @@ public partial class DumpTableView
             FontStyle = cell?.IsNull == true ? FontStyle.Italic : FontStyle.Normal,
             VerticalAlignment = VerticalAlignment.Center,
             TextTrimming = TextTrimming.CharacterEllipsis,
-            TextAlignment = cell?.Alignment ?? TextAlignment.Left,
+            TextAlignment = cell?.IsNumeric == true ? TextAlignment.Right : TextAlignment.Left,
             // Right-click reaches the row's cell menu (which has Copy Cell Value) instead of a bare Copy flyout.
             ContextFlyout = null,
         };

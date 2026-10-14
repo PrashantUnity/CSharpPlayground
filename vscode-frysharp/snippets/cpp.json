@@ -1,0 +1,37 @@
+{
+  "FrySharp table": {
+    "prefix": "frytable",
+    "body": ["fry::display::table(${1:rows}, \"${2:Title}\");"],
+    "description": "Show a list of values, pairs or rows as a sortable, filterable table"
+  },
+  "FrySharp line chart": {
+    "prefix": "frylinechart",
+    "body": ["fry::line_chart(${1:values}, \"${2:Title}\");"],
+    "description": "Show numbers as a line chart"
+  },
+  "FrySharp bar chart": {
+    "prefix": "frybarchart",
+    "body": ["fry::bar_chart(${1:values}, \"${2:Title}\");"],
+    "description": "Show numbers as a bar chart"
+  },
+  "FrySharp markdown": {
+    "prefix": "frymarkdown",
+    "body": ["fry::markdown(\"${1:# Heading}\");"],
+    "description": "Show Markdown"
+  },
+  "FrySharp input": {
+    "prefix": "fryinput",
+    "body": ["auto ${1:answer} = fry::input(\"${2:Prompt: }\");  // empty is the end of input"],
+    "description": "Ask the notebook for a line of input (a std::optional<std::string>)"
+  },
+  "FrySharp share a value": {
+    "prefix": "fryshareout",
+    "body": ["fry::share(\"${1:name}\", ${2:value});"],
+    "description": "Offer a value to other languages' cells (#!share --from cpp name)"
+  },
+  "FrySharp share from another language": {
+    "prefix": "fryshare",
+    "body": ["#!share --from ${1|csharp,python,javascript,fsharp,java,rust,go,sql|} ${2:name}"],
+    "description": "Copy a variable of another language's kernel into this cell"
+  }
+}

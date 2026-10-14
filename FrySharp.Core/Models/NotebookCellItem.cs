@@ -1,0 +1,84 @@
+using System;
+using System.Text.Json.Serialization;
+using PdfEditorApp.Plugins.CSharpEditor.Visuals.Output;
+
+namespace PdfEditorApp.Plugins.CSharpEditor.Models;
+
+[JsonConverter(typeof(FlexibleCellTypeConverter))]
+public enum CellType
+{
+    Code = 0,
+    Markdown = 1
+}
+
+public sealed class FlexibleCellTypeConverter : JsonConverter<CellType>
+{
+    public override CellType Read(ref System.Text.Json.Utf8JsonReader reader, Type typeToConvert, System.Text.Json.JsonSerializerOptions options)
+    {
+        if (reader.TokenType == System.Text.Json.JsonTokenType.Number)
+        {
+            return reader.GetInt32() == 1 ? CellType.Markdown : CellType.Code;
+        }
+        if (reader.TokenType == System.Text.Json.JsonTokenType.String)
+        {
+            var str = reader.GetString();
+            return string.Equals(str, "markdown", StringComparison.OrdinalIgnoreCase) || str == "1"
+                ? CellType.Markdown
+                : CellType.Code;
+        }
+        return CellType.Code;
+    }
+
+    public override void Write(System.Text.Json.Utf8JsonWriter writer, CellType value, System.Text.Json.JsonSerializerOptions options)
+    {
+        writer.WriteNumberValue((int)value);
+    }
+}
+
+public class NotebookCellItem
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString("N");
+    public CellType Type { get; set; } = CellType.Code;
+
+    /// <summary>The code cell's language id (e.g. "python"), or null for the notebook's default language.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Language { get; set; }
+    public string Source { get; set; } = string.Empty;
+    public string OutputText { get; set; } = string.Empty;
+    public int? ExecutionCount { get; set; }
+    public bool IsExecuting { get; set; }
+    public string ExecutionTimeText { get; set; } = string.Empty;
+    public bool HasError { get; set; }
+    public bool IsMarkdownPreviewMode { get; set; } = false;
+    public bool IsInputCollapsed { get; set; } = false;
+    public bool IsOutputCollapsed { get; set; } = false;
+    public bool IsOutputScrolled { get; set; } = false;
+
+    // Rich Media Outputs
+    public byte[]? ImageBytes { get; set; }
+    public string? ImageFormat { get; set; }
+    public int? ImageWidth { get; set; }
+    public int? ImageHeight { get; set; }
+    public string? HtmlContent { get; set; }
+
+    /// <summary>For a Markdown output, the Markdown <see cref="HtmlContent"/> was rendered from (saved only when there is one).</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? MarkdownContent { get; set; }
+    public DumpTableSnapshot? TableSnapshot { get; set; }
+    public ObjectInspectorSnapshot? InspectorSnapshot { get; set; }
+
+    /// <summary>The cell's charts, 3D plots and visualizers, each saved as its MIME type and spec (as a Jupyter output).</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<VisualOutputSnapshot>? Visuals { get; set; }
+
+    /// <summary>True if this cell last displayed a live Control (e.g. via Display.Animate/Display.
+    /// Control) — the control itself can't be serialized, so this only records the fact that one was
+    /// there, letting the UI show a "re-run to restore" placeholder instead of silently showing nothing.</summary>
+    public bool HadInteractiveControl { get; set; }
+
+    public bool HasImage => ImageBytes != null && ImageBytes.Length > 0;
+    public bool HasHtml => !string.IsNullOrEmpty(HtmlContent);
+    public bool HasOutput => !string.IsNullOrEmpty(OutputText) || HasImage || HasHtml || TableSnapshot != null || InspectorSnapshot != null || HadInteractiveControl || Visuals is { Count: > 0 };
+    public bool IsCodeCell => Type == CellType.Code;
+    public bool IsMarkdownCell => Type == CellType.Markdown;
+}

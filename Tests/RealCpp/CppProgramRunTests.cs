@@ -42,7 +42,7 @@ public class CppProgramRunTests : IDisposable
         var cpp = TestCpp.Require();
         var services = TestCpp.Services(Path.Combine(_dir, ".studio"));
         var language = (CppLanguage)services.Registry.Get(LanguageIds.Cpp)!;
-        var plan = await language.ScriptRunner.PlanAsync(new ScriptRunContext(path, Path.GetDirectoryName(path)!, cpp));
+        var plan = await language.Engine.ScriptRunner.PlanAsync(new ScriptRunContext(path, Path.GetDirectoryName(path)!, cpp));
         var output = new ConcurrentQueue<string>();
         var session = new ScriptRunExecutor(services.Processes).Start(plan, path, language.RunDiagnostics, output.Enqueue);
         return (session, output);
@@ -165,7 +165,7 @@ public class CppProgramRunTests : IDisposable
         var language = (CppLanguage)services.Registry.Get(LanguageIds.Cpp)!;
 
         var context = new PdfEditorApp.Plugins.CSharpEditor.Services.Kernels.KernelCreationContext(() => _dir);
-        using var kernel = language.NotebookKernels!.Create(context);
+        using var kernel = language.Engine.NotebookKernels.Create(context);
 
         var console = new System.Text.StringBuilder();
         var request = new PdfEditorApp.Plugins.CSharpEditor.Services.Kernels.KernelExecutionRequest

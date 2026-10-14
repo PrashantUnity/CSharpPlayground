@@ -401,10 +401,10 @@ public partial class FryServerStudioViewModel : ObservableObject, IDisposable
             if (string.Equals(id, Document?.Id, StringComparison.OrdinalIgnoreCase)) LoadDocument(CreateDefaultDocument());
         };
 
-        storage.ActiveWorkspaceChanged += () => Dispatcher.UIThread.Post(() => _ = explorer.RefreshExplorer());
+        storage.ActiveWorkspaceChanged += () => Dispatcher.UIThread.Post(() => _ = explorer.RefreshExplorerAsync());
         storage.ExternalChangeDetected += () => Dispatcher.UIThread.Post(() => _ = explorer.RefreshIfStaleAsync());
         explorer.Highlight(Document?.Id); // marked when the listing arrives
-        _ = explorer.RefreshExplorer();
+        _ = explorer.RefreshExplorerAsync();
         return explorer;
     }
 

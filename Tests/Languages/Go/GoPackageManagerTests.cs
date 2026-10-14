@@ -5,7 +5,7 @@ namespace CSharpEditorPlugin.Tests;
 
 public class GoPackageManagerTests
 {
-    private readonly GoPackageManager _manager = new();
+    private readonly GoPackageManager _manager = new(Path.Combine(Path.GetTempPath(), "FryPDF_GoPackageManagerTests"));
 
     [Theory]
     [InlineData("%go get github.com/google/uuid", "github.com/google/uuid")]

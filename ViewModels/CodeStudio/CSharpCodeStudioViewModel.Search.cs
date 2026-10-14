@@ -6,6 +6,7 @@ using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Workspace;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Common;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio;
 

@@ -4,6 +4,7 @@ using Avalonia.Input.Platform;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Activities;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Workspace;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer;
@@ -22,19 +23,22 @@ public sealed partial class StudioWorkspaceExplorer : ObservableObject, IExplore
     private readonly IScriptStorageService _storage;
     private readonly Func<ExplorerItemViewModel, Task> _open;
     private readonly Func<string?, Task<string?>> _createDocument;
+    private readonly ExplorerRefresher _refresh;
     private LazyExplorerTree? _lazy;
-    private long _listedVersion = -1;
     private string? _highlightedId;
 
     /// <param name="storage">The workspace.</param>
     /// <param name="open">Opens a file the user picked (the studio decides where).</param>
     /// <param name="createDocument">Creates the studio's own kind of document in a folder (path from the root, null for the top) and returns its id.</param>
-    public StudioWorkspaceExplorer(IScriptStorageService storage, Func<ExplorerItemViewModel, Task> open, Func<string?, Task<string?>> createDocument)
+    /// <param name="activities">Where a slow listing shows and a failed one is reported.</param>
+    public StudioWorkspaceExplorer(IScriptStorageService storage, Func<ExplorerItemViewModel, Task> open, Func<string?, Task<string?>> createDocument,
+        IActivityService? activities = null)
     {
         _storage = storage;
         _open = open;
         _createDocument = createDocument;
         ExplorerRows = new ExplorerRowList(ExplorerRootItems);
+        _refresh = new ExplorerRefresher(storage, activities ?? NullActivityService.Instance, Show);
     }
 
     public ObservableCollection<ExplorerItemViewModel> ExplorerRootItems { get; } = new();
@@ -66,32 +70,15 @@ public sealed partial class StudioWorkspaceExplorer : ObservableObject, IExplore
 
     // ── Listing ───────────────────────────────────────────────────────────────
 
-    private int _refreshGeneration;
-    private readonly object _treeGate = new();
-
+    /// <summary>Lists the workspace and redraws the tree, whether or not anything changed (the Refresh button).</summary>
     [RelayCommand]
-    public async Task RefreshExplorer()
-    {
-        var generation = Interlocked.Increment(ref _refreshGeneration);
-        try
-        {
-            // Taken before the scan: a change that lands while it runs leaves the tree stale, so the next check reloads.
-            var version = _storage.StructureVersion;
-            var listing = await _storage.LoadExplorerListingAsync();
+    public Task RefreshExplorerAsync() => _refresh.RefreshAsync();
 
-            // A newer refresh is on its way: an older listing must not land after it (or beside it).
-            if (generation != Volatile.Read(ref _refreshGeneration)) return;
-            lock (_treeGate) Show(listing);
-            _listedVersion = version;
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"[CSharpEditorPlugin] Explorer refresh failed: {ex.Message}");
-        }
-    }
+    /// <summary>Backward-compatibility method for tests and callers.</summary>
+    public Task RefreshExplorer() => RefreshExplorerAsync();
 
     /// <summary>Lists the workspace again only when it changed since it was listed (a page coming back, say).</summary>
-    public Task RefreshIfStaleAsync() => _listedVersion == _storage.StructureVersion ? Task.CompletedTask : RefreshExplorer();
+    public Task RefreshIfStaleAsync() => _refresh.RefreshIfStaleAsync();
 
     private void Show(WorkspaceListing listing)
     {
@@ -267,7 +254,7 @@ public sealed partial class StudioWorkspaceExplorer : ObservableObject, IExplore
         var id = await _createDocument(folder?.FullPath);
         if (id == null) return;
 
-        await RefreshExplorer();
+        await RefreshExplorerAsync();
         if (folder != null) await ListedAsync(folder.FullPath);
         var created = Find(ExplorerRootItems, i => string.Equals(i.DocumentId, id, StringComparison.OrdinalIgnoreCase));
         if (created == null) return;
@@ -292,7 +279,7 @@ public sealed partial class StudioWorkspaceExplorer : ObservableObject, IExplore
             return;
         }
 
-        await RefreshExplorer();
+        await RefreshExplorerAsync();
         if (parent != null) await ListedAsync(parent.FullPath);
         var created = Find(ExplorerRootItems, i => string.Equals(i.DocumentId, doc.Id, StringComparison.OrdinalIgnoreCase));
         if (created != null)
@@ -316,7 +303,7 @@ public sealed partial class StudioWorkspaceExplorer : ObservableObject, IExplore
             return;
         }
 
-        await RefreshExplorer();
+        await RefreshExplorerAsync();
         if (parent != null) await ListedAsync(parent.FullPath);
         Find(ExplorerRootItems, i => i.IsDirectory && string.Equals(i.FullPath, path, StringComparison.OrdinalIgnoreCase))?.StartRename();
     }
@@ -383,7 +370,7 @@ public sealed partial class StudioWorkspaceExplorer : ObservableObject, IExplore
         try
         {
             var copy = await _storage.DuplicateFileAsync(item.FullPath);
-            await RefreshExplorer();
+            await RefreshExplorerAsync();
             var parentPath = copy.Contains('/') ? copy[..copy.LastIndexOf('/')] : null;
             if (parentPath != null) await ListedAsync(parentPath);
             if (Find(ExplorerRootItems, i => !i.IsDirectory && string.Equals(i.FullPath, copy, StringComparison.OrdinalIgnoreCase)) is { } created)

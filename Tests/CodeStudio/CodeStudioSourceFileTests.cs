@@ -35,11 +35,16 @@ public class CodeStudioSourceFileTests : IDisposable
         }
     }
 
-    private CSharpCodeStudioViewModel Studio(ScriptDocumentItem script) =>
-        new(script, _storage, new RoslynCompilerService(), new ScriptExecutionEngine(),
+    // A studio lists its folder in the background when it is made: wait for the listing, so the Explorer has its files.
+    private async Task<CSharpCodeStudioViewModel> StudioAsync(ScriptDocumentItem script)
+    {
+        var studio = new CSharpCodeStudioViewModel(script, _storage, new RoslynCompilerService(), new ScriptExecutionEngine(),
             backToHubAction: () => { },
             blindProgress: new LocalBlindProgressService(Path.Combine(_baseDir, "progress")),
             languages: _languages);
+        await studio.RefreshExplorerAsync();
+        return studio;
+    }
 
     private string WriteSource(string relativePath, string text)
     {
@@ -77,7 +82,7 @@ public class CodeStudioSourceFileTests : IDisposable
     public async Task TheExplorer_ShowsSourceFiles_WithTheirLanguagesIcon()
     {
         WriteSource("main.py", "print('hi')\n");
-        var studio = Studio(await _storage.CreateNewScriptAsync("Notes"));
+        var studio = await StudioAsync(await _storage.CreateNewScriptAsync("Notes"));
 
         var item = Assert.Single(All(studio.ExplorerRootItems), i => i.Name == "main.py");
 
@@ -90,7 +95,7 @@ public class CodeStudioSourceFileTests : IDisposable
     public async Task OpeningASourceFile_GivesItATabWithItsLanguage()
     {
         WriteSource("main.py", "print('hi')\n");
-        var studio = Studio(await _storage.CreateNewScriptAsync("Notes"));
+        var studio = await StudioAsync(await _storage.CreateNewScriptAsync("Notes"));
         var item = All(studio.ExplorerRootItems).Single(i => i.Name == "main.py");
 
         await studio.SwitchToScriptAsync(item);
@@ -106,7 +111,7 @@ public class CodeStudioSourceFileTests : IDisposable
     [Fact]
     public async Task NewFileOptions_OfferEverySourceFileLanguage()
     {
-        var studio = Studio(await _storage.CreateNewScriptAsync("Notes"));
+        var studio = await StudioAsync(await _storage.CreateNewScriptAsync("Notes"));
 
         Assert.Equal(8, studio.NewFileOptions.Count);
         var python = Assert.Single(studio.NewFileOptions, o => o.LanguageId == LanguageIds.Python);
@@ -140,7 +145,7 @@ public class CodeStudioSourceFileTests : IDisposable
     public async Task ANewSourceFile_IsCreatedInTheSelectedFolder_OpenedAndReadyToRename()
     {
         Directory.CreateDirectory(Path.Combine(_storage.LibraryRootPath, "tools"));
-        var studio = Studio(await _storage.CreateNewScriptAsync("Notes"));
+        var studio = await StudioAsync(await _storage.CreateNewScriptAsync("Notes"));
         var folder = All(studio.ExplorerRootItems).Single(i => i.IsDirectory && i.Name == "tools");
 
         await studio.NewFileOptions.First(o => o.LanguageId == LanguageIds.Python).Command.ExecuteAsync(folder);
@@ -156,7 +161,7 @@ public class CodeStudioSourceFileTests : IDisposable
     public async Task RenamingInTheExplorer_MovesTheFile_AndTheOpenTabFollows()
     {
         var path = WriteSource("draft.py", "print('draft')\n");
-        var studio = Studio(await _storage.CreateNewScriptAsync("Notes"));
+        var studio = await StudioAsync(await _storage.CreateNewScriptAsync("Notes"));
         var item = All(studio.ExplorerRootItems).Single(i => i.Name == "draft.py");
         await studio.SwitchToScriptAsync(item);
 
@@ -177,7 +182,7 @@ public class CodeStudioSourceFileTests : IDisposable
     public async Task DeletingASourceFile_AsksFirst()
     {
         var path = WriteSource("keep.py", "print('keep')\n");
-        var studio = Studio(await _storage.CreateNewScriptAsync("Notes"));
+        var studio = await StudioAsync(await _storage.CreateNewScriptAsync("Notes"));
         var item = All(studio.ExplorerRootItems).Single(i => i.Name == "keep.py");
 
         item.RequestDelete();
@@ -198,7 +203,7 @@ public class CodeStudioSourceFileTests : IDisposable
     public async Task Duplicating_CopiesTheFile_WithTheEditorsText()
     {
         WriteSource("tool.py", "print('v1')\n");
-        var studio = Studio(await _storage.CreateNewScriptAsync("Notes"));
+        var studio = await StudioAsync(await _storage.CreateNewScriptAsync("Notes"));
         await studio.SwitchToScriptAsync(All(studio.ExplorerRootItems).Single(i => i.Name == "tool.py"));
         studio.Code = "print('v2')\n";
 
@@ -213,7 +218,7 @@ public class CodeStudioSourceFileTests : IDisposable
     public async Task SwitchingAway_DoesntSaveOverAnotherEditorsChange()
     {
         var path = WriteSource("shared.py", "print('original')\n");
-        var studio = Studio(await _storage.CreateNewScriptAsync("Notes"));
+        var studio = await StudioAsync(await _storage.CreateNewScriptAsync("Notes"));
         await studio.SwitchToScriptAsync(All(studio.ExplorerRootItems).Single(i => i.Name == "shared.py"));
         studio.Code = "print('studio')\n";
         File.WriteAllText(path, "print('other editor')\n");
@@ -228,7 +233,7 @@ public class CodeStudioSourceFileTests : IDisposable
     public async Task CtrlS_SavesTheEditorsText_OverAnotherEditorsChange()
     {
         var path = WriteSource("shared.py", "print('original')\n");
-        var studio = Studio(await _storage.CreateNewScriptAsync("Notes"));
+        var studio = await StudioAsync(await _storage.CreateNewScriptAsync("Notes"));
         await studio.SwitchToScriptAsync(All(studio.ExplorerRootItems).Single(i => i.Name == "shared.py"));
         studio.Code = "print('studio')\n";
         File.WriteAllText(path, "print('other editor')\n");
@@ -262,7 +267,7 @@ public class CodeStudioSourceFileTests : IDisposable
     public async Task OpeningAnImageFile_ActivatesVisualImageViewer_WithAccurateMetadata()
     {
         CopyOrWriteImage("assets/app-logo.png");
-        var studio = Studio(await _storage.CreateNewScriptAsync("Notes"));
+        var studio = await StudioAsync(await _storage.CreateNewScriptAsync("Notes"));
         var item = Assert.Single(All(studio.ExplorerRootItems), i => i.Name == "app-logo.png");
 
         await studio.SwitchToScriptAsync(item);
@@ -295,7 +300,7 @@ public class CodeStudioSourceFileTests : IDisposable
     public async Task OpeningAMarkdownFile_TogglesBetweenPreviewAndEditModes()
     {
         var mdPath = WriteSource("docs/guide.md", "# Guide\n\nWelcome to **C# Studio**.\n");
-        var studio = Studio(await _storage.CreateNewScriptAsync("Notes"));
+        var studio = await StudioAsync(await _storage.CreateNewScriptAsync("Notes"));
         var item = Assert.Single(All(studio.ExplorerRootItems), i => i.Name == "guide.md");
 
         await studio.SwitchToScriptAsync(item);
@@ -333,7 +338,7 @@ public class CodeStudioSourceFileTests : IDisposable
         var csv = new System.Text.StringBuilder("id,name,score\n");
         for (int i = 0; i < 20_000; i++) csv.Append(i).Append(",name ").Append(i).Append(',').Append(i % 100).Append('\n');
         WriteSource("data/big.csv", csv.ToString());
-        var studio = Studio(await _storage.CreateNewScriptAsync("Notes"));
+        var studio = await StudioAsync(await _storage.CreateNewScriptAsync("Notes"));
         var item = Assert.Single(All(studio.ExplorerRootItems), i => i.Name == "big.csv");
 
         await studio.SwitchToScriptAsync(item);
@@ -365,7 +370,7 @@ public class CodeStudioSourceFileTests : IDisposable
             3,"Austin, TX",89.0,true
             """;
         WriteSource("data/cities.csv", csvContent);
-        var studio = Studio(await _storage.CreateNewScriptAsync("Notes"));
+        var studio = await StudioAsync(await _storage.CreateNewScriptAsync("Notes"));
         var item = Assert.Single(All(studio.ExplorerRootItems), i => i.Name == "cities.csv");
 
         await studio.SwitchToScriptAsync(item);

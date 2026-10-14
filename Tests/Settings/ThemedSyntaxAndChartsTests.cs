@@ -114,7 +114,7 @@ public class ThemedSyntaxAndChartsTests : IDisposable
     {
         var engine = StudioAppContext.Instance.ThemeEngine;
         engine.ApplyTheme(BuiltInThemes.DarkPlus.Id);
-        Assert.Equal(ChartPaletteService.ExpressivePalette[2], ChartPaletteService.GetSeriesColor(2));
+        Assert.Equal(ChartPalette.ExpressivePalette[2], ChartPaletteService.GetSeriesColor(2));
 
         var theme = HarmonicColorGenerator.GenerateHarmonicTheme(new HarmonicConfiguration { BaseHue = 200 }, isDark: false);
         engine.RegisterTheme(theme);

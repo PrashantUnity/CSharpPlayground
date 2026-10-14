@@ -40,6 +40,7 @@ public class CodeStudioPythonRunTests : IDisposable
             backToHubAction: () => { },
             blindProgress: new LocalBlindProgressService(Path.Combine(_baseDir, "progress")),
             languages: services);
+        await studio.RefreshExplorerAsync(); // the explorer lists the folder in the background: wait for the file just written
         await studio.SwitchToScriptAsync(studio.ExplorerRootItems.Single(i => i.Name == fileName));
         return studio;
     }

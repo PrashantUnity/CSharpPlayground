@@ -7,7 +7,7 @@
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:vm="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Server"
              xmlns:serverControls="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Server"
-             xmlns:models="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Models"
+             xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
              xmlns:server="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Server"
              xmlns:server1="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Models.Server"
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="900"

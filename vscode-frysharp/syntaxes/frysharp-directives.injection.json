@@ -1,0 +1,38 @@
+{
+  "scopeName": "frysharp.directives.injection",
+  "injectionSelector": "L:source.cs, L:source.python, L:source.js, L:source.fsharp, L:source.java, L:source.rust, L:source.go, L:source.cpp, L:source.sql",
+  "patterns": [{ "include": "#share" }, { "include": "#language" }, { "include": "#package" }],
+  "repository": {
+    "share": {
+      "comment": "#!share --from <language> <name> [--as <new name>]",
+      "match": "^\\s*(#!)(share)\\b(?:\\s+(--from)\\s+([A-Za-z][\\w#+]*))?(?:\\s+(?!--)([A-Za-z_][\\w.]*))?(?:\\s+(--as)\\s+([A-Za-z_][\\w.]*))?",
+      "captures": {
+        "1": { "name": "punctuation.definition.directive.frysharp" },
+        "2": { "name": "keyword.control.directive.share.frysharp" },
+        "3": { "name": "keyword.operator.option.frysharp" },
+        "4": { "name": "entity.name.type.language.frysharp" },
+        "5": { "name": "variable.other.shared.frysharp" },
+        "6": { "name": "keyword.operator.option.frysharp" },
+        "7": { "name": "variable.other.alias.frysharp" }
+      }
+    },
+    "language": {
+      "comment": "#!python, #!csharp, ...: the language of the cell. #![ is Rust's attribute and #!/ a shebang, neither is one.",
+      "match": "^\\s*(#!)(?![\\[/])([A-Za-z][\\w#+]*)(?![\\w#+])",
+      "captures": {
+        "1": { "name": "punctuation.definition.directive.frysharp" },
+        "2": { "name": "entity.name.function.directive.language.frysharp" }
+      }
+    },
+    "package": {
+      "comment": "%pip install x, %npm install x, %nuget install x",
+      "match": "^\\s*(%)(pip|npm|nuget)\\b\\s*(install|uninstall|list|show)?\\b\\s*(.*)$",
+      "captures": {
+        "1": { "name": "punctuation.definition.directive.frysharp" },
+        "2": { "name": "keyword.control.directive.package.frysharp" },
+        "3": { "name": "keyword.operator.option.frysharp" },
+        "4": { "name": "string.unquoted.package.frysharp" }
+      }
+    }
+  }
+}

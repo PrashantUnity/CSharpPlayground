@@ -33,15 +33,18 @@ public class CSharpCodeStudioExplorerTests : IDisposable
         catch { }
     }
 
-    private CSharpCodeStudioViewModel CreateStudio(ScriptDocumentItem script)
+    // A studio lists its folder in the background when it is made: wait for the listing, so the Explorer has its files.
+    private async Task<CSharpCodeStudioViewModel> CreateStudioAsync(ScriptDocumentItem script)
     {
-        return new CSharpCodeStudioViewModel(
+        var studio = new CSharpCodeStudioViewModel(
             script,
             _testStorage,
             new RoslynCompilerService(),
             new ScriptExecutionEngine(),
             backToHubAction: () => { },
             backToHomeAction: () => { });
+        await studio.RefreshExplorerAsync();
+        return studio;
     }
 
     [Fact]
@@ -50,7 +53,7 @@ public class CSharpCodeStudioExplorerTests : IDisposable
         var script = await _testStorage.CreateNewScriptAsync("Main Script");
         await _testStorage.CreateNewScriptAsync("Sibling Script");
 
-        var studio = CreateStudio(script);
+        var studio = await CreateStudioAsync(script);
 
         Assert.Contains(studio.ExplorerRootItems, x => !x.IsDirectory && x.Name == "Main Script.frycs");
         Assert.Contains(studio.ExplorerRootItems, x => !x.IsDirectory && x.Name == "Sibling Script.frycs");
@@ -71,7 +74,7 @@ public class CSharpCodeStudioExplorerTests : IDisposable
 
         await _testStorage.OpenExternalProjectAsync(root);
         var outsider = await _testStorage.CreateNewScriptAsync("Outsider", folderPath: Path.Combine(_testBaseDir, "elsewhere"));
-        var studio = CreateStudio(outsider);
+        var studio = await CreateStudioAsync(outsider);
         await studio.RefreshExplorerAsync();
 
         var top = studio.ExplorerRootItems.Select(i => i.Name).ToList();
@@ -106,7 +109,7 @@ public class CSharpCodeStudioExplorerTests : IDisposable
         try
         {
             var script = await _testStorage.CreateNewScriptAsync("External Script", folderPath: externalDir);
-            var studio = CreateStudio(script);
+            var studio = await CreateStudioAsync(script);
 
             Assert.DoesNotContain(studio.ExplorerRootItems, x => x.Name == "External Script.frycs");
             Assert.Equal(script.Id, studio.Script.Id); // still open, just not in this folder's list
@@ -128,7 +131,7 @@ public class CSharpCodeStudioExplorerTests : IDisposable
             var openScript = await _testStorage.CreateNewScriptAsync("Open One", folderPath: relevantDir);
             await _testStorage.CreateNewScriptAsync("Untouched", folderPath: unrelatedDir);
 
-            var studio = CreateStudio(openScript);
+            var studio = await CreateStudioAsync(openScript);
 
             // Neither external folder is the active workspace root, so neither document is listed.
             Assert.DoesNotContain(studio.ExplorerRootItems, x => x.Name is "Open One.frycs" or "Untouched.frycs");
@@ -154,7 +157,7 @@ public class CSharpCodeStudioExplorerTests : IDisposable
         second.Code = "// second script code";
         await _testStorage.SaveScriptAsync(second);
 
-        var studio = CreateStudio(first);
+        var studio = await CreateStudioAsync(first);
         studio.Code = "// edited in memory, unsaved";
 
         var reloadFired = false;
@@ -175,7 +178,7 @@ public class CSharpCodeStudioExplorerTests : IDisposable
     public async Task SwitchToScriptAsync_ToAlreadyOpenScript_DoesNothingAndDoesNotFireReload()
     {
         var script = await _testStorage.CreateNewScriptAsync("Solo Script");
-        var studio = CreateStudio(script);
+        var studio = await CreateStudioAsync(script);
 
         var reloadFired = false;
         studio.RequestReloadEditorText += () => reloadFired = true;
@@ -190,7 +193,7 @@ public class CSharpCodeStudioExplorerTests : IDisposable
     public async Task NewScriptCommand_WithNoSelection_CreatesAtLibraryRootAndSwitchesToIt()
     {
         var initial = await _testStorage.CreateNewScriptAsync("Initial Script");
-        var studio = CreateStudio(initial);
+        var studio = await CreateStudioAsync(initial);
 
         await studio.NewScript();
 
@@ -214,7 +217,7 @@ public class CSharpCodeStudioExplorerTests : IDisposable
             await _testStorage.OpenExternalProjectAsync(externalDir);
             var subFolder = await _testStorage.CreateFolderAsync(null, "SubFolder");
             var script = await _testStorage.CreateNewScriptAsync("Inside", folderPath: subFolder);
-            var studio = CreateStudio(script);
+            var studio = await CreateStudioAsync(script);
 
             var folderNode = studio.ExplorerRootItems.Single(x => x.IsDirectory);
             Assert.True(folderNode.IsManageableDirectory);
@@ -238,7 +241,7 @@ public class CSharpCodeStudioExplorerTests : IDisposable
         var openScript = await _testStorage.CreateNewScriptAsync("Kept Open");
         var folder = await _testStorage.CreateFolderAsync(null, "SoloFolder");
         await _testStorage.CreateNewScriptAsync("Only One", folderPath: folder);
-        var studio = CreateStudio(openScript);
+        var studio = await CreateStudioAsync(openScript);
 
         var summaries = await _testStorage.LoadWorkspaceSummariesAsync();
         var docId = summaries.Single(s => s.Title == "Only One").Id;
@@ -262,7 +265,7 @@ public class CSharpCodeStudioExplorerTests : IDisposable
         {
             await _testStorage.OpenExternalProjectAsync(externalDir);
             var script = await _testStorage.CreateNewScriptAsync("Original");
-            var studio = CreateStudio(script);
+            var studio = await CreateStudioAsync(script);
             var originalItem = studio.ExplorerRootItems.Single(x => !x.IsDirectory);
 
             await studio.DuplicateExplorerItemAsync(originalItem);
@@ -282,7 +285,7 @@ public class CSharpCodeStudioExplorerTests : IDisposable
     public async Task OnItemRenamedAsync_ForCurrentlyOpenScript_UpdatesScriptTitleAndPersists()
     {
         var script = await _testStorage.CreateNewScriptAsync("Old Name");
-        var studio = CreateStudio(script);
+        var studio = await CreateStudioAsync(script);
         var item = studio.ExplorerRootItems.Single(x => x.DocumentId == script.Id);
 
         item.Name = "New Name.frycs";
@@ -302,7 +305,7 @@ public class CSharpCodeStudioExplorerTests : IDisposable
         {
             var first = await _testStorage.CreateNewScriptAsync("First", folderPath: externalDir);
             var second = await _testStorage.CreateNewScriptAsync("Second", folderPath: externalDir);
-            var studio = CreateStudio(first);
+            var studio = await CreateStudioAsync(first);
 
             var pump = new SingleThreadSynchronizationContext();
             var completed = new TaskCompletionSource<bool>();
@@ -356,7 +359,7 @@ public class CSharpCodeStudioExplorerTests : IDisposable
             await File.WriteAllTextAsync(externalFile, "System.Console.WriteLine(\"Imported!\");");
 
             var initialScript = await _testStorage.CreateNewScriptAsync("Initial");
-            var studio = CreateStudio(initialScript);
+            var studio = await CreateStudioAsync(initialScript);
 
             await studio.OpenExternalProjectAsync(externalFile);
 
@@ -415,7 +418,7 @@ public class CSharpCodeStudioExplorerTests : IDisposable
     public async Task NewNotebookUnderItemAsync_CreatesNotebookInTargetFolder()
     {
         var script = await _testStorage.CreateNewScriptAsync("TestScript");
-        var studio = CreateStudio(script);
+        var studio = await CreateStudioAsync(script);
         var subFolder = Path.Combine(_testStorage.ActiveWorkspaceRootPath, "analytics");
         Directory.CreateDirectory(subFolder);
         await studio.RefreshExplorerAsync();
@@ -433,7 +436,7 @@ public class CSharpCodeStudioExplorerTests : IDisposable
     public async Task NewServerUnderItemAsync_CreatesServerInTargetFolder()
     {
         var script = await _testStorage.CreateNewScriptAsync("TestScript");
-        var studio = CreateStudio(script);
+        var studio = await CreateStudioAsync(script);
         var subFolder = Path.Combine(_testStorage.ActiveWorkspaceRootPath, "services");
         Directory.CreateDirectory(subFolder);
         await studio.RefreshExplorerAsync();

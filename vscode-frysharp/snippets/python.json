@@ -1,0 +1,27 @@
+{
+  "FrySharp table": {
+    "prefix": "frytable",
+    "body": ["from fry import Display", "", "Display.table(${1:rows}, \"${2:Title}\")"],
+    "description": "Show a list of records as a sortable, filterable table"
+  },
+  "FrySharp line chart": {
+    "prefix": "frylinechart",
+    "body": ["from fry import Display", "", "Display.line_chart(${1:values}, \"${2:Title}\")"],
+    "description": "Show numbers as a line chart"
+  },
+  "FrySharp bar chart": {
+    "prefix": "frybarchart",
+    "body": ["from fry import Display", "", "Display.bar_chart(${1:values}, \"${2:Title}\")"],
+    "description": "Show numbers as a bar chart"
+  },
+  "FrySharp markdown": {
+    "prefix": "frymarkdown",
+    "body": ["from fry import Display", "", "Display.markdown(\"${1:# Heading}\")"],
+    "description": "Show Markdown"
+  },
+  "FrySharp share from another language": {
+    "prefix": "fryshare",
+    "body": ["#!share --from ${1|csharp,javascript|} ${2:name}"],
+    "description": "Copy a variable of another language's kernel into this cell"
+  }
+}

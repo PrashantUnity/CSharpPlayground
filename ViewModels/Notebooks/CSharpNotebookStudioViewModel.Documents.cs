@@ -221,7 +221,7 @@ public partial class CSharpNotebookStudioViewModel
                 return;
             }
 
-            await RefreshExplorer();
+            await RefreshExplorerAsync();
 
             Services.Extensibility.WorkspaceCustomizationLoader.LoadInBackground(_storageService.ActiveWorkspaceRootPath, _activities);
 

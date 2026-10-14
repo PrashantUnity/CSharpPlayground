@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Input;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Activities;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Workspace;
 using PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer;
@@ -16,34 +16,21 @@ public partial class CSharpNotebookStudioViewModel
 {
     // ── Explorer refresh ──────────────────────────────────────────────────────
 
-    // The storage's StructureVersion the tree was last built at (-1: never built). The tree is rebuilt from a full
-    // workspace scan only when this has moved.
-    private long _explorerStructureVersion = -1;
+    private ExplorerRefresher? _explorerRefresher;
 
+    // When the tree is listed: never while the studio is built, but on the first visit, from the host once the engine
+    // is warm, and when the workspace changed (see ExplorerRefresher).
+    private ExplorerRefresher ExplorerRefresh => _explorerRefresher ??= new ExplorerRefresher(_storageService, _activities, ShowExplorerListing);
+
+    /// <summary>Lists the workspace and redraws the Explorer, whether or not anything changed (the Refresh button).</summary>
     [RelayCommand]
-    public async Task RefreshExplorer()
-    {
-        try
-        {
-            // Taken before the scan: a change that lands while it runs leaves the tree stale, so the next check reloads.
-            var version = _storageService.StructureVersion;
-            ShowExplorerListing(await _storageService.LoadExplorerListingAsync());
-            _explorerStructureVersion = version;
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"[CSharpEditorPlugin] Failed to refresh explorer tree: {ex.Message}");
-        }
-    }
+    public Task RefreshExplorerAsync() => ExplorerRefresh.RefreshAsync();
 
-    /// <summary>Reloads the Explorer only if the workspace changed since it was built (a script created in the Hub, say).</summary>
-    public async Task RefreshExplorerIfStaleAsync()
-    {
-        if (_explorerStructureVersion != _storageService.StructureVersion)
-        {
-            await RefreshExplorer();
-        }
-    }
+    /// <summary>Backward-compatibility method for tests and callers.</summary>
+    public Task RefreshExplorer() => RefreshExplorerAsync();
+
+    /// <summary>Reloads the Explorer only if the workspace changed since it was built (a script created in the Hub, say), or never was.</summary>
+    public Task RefreshExplorerIfStaleAsync() => ExplorerRefresh.RefreshIfStaleAsync();
 
     // ── Page lifecycle ────────────────────────────────────────────────────────
 
@@ -56,7 +43,7 @@ public partial class CSharpNotebookStudioViewModel
     {
         _isPageActive = true;
         UpdateExtensibilityDocumentResolver();
-        _ = RefreshExplorerIfStaleAsync();
+        RefreshExplorerIfStaleAsync().FireAndForget(_activities, "Listing the workspace");
 
         // Reading the file index starts (or refreshes) its background walk, so Go to File is ready when it is used.
         _ = _storageService.FileIndex;
@@ -128,20 +115,6 @@ public partial class CSharpNotebookStudioViewModel
         }
     }
 
-    public void PopulateExplorerTree()
-    {
-        try
-        {
-            var version = _storageService.StructureVersion;
-            ShowExplorerListing(_storageService.LoadExplorerListingAsync().GetAwaiter().GetResult());
-            _explorerStructureVersion = version;
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"[CSharpEditorPlugin] Failed to populate explorer tree: {ex.Message}");
-            ExplorerRootItems.Clear();
-        }
-    }
 
     private void RebuildExplorerTree(IReadOnlyList<string> folderPaths, IReadOnlyList<WorkspaceItemSummary> summaries, IReadOnlyList<string> closedFolders)
     {

@@ -1,7 +1,4 @@
 using System.Text;
-using System.Text.Encodings.Web;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
@@ -14,13 +11,6 @@ namespace PdfEditorApp.Plugins.CSharpEditor.Services.Storage;
 /// </summary>
 public static class DocumentExportService
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        WriteIndented = true,
-        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-    };
-
     /// <summary>
     /// Exports a script into a clean standalone C# (.cs) source code file.
     /// </summary>
@@ -107,88 +97,8 @@ public static class DocumentExportService
     /// Exports an interactive notebook into standard Jupyter Notebook (.ipynb) v4 schema format.
     /// Compatible with VS Code, JupyterLab, and GitHub notebook renderers.
     /// </summary>
-    public static string ExportNotebookToIpynb(NotebookDocumentItem notebook, LanguageRegistry? languages = null)
-    {
-        ArgumentNullException.ThrowIfNull(notebook);
-        var registry = languages ?? StudioLanguageServices.Default.Registry;
-        var defaultLanguage = DefaultLanguage(notebook, registry);
-        var used = notebook.Cells.Where(c => c.Type == CellType.Code).Select(c => CellLanguage(c, defaultLanguage, registry)).Distinct().ToList();
-        // A notebook of several languages is written as Polyglot Notebooks does: the kernel of each cell in its metadata.
-        var polyglot = used.Count > 1;
-
-        var cells = new List<object>();
-
-        foreach (var cell in notebook.Cells)
-        {
-            var sourceLines = SplitToLinesWithNewlines(cell.Source);
-
-            if (cell.Type == CellType.Markdown)
-            {
-                cells.Add(new
-                {
-                    cell_type = "markdown",
-                    metadata = new Dictionary<string, object>(),
-                    source = sourceLines
-                });
-            }
-            else
-            {
-                var outputs = new List<object>();
-                if (!string.IsNullOrEmpty(cell.OutputText))
-                {
-                    outputs.Add(new
-                    {
-                        output_type = "stream",
-                        name = cell.HasError ? "stderr" : "stdout",
-                        text = SplitToLinesWithNewlines(cell.OutputText)
-                    });
-                }
-
-                var metadata = new Dictionary<string, object>();
-                if (polyglot) metadata["polyglot_notebook"] = new { kernelName = CellLanguage(cell, defaultLanguage, registry).Id };
-                cells.Add(new
-                {
-                    cell_type = "code",
-                    execution_count = cell.ExecutionCount,
-                    metadata,
-                    outputs = outputs,
-                    source = sourceLines
-                });
-            }
-        }
-
-        // The notebook's kernel: its default language's, or the one language all its cells are in.
-        var main = (used.Count == 1 ? used[0] : defaultLanguage).Jupyter ?? registry.Get(LanguageIds.CSharp)?.Jupyter
-                   ?? new JupyterLanguageInfo(".net-csharp", ".NET (C#)", "C#", "csharp", ".cs", "text/x-csharp", "13.0");
-        var notebookMetadata = new Dictionary<string, object>
-        {
-            ["language_info"] = main.Version != null
-                ? new { name = main.LanguageName, version = main.Version, file_extension = main.FileExtension, mimetype = main.MimeType }
-                : new { name = main.LanguageName, file_extension = main.FileExtension, mimetype = main.MimeType },
-            ["kernelspec"] = new { name = main.KernelName, display_name = main.KernelDisplayName, language = main.KernelLanguage }
-        };
-        if (polyglot)
-        {
-            notebookMetadata["polyglot_notebook"] = new
-            {
-                kernelInfo = new
-                {
-                    defaultKernelName = defaultLanguage.Id,
-                    items = used.Select(l => new { name = l.Id, languageName = l.Jupyter?.LanguageName ?? l.Id, aliases = l.Aliases }).ToList()
-                }
-            };
-        }
-
-        var ipynbObj = new
-        {
-            cells = cells,
-            metadata = notebookMetadata,
-            nbformat = 4,
-            nbformat_minor = 5
-        };
-
-        return JsonSerializer.Serialize(ipynbObj, JsonOptions);
-    }
+    public static string ExportNotebookToIpynb(NotebookDocumentItem notebook, LanguageRegistry? languages = null) =>
+        NotebookFileFormat.WriteIpynb(notebook, languages ?? StudioLanguageServices.Default.Registry);
 
     /// <summary>
     /// Exports an interactive notebook into clean GitHub-Flavored Markdown (.md).
@@ -258,19 +168,5 @@ public static class DocumentExportService
     {
         var own = registry.Get(cell.Language) ?? defaultLanguage;
         return registry.Get(NotebookCellDirectives.LanguageOf(cell.Source, registry, own.Id)) ?? own;
-    }
-
-    private static string[] SplitToLinesWithNewlines(string? text)
-    {
-        if (string.IsNullOrEmpty(text)) return Array.Empty<string>();
-
-        var rawLines = text.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
-        var result = new string[rawLines.Length];
-        for (int i = 0; i < rawLines.Length; i++)
-        {
-            // In Jupyter .ipynb format, each line except possibly the last ends with '\n'
-            result[i] = i < rawLines.Length - 1 ? rawLines[i] + "\n" : rawLines[i];
-        }
-        return result;
     }
 }

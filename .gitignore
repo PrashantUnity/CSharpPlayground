@@ -51,3 +51,8 @@ Desktop.ini
 *.log
 .cache/
 *.metadata.json
+
+## FrySharp web mode
+# Never commit a server token (older builds wrote one into the workspace).
+.frysharp-token
+web/node_modules/

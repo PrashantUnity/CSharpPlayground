@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:vm="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
-             xmlns:models="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Models"
+             xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
              xmlns:common="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Overlays.QuickOpenOverlayControl"

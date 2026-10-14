@@ -106,13 +106,13 @@ public class TablePreviewScaleTests
         new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13, (byte)'I', (byte)'H', (byte)'D', (byte)'R' }.CopyTo(png, 0);
         png[18] = 0x17; png[19] = 0x70; // 6000
         png[22] = 0x0F; png[23] = 0xA0; // 4000
-        Assert.True(ImageDecoder.TryReadDimensions(png, out int w, out int h));
+        Assert.True(ImageHeader.TryReadDimensions(png, out int w, out int h));
         Assert.Equal((6000, 4000), (w, h));
 
         var gif = Encoding.ASCII.GetBytes("GIF89a").Concat(new byte[] { 0x40, 0x01, 0xF0, 0x00 }).ToArray();
-        Assert.True(ImageDecoder.TryReadDimensions(gif, out w, out h));
+        Assert.True(ImageHeader.TryReadDimensions(gif, out w, out h));
         Assert.Equal((320, 240), (w, h));
 
-        Assert.False(ImageDecoder.TryReadDimensions(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 }, out _, out _));
+        Assert.False(ImageHeader.TryReadDimensions(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 }, out _, out _));
     }
 }

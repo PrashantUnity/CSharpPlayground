@@ -33,13 +33,20 @@ public class WorkspaceStalenessTests : IDisposable
         }
     }
 
-    private CSharpCodeStudioViewModel CreateStudio(PdfEditorApp.Plugins.CSharpEditor.Models.ScriptDocumentItem script) => new(
-        script,
-        _storage,
-        new RoslynCompilerService(),
-        new ScriptExecutionEngine(),
-        backToHubAction: () => { },
-        backToHomeAction: () => { });
+    // A studio lists its folder in the background when it is made: wait for that scan to end, so a count taken after it is
+    // not one the scan is still moving.
+    private async Task<CSharpCodeStudioViewModel> CreateStudioAsync(PdfEditorApp.Plugins.CSharpEditor.Models.ScriptDocumentItem script)
+    {
+        var studio = new CSharpCodeStudioViewModel(
+            script,
+            _storage,
+            new RoslynCompilerService(),
+            new ScriptExecutionEngine(),
+            backToHubAction: () => { },
+            backToHomeAction: () => { });
+        await studio.RefreshExplorerAsync();
+        return studio;
+    }
 
     [Fact]
     public async Task StructureVersion_MovesWhenItemsAreCreatedRenamedOrDeleted_ButNotOnASave()
@@ -86,7 +93,7 @@ public class WorkspaceStalenessTests : IDisposable
     {
         var first = await _storage.CreateNewScriptAsync("Alpha");
         var second = await _storage.CreateNewScriptAsync("Beta");
-        var studio = CreateStudio(first);
+        var studio = await CreateStudioAsync(first);
 
         var scans = _storage.WorkspaceScanCount;
         await studio.UpdateActiveScriptAsync(second);
@@ -103,7 +110,7 @@ public class WorkspaceStalenessTests : IDisposable
     {
         var first = await _storage.CreateNewScriptAsync("Alpha");
         var second = await _storage.CreateNewScriptAsync("Beta");
-        var studio = CreateStudio(first);
+        var studio = await CreateStudioAsync(first);
         await studio.UpdateActiveScriptAsync(second);
 
         await _storage.CreateNewScriptAsync("Gamma");
@@ -116,7 +123,7 @@ public class WorkspaceStalenessTests : IDisposable
     public async Task ShowingTheExplorerAgain_WithNothingChanged_DoesNotRescan()
     {
         var script = await _storage.CreateNewScriptAsync("Alpha");
-        var studio = CreateStudio(script);
+        var studio = await CreateStudioAsync(script);
 
         var scans = _storage.WorkspaceScanCount;
         await studio.RefreshExplorerIfStaleAsync();
@@ -129,7 +136,7 @@ public class WorkspaceStalenessTests : IDisposable
     public async Task ShowingTheExplorerAgain_AfterASaveOnly_DoesNotRescan()
     {
         var script = await _storage.CreateNewScriptAsync("Alpha");
-        var studio = CreateStudio(script);
+        var studio = await CreateStudioAsync(script);
 
         script.Code = "// edited";
         await _storage.SaveScriptAsync(script);

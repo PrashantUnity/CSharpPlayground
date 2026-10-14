@@ -6,25 +6,21 @@ using AvaloniaEdit.Indentation;
 using AvaloniaEdit.Indentation.CSharp;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Debugging;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Execution;
-using PdfEditorApp.Plugins.CSharpEditor.Services.Kernels;
-using PdfEditorApp.Plugins.CSharpEditor.Services.Packages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Processes;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Languages.CSharp;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Roslyn;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Toolchains;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 
 /// <summary>
-/// C#, the studio's own language: compiled and run inside the studio by Roslyn, with completion, hover, debugging, test
-/// cases and live diagnostics. It has no toolchain or script runner; the Code Studio runs it on its built-in path.
+/// C# in the studio: <see cref="CSharpEngine"/> (Roslyn, run in-process) with completion, hover, live diagnostics,
+/// debugging and the editor's highlighting, indentation and folding.
 /// </summary>
-public sealed class CSharpLanguage : LanguageDefinition
+public sealed class CSharpLanguage : EngineLanguageDefinition<CSharpEngine>
 {
-    private static readonly string[] CSharpAliases = ["c#", "cs"];
-    private static readonly string[] CSharpExtensions = [".frycs"];
-    private static readonly INotebookKernelFactory Kernels = new DelegateKernelFactory(_ => new NotebookExecutionKernel());
-
     public CSharpLanguage(IDebuggerProvider? debugger = null)
+        : base(new CSharpEngine())
     {
         var compiler = new RoslynCompilerService();
         var exec = new ScriptExecutionEngine();
@@ -38,38 +34,12 @@ public sealed class CSharpLanguage : LanguageDefinition
 
     public override IDebuggerProvider Debugger { get; }
 
-    public override string Id => LanguageIds.CSharp;
-    public override string DisplayName => "C#";
-    public override JupyterLanguageInfo Jupyter { get; } = new(".net-csharp", ".NET (C#)", "C#", "csharp", ".cs", "text/x-csharp", "13.0");
-    public override string ShortName => "C#";
-    public override IReadOnlyList<string> Aliases => CSharpAliases;
-    public override IReadOnlyList<string> FileExtensions => CSharpExtensions;
-    public override LanguageStorageKind Storage => LanguageStorageKind.FryDocument;
-
-    public override IPackageManager Packages { get; } = new CSharp.NuGetPackageManager();
-    public override IDiagnosticParser RunDiagnostics { get; } = new CSharp.CSharpCompilerDiagnosticParser();
-
-    public override LanguageCapabilities Capabilities =>
-        LanguageCapabilities.Completion | LanguageCapabilities.QuickInfo | LanguageCapabilities.Formatting |
-        LanguageCapabilities.Debugging | LanguageCapabilities.Breakpoints | LanguageCapabilities.LiveDiagnostics |
-        LanguageCapabilities.TestCases | LanguageCapabilities.Templates | LanguageCapabilities.ExecutionModes |
-        LanguageCapabilities.NotebookCells | LanguageCapabilities.ValueSharing |
-        LanguageCapabilities.StandardInput | LanguageCapabilities.Packages;
-
-    public override string IconKind => "LanguageCsharp";
-    public override string AccentHex => "#58A6FF";
-    public override string LineCommentPrefix => "//";
-    public override string RuntimeDescription => "C# (.NET 10 Roslyn)";
-    public override string NewFileTemplate => "// Write C# Statements or top-level code here\nConsole.WriteLine(\"Hello from FryPDF!\");";
-
     public override IHighlightingDefinition GetHighlighting(bool isDark) =>
         isDark ? CSharpSyntaxHighlightingTheme.GetDarkTheme() : CSharpSyntaxHighlightingTheme.GetLightTheme();
 
     public override IIndentationStrategy CreateIndentationStrategy(TextEditorOptions options) => new CSharpIndentationStrategy(options);
 
     public override ILanguageFolding Folding { get; } = new BraceFolding();
-
-    public override INotebookKernelFactory NotebookKernels => Kernels;
 
     private sealed class BraceFolding : ILanguageFolding
     {

@@ -1,0 +1,1332 @@
+import java.io.*;
+import java.lang.reflect.*;
+import java.net.*;
+import java.nio.file.*;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.function.Consumer;
+
+/**
+ * Interactive Display and Visual Dump API for FrySharp (Java).
+ */
+public class Display {
+    public static final String DISPLAY_MARKER = "__FRY_DISPLAY__";
+    public static final String CHART_MIME = "application/vnd.fry.chart.v1+json";
+    public static final String PLOT3D_MIME = "application/vnd.fry.plot3d.v1+json";
+    public static final String VISUALIZER_MIME = "application/vnd.fry.visualizer.v1+json";
+    public static final String TABLE_MIME = "application/vnd.fry.table+json";
+
+    public static class TreeNode {
+        public Object val;
+        public TreeNode left;
+        public TreeNode right;
+        public TreeNode(Object val) { this.val = val; }
+        public TreeNode(Object val, TreeNode left, TreeNode right) {
+            this.val = val;
+            this.left = left;
+            this.right = right;
+        }
+    }
+
+    public static class ListNode {
+        public Object val;
+        public ListNode next;
+        public ListNode(Object val) { this.val = val; }
+        public ListNode(Object val, ListNode next) {
+            this.val = val;
+            this.next = next;
+        }
+    }
+
+    private static final ConcurrentHashMap<String, DisplayHandle> activeHandles = new ConcurrentHashMap<>();
+    private static Socket eventSocket = null;
+    private static boolean socketConnecting = false;
+
+    // ------------------------------------------------------------------------------------------------------- socket
+    private static synchronized void ensureEventSocket() {
+        String addr = System.getenv("FRY_EVENTS");
+        if (addr == null || addr.isEmpty() || eventSocket != null || socketConnecting) return;
+        socketConnecting = true;
+        Thread t = new Thread(() -> {
+            try {
+                String[] parts = addr.split(":");
+                String host = parts[0];
+                int port = Integer.parseInt(parts[1]);
+                Socket s = new Socket(host, port);
+                synchronized (Display.class) {
+                    eventSocket = s;
+                    socketConnecting = false;
+                }
+                String token = System.getenv("FRY_EVENTS_TOKEN");
+                if (token == null) token = "";
+                OutputStream out = s.getOutputStream();
+                out.write(("{\"type\":\"hello\",\"token\":\"" + escapeJson(token) + "\"}\n").getBytes("UTF-8"));
+                out.flush();
+
+                BufferedReader reader = new BufferedReader(new InputStreamReader(s.getInputStream(), "UTF-8"));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    line = line.trim();
+                    if (!line.isEmpty()) {
+                        deliverEventLine(line);
+                    }
+                }
+            } catch (Exception ignored) {
+            } finally {
+                synchronized (Display.class) {
+                    eventSocket = null;
+                    socketConnecting = false;
+                }
+            }
+        }, "fry-event-socket");
+        t.setDaemon(true);
+        t.start();
+    }
+
+    public static void deliverEventLine(String line) {
+        try {
+            int atDisplay = line.indexOf("\"display_id\"");
+            if (atDisplay < 0) return;
+            int colon = line.indexOf(':', atDisplay);
+            int q1 = line.indexOf('"', colon);
+            int q2 = line.indexOf('"', q1 + 1);
+            String displayId = line.substring(q1 + 1, q2);
+            DisplayHandle handle = activeHandles.get(displayId);
+            if (handle != null) {
+                handle.dispatchRawEvent(line);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    public interface Sink {
+        void emit(String json);
+    }
+    private static volatile Sink customSink = null;
+    public static void setSink(Sink sink) { customSink = sink; }
+
+    public static Map<String, Object> map(Object... kvs) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        for (int i = 0; i + 1 < kvs.length; i += 2) {
+            m.put(String.valueOf(kvs[i]), kvs[i + 1]);
+        }
+        return m;
+    }
+
+    /** A series' values and how it is drawn: Display.series(margin).kind("line").rightAxis().dash("dashed"). */
+    public static class SeriesData {
+        public final Object values;
+        public final Map<String, Object> options = new LinkedHashMap<>();
+
+        SeriesData(Object values) { this.values = values; }
+
+        private SeriesData set(String key, Object value) { options.put(key, value); return this; }
+
+        /** Draws this series as another kind than the chart's: line, area, bar or scatter. */
+        public SeriesData kind(String kind) { return set("kind", kind); }
+        /** Measures this series on the second value axis, up the right side. */
+        public SeriesData rightAxis() { return set("axis", "right"); }
+        public SeriesData color(String color) { return set("color", color); }
+        /** A colour for each value (a bar, point or slice). */
+        public SeriesData colors(String... colors) { return set("colors", Arrays.asList(colors)); }
+        public SeriesData lineWidth(double pixels) { return set("lineWidth", pixels); }
+        /** "dashed" or "dotted". */
+        public SeriesData dash(String dash) { return set("dash", dash); }
+        /** A curve through the values; tension is from 0 to 1. */
+        public SeriesData smooth(double tension) { set("interpolation", "smooth"); return set("tension", tension); }
+        public SeriesData monotone() { return set("interpolation", "monotone"); }
+        /** "before", "after" or "middle". */
+        public SeriesData step(String step) { return set("step", step); }
+        public SeriesData fill(boolean on) { return set("fill", on); }
+        /** Fills the space between this series and the series at that index. */
+        public SeriesData fillTo(int series) { return set("fillTo", series); }
+        /** "circle", "triangle", "square", "diamond", "cross" or "star", and the marker radius. */
+        public SeriesData pointStyle(String shape, double radius) { set("pointStyle", shape); return set("pointRadius", radius); }
+        public SeriesData colorSegments() { return set("colorSegments", true); }
+        /** The pile this series stacks in. */
+        public SeriesData stack(String name) { return set("stack", name); }
+        /** A bubble chart's radius for each value. */
+        public SeriesData sizes(List<?> sizes) { return set("sizes", sizes); }
+        /** Floating bars: where each bar starts. */
+        public SeriesData from(List<?> from) { return set("from", from); }
+        public SeriesData cornerRadius(double pixels) { return set("cornerRadius", pixels); }
+    }
+
+    public static SeriesData series(Object values) { return new SeriesData(values); }
+
+    /** What a chart is told besides its data: Display.options().title("Sales").labels("Jan", "Feb").stacked().y2Axis("%", 0, 100). */
+    public static class Options {
+        String title;
+        List<String> labels;
+        final Map<String, Object> extra = new LinkedHashMap<>();
+
+        public Options title(String title) { this.title = title; return this; }
+        /** Names the places of the values: x positions, a radar's spokes, a pie's slices. */
+        public Options labels(String... names) { this.labels = Arrays.asList(names); return this; }
+        public Options stacked() { extra.put("stack", "stacked"); return this; }
+        public Options percentStacked() { extra.put("stack", "percent"); return this; }
+        public Options horizontal() { extra.put("orientation", "horizontal"); return this; }
+        public Options gauge() { extra.put("startAngle", -90); extra.put("sweep", 180); return this; }
+        public Options angles(double start, double sweep) { extra.put("startAngle", start); extra.put("sweep", sweep); return this; }
+        public Options cutout(double share) { extra.put("cutout", share); return this; }
+        /** "top", "bottom", "left" or "right". */
+        public Options legendAt(String position) { return nest("legend", "position", position); }
+        /** A second value axis, up the right side, for the series set rightAxis(). */
+        public Options y2Axis(String title, double min, double max) { nest("y2Axis", "title", title); nest("y2Axis", "min", min); return nest("y2Axis", "max", max); }
+        /** "linear", "log", "time" (x only) or "category" (x only). */
+        public Options xScale(String scale) { return nest("xAxis", "scale", scale); }
+        public Options yScale(String scale) { return nest("yAxis", "scale", scale); }
+        public Options suggestedY(double min, double max) { nest("yAxis", "suggestedMin", min); return nest("yAxis", "suggestedMax", max); }
+        public Options reverseX() { return nest("xAxis", "reverse", true); }
+        public Options reverseY() { return nest("yAxis", "reverse", true); }
+
+        @SuppressWarnings("unchecked")
+        private Options nest(String key, String field, Object value) {
+            ((Map<String, Object>) extra.computeIfAbsent(key, k -> new LinkedHashMap<String, Object>())).put(field, value);
+            return this;
+        }
+    }
+
+    public static Options options() { return new Options(); }
+
+    public static void emitRaw(String json) {
+        if (customSink != null) {
+            customSink.emit(json);
+            return;
+        }
+        System.out.println(DISPLAY_MARKER + " " + json);
+        System.out.flush();
+    }
+
+    // ------------------------------------------------------------------------------------------------------- handles
+    public static class DisplayHandle {
+        public final String mime;
+        public volatile Map<String, Object> spec;
+        public final String displayId;
+        public final boolean _fry_shown = true;
+        private final ConcurrentHashMap<String, List<Consumer<Map<String, Object>>>> listeners = new ConcurrentHashMap<>();
+        private final ScheduledExecutorService throttleExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "fry-throttle");
+            t.setDaemon(true);
+            return t;
+        });
+        private volatile Map<String, Object> pendingUpdate = null;
+        private volatile ScheduledFuture<?> pendingTask = null;
+
+        public DisplayHandle(String mime, Map<String, Object> spec, String displayId) {
+            this.mime = mime;
+            this.spec = spec;
+            this.displayId = displayId;
+            activeHandles.put(displayId, this);
+        }
+
+        public DisplayHandle update(String title) {
+            Map<String, Object> copy = new LinkedHashMap<>(spec);
+            copy.put("title", title);
+            return update(copy);
+        }
+
+        public DisplayHandle update(Map<String, Object> newSpec) {
+            this.spec = new LinkedHashMap<>(newSpec);
+            synchronized (this) {
+                pendingUpdate = this.spec;
+                if (pendingTask == null || pendingTask.isDone()) {
+                    pendingTask = throttleExecutor.schedule(this::flushUpdate, 33, TimeUnit.MILLISECONDS);
+                }
+            }
+            return this;
+        }
+
+        private void flushUpdate() {
+            Map<String, Object> toSend;
+            synchronized (this) {
+                toSend = pendingUpdate;
+                pendingUpdate = null;
+                pendingTask = null;
+            }
+            if (toSend != null) {
+                emitRaw(buildMessage("update_display", mime, toSend, displayId));
+            }
+        }
+
+        public DisplayHandle on(String event, Consumer<Map<String, Object>> listener) {
+            String ev = event.toLowerCase();
+            listeners.computeIfAbsent(ev, k -> new CopyOnWriteArrayList<>()).add(listener);
+            ensureEventSocket();
+            emitRaw("{\"type\":\"subscribe\",\"display_id\":\"" + displayId + "\",\"events\":[\"" + ev + "\"]}");
+            return this;
+        }
+
+        public DisplayHandle onClick(Consumer<Map<String, Object>> listener) { return on("click", listener); }
+        public DisplayHandle onSelect(Consumer<Map<String, Object>> listener) { return on("select", listener); }
+        public DisplayHandle onStep(Consumer<Map<String, Object>> listener) { return on("step", listener); }
+
+        public DisplayHandle off(String event) {
+            String ev = event.toLowerCase();
+            listeners.remove(ev);
+            emitRaw("{\"type\":\"unsubscribe\",\"display_id\":\"" + displayId + "\",\"events\":[\"" + ev + "\"]}");
+            return this;
+        }
+
+        public void close() {
+            activeHandles.remove(displayId);
+            throttleExecutor.shutdown();
+        }
+
+        public void dispatchRawEvent(String line) {
+            Object parsedObj = new JsonParser(line).parse();
+            if (!(parsedObj instanceof Map<?, ?> rootMap)) return;
+            Object evObj = rootMap.get("event");
+            Map<String, Object> eventData = evObj instanceof Map ? (Map<String, Object>) evObj : (Map<String, Object>) rootMap;
+            String kind = String.valueOf(eventData.getOrDefault("event", "click")).toLowerCase();
+            List<Consumer<Map<String, Object>>> list = listeners.get(kind);
+            if (list != null) {
+                for (Consumer<Map<String, Object>> c : list) {
+                    try {
+                        c.accept(eventData);
+                    } catch (Exception ex) {
+                        System.err.println("[Display event error]: " + ex);
+                    }
+                }
+            }
+        }
+    }
+
+    private static String newId() {
+        return UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+    }
+
+    private static String buildMessage(String type, String mime, Map<String, Object> spec, String displayId) {
+        String specJson = toJson(spec);
+        String kind = String.valueOf(spec.getOrDefault("kind", "visual"));
+        String title = spec.containsKey("title") ? ": " + spec.get("title") : "";
+        String fallback = kind + " " + title;
+        return "{\"type\":\"" + type + "\",\"data\":{\"" + mime + "\":" + specJson +
+               ",\"text/plain\":\"" + escapeJson(fallback) + "\"},\"metadata\":{},\"transient\":{\"display_id\":\"" + displayId + "\"}}";
+    }
+
+    public static DisplayHandle sendDisplay(String mime, Map<String, Object> spec) {
+        String id = newId();
+        emitRaw(buildMessage("display", mime, spec, id));
+        return new DisplayHandle(mime, spec, id);
+    }
+
+    public static <T> T dump(T obj) { return dump((String) null, obj); }
+    public static <T> T dump(String title, T obj) { table(title, obj); return obj; }
+    public static <T> T dump(T obj, String title) { return dump(title, obj); }
+    public static <T> T show(T obj) { return dump(obj); }
+    public static <T> T show(String title, T obj) { return dump(title, obj); }
+    public static <T> T show(T obj, String title) { return dump(title, obj); }
+
+    public static void table(Object obj) { table(null, obj); }
+    public static void table(String title, Object obj) {
+        emitRaw("{\"type\":\"display\",\"data\":{\"" + TABLE_MIME + "\":" + formatTable(title, obj) + "},\"metadata\":{}}");
+    }
+
+    public static void html(String htmlContent) {
+        emitRaw("{\"type\":\"display\",\"data\":{\"text/html\":\"" + escapeJson(htmlContent) + "\"},\"metadata\":{}}");
+    }
+
+    public static void markdown(String content) {
+        emitRaw("{\"type\":\"display\",\"data\":{\"text/markdown\":\"" + escapeJson(content) + "\"},\"metadata\":{}}");
+    }
+
+    public static void image(byte[] bytes) { image(bytes, "PNG"); }
+    public static void image(byte[] bytes, String format) {
+        if (bytes == null) return;
+        String b64 = Base64.getEncoder().encodeToString(bytes);
+        String mime = "image/" + format.toLowerCase();
+        emitRaw("{\"type\":\"display\",\"data\":{\"" + mime + "\":\"" + b64 + "\"},\"metadata\":{}}");
+    }
+
+    public static void image(String path) {
+        try {
+            File f = new File(path);
+            if (f.exists()) {
+                byte[] bytes = Files.readAllBytes(f.toPath());
+                String ext = path.toLowerCase().endsWith(".jpg") || path.toLowerCase().endsWith(".jpeg") ? "jpeg" : "png";
+                image(bytes, ext);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    public static void json(Object obj) {
+        emitRaw("{\"type\":\"display\",\"data\":{\"application/json\":" + toJson(obj) + "},\"metadata\":{}}");
+    }
+
+    // Charts
+    private static DisplayHandle chartDisplay(String kind, Object data, Options options) {
+        Map<String, Object> spec = chartSpec(kind, data, options.title, options.extra);
+        if (options.labels != null && spec.get("series") instanceof List<?> all) {
+            for (Object one : all) {
+                if (one instanceof Map<?, ?> m && m.get("y") instanceof List<?> y && y.size() == options.labels.size()) {
+                    @SuppressWarnings("unchecked") Map<String, Object> series = (Map<String, Object>) m;
+                    series.put("labels", options.labels);
+                }
+            }
+        }
+        return sendDisplay(CHART_MIME, spec);
+    }
+
+    private static Options titled(String title) { return new Options().title(title); }
+
+    public static DisplayHandle lineChart(Object data) { return lineChart(data, (String) null); }
+    public static DisplayHandle lineChart(Object data, String title) { return chartDisplay("line", data, titled(title)); }
+    public static DisplayHandle lineChart(Object data, Options options) { return chartDisplay("line", data, options); }
+
+    public static DisplayHandle areaChart(Object data) { return areaChart(data, (String) null); }
+    public static DisplayHandle areaChart(Object data, String title) { return chartDisplay("area", data, titled(title)); }
+    public static DisplayHandle areaChart(Object data, Options options) { return chartDisplay("area", data, options); }
+
+    public static DisplayHandle scatterChart(Object data) { return scatterChart(data, (String) null); }
+    public static DisplayHandle scatterChart(Object data, String title) { return chartDisplay("scatter", data, titled(title)); }
+    public static DisplayHandle scatterChart(Object data, Options options) { return chartDisplay("scatter", data, options); }
+
+    public static DisplayHandle barChart(Object data) { return barChart(data, (String) null); }
+    public static DisplayHandle barChart(Object data, String title) { return chartDisplay("bar", data, titled(title)); }
+    public static DisplayHandle barChart(Object data, Options options) { return chartDisplay("bar", data, options); }
+
+    public static DisplayHandle stackedBarChart(Object data, String title) { return chartDisplay("bar", data, titled(title).stacked()); }
+    public static DisplayHandle stackedBarChart(Object data, Options options) { return chartDisplay("bar", data, options.stacked()); }
+
+    public static DisplayHandle horizontalBarChart(Object data, String title) { return chartDisplay("bar", data, titled(title).horizontal()); }
+    public static DisplayHandle horizontalBarChart(Object data, Options options) { return chartDisplay("bar", data, options.horizontal()); }
+
+    public static DisplayHandle chart(Object data) { return chart(data, (String) null); }
+    public static DisplayHandle chart(Object data, String title) { return chartDisplay("line", data, titled(title)); }
+    public static DisplayHandle chart(Object data, Options options) { return chartDisplay("line", data, options); }
+
+    public static DisplayHandle pieChart(Object data) { return pieChart(data, (String) null); }
+    public static DisplayHandle pieChart(Object data, String title) { return chartDisplay("pie", data, titled(title)); }
+    public static DisplayHandle pieChart(Object data, Options options) { return chartDisplay("pie", data, options); }
+
+    public static DisplayHandle donutChart(Object data) { return donutChart(data, (String) null); }
+    public static DisplayHandle donutChart(Object data, String title) { return chartDisplay("donut", data, titled(title)); }
+    public static DisplayHandle donutChart(Object data, Options options) { return chartDisplay("donut", data, options); }
+
+    /** (x, y, size) items; the size is a radius in pixels. */
+    public static DisplayHandle bubbleChart(Object data, String title) { return chartDisplay("bubble", data, titled(title)); }
+    public static DisplayHandle bubbleChart(Object data, Options options) { return chartDisplay("bubble", data, options); }
+
+    /** A polygon for each series over a spoke for each value (name the spokes with Options.labels). */
+    public static DisplayHandle radarChart(Object data, String title) { return chartDisplay("radar", data, titled(title)); }
+    public static DisplayHandle radarChart(Object data, Options options) { return chartDisplay("radar", data, options); }
+
+    public static DisplayHandle polarAreaChart(Object data, String title) { return chartDisplay("polarArea", data, titled(title)); }
+    public static DisplayHandle polarAreaChart(Object data, Options options) { return chartDisplay("polarArea", data, options); }
+
+    public static DisplayHandle histogram(Object data, String title, int bins) {
+        Map<String, Object> extra = new LinkedHashMap<>();
+        extra.put("bins", bins);
+        return sendDisplay(CHART_MIME, chartSpec("histogram", data, title, extra));
+    }
+    public static DisplayHandle histogram(Object data, String title) { return histogram(data, title, 10); }
+
+    // 3D
+    public static DisplayHandle scatter3d(Object data) { return scatter3d(data, null); }
+    public static DisplayHandle scatter3d(Object data, String title) { return sendDisplay(PLOT3D_MIME, plot3dSpec("scatter", data, title)); }
+
+    public static DisplayHandle surface3d(Object data) { return surface3d(data, null); }
+    public static DisplayHandle surface3d(Object data, String title) { return sendDisplay(PLOT3D_MIME, plot3dSpec("surface", data, title)); }
+
+    public static DisplayHandle graph3d(Object data) { return graph3d(data, null); }
+    public static DisplayHandle graph3d(Object data, String title) { return sendDisplay(PLOT3D_MIME, plot3dSpec("graph", data, title)); }
+
+    public static DisplayHandle voxelBars(Object data) { return voxelBars(data, null); }
+    public static DisplayHandle voxelBars(Object data, String title) { return sendDisplay(PLOT3D_MIME, plot3dSpec("voxelBar", data, title)); }
+
+    @FunctionalInterface
+    public interface DoubleBinaryFunction {
+        double apply(double x, double y);
+    }
+
+    public static DisplayHandle plot3d(String title, DoubleBinaryFunction func, double minX, double maxX, double minY, double maxY, int res) {
+        int n = Math.max(2, res);
+        List<List<Object>> zGrid = new ArrayList<>();
+        for (int r = 0; r < n; r++) {
+            double y = minY + (maxY - minY) * r / (n - 1);
+            List<Object> row = new ArrayList<>();
+            for (int c = 0; c < n; c++) {
+                double x = minX + (maxX - minX) * c / (n - 1);
+                try {
+                    row.add(func.apply(x, y));
+                } catch (Exception e) {
+                    row.add(null);
+                }
+            }
+            zGrid.add(row);
+        }
+        Map<String, Object> surface = new LinkedHashMap<>();
+        surface.put("x", Map.of("min", minX, "max", maxX));
+        surface.put("y", Map.of("min", minY, "max", maxY));
+        surface.put("z", zGrid);
+
+        Map<String, Object> spec = new LinkedHashMap<>();
+        spec.put("kind", "surface");
+        spec.put("surface", surface);
+        if (title != null) spec.put("title", title);
+        return sendDisplay(PLOT3D_MIME, spec);
+    }
+
+    public static DisplayHandle plot3d(DoubleBinaryFunction func, double minX, double maxX, double minY, double maxY, int res, String title) {
+        return plot3d(title, func, minX, maxX, minY, maxY, res);
+    }
+
+    public static DisplayHandle plot3d(Object data, String title) { return surface3d(data, title); }
+    public static DisplayHandle plot3d(Object data) { return surface3d(data, null); }
+
+
+    // Visualizers
+    public static DisplayHandle matrix(Object grid) { return matrix(grid, null); }
+    public static DisplayHandle matrix(Object grid, String title) { return sendDisplay(VISUALIZER_MIME, matrixSpec(grid, title)); }
+
+    public static DisplayHandle islands(Object grid) { return islands(grid, null); }
+    public static DisplayHandle islands(Object grid, String title) { return sendDisplay(VISUALIZER_MIME, islandsSpec(grid, title)); }
+
+    public static DisplayHandle array(Object values, Object pointers, String title) {
+        return sendDisplay(VISUALIZER_MIME, arraySpec(values, pointers, title));
+    }
+
+    public static DisplayHandle tree(Object root) { return tree(root, null); }
+    public static DisplayHandle tree(Object root, String title) { return sendDisplay(VISUALIZER_MIME, treeSpec(root, title)); }
+
+    public static DisplayHandle graph(Object graph) { return graph(graph, null); }
+    public static DisplayHandle graph(Object graph, String title) { return sendDisplay(VISUALIZER_MIME, graphSpec(graph, title)); }
+
+    public static DisplayHandle linkedList(Object head) { return linkedList(head, null); }
+    public static DisplayHandle linkedList(Object head, String title) { return sendDisplay(VISUALIZER_MIME, linkedListSpec(head, title)); }
+
+    public static DisplayHandle bars(Object values) { return bars(values, null); }
+    public static DisplayHandle bars(Object values, String title) { return sendDisplay(VISUALIZER_MIME, barsSpec(values, title)); }
+
+    public static void wait(double seconds) {
+        ensureEventSocket();
+        long end = System.currentTimeMillis() + (long)(seconds * 1000);
+        while (System.currentTimeMillis() < end) {
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                break;
+            }
+        }
+    }
+    public static void wait(int seconds) { wait((double) seconds); }
+    public static void waitFor(double seconds) { wait(seconds); }
+    public static void waitLoop() { wait(3600.0); }
+    public static void processEvents() {
+        // Events are dispatched on receipt by reader thread
+    }
+
+    // ------------------------------------------------------------------------------------------------------ specs
+    private static Map<String, Object> chartSpec(String kind, Object data, String title, Map<String, Object> extra) {
+        Map<String, Object> spec = new LinkedHashMap<>();
+        spec.put("kind", kind);
+        if (extra != null) spec.putAll(extra);
+        List<Map<String, Object>> series = new ArrayList<>();
+
+        if ("bubble".equals(kind)) {
+            if (data instanceof Map<?, ?> named) {
+                for (Map.Entry<?, ?> e : named.entrySet()) series.add(bubbleSeries(toList(e.getValue()), String.valueOf(e.getKey())));
+            } else {
+                series.add(bubbleSeries(toList(data), null));
+            }
+            spec.put("series", series);
+            if (title != null) spec.put("title", title);
+            return spec;
+        }
+
+        List<?> list = toList(data);
+        if (list != null) {
+            List<?> firstPair = toList(!list.isEmpty() ? list.get(0) : null);
+            if (firstPair != null && firstPair.size() >= 2) {
+                List<Object> x = new ArrayList<>();
+                List<Object> y = new ArrayList<>();
+                for (Object item : list) {
+                    List<?> p = toList(item);
+                    if (p != null && p.size() >= 2) {
+                        x.add(toNum(p.get(0)));
+                        y.add(toNum(p.get(1)));
+                    }
+                }
+                Map<String, Object> s = new LinkedHashMap<>();
+                s.put("x", x);
+                s.put("y", y);
+                series.add(s);
+            } else if (!list.isEmpty() && list.get(0) instanceof Map<?, ?> record) {
+                List<Object> y = new ArrayList<>();
+                List<String> labels = new ArrayList<>();
+                String valKey = findKey(record, "value", "y", "amount", "count", "total");
+                String labelKey = findKey(record, "name", "x", "label", "key", "title");
+                for (Object item : list) {
+                    Map<?, ?> r = (Map<?, ?>) item;
+                    y.add(toNum(r.get(valKey)));
+                    labels.add(String.valueOf(r.get(labelKey)));
+                }
+                Map<String, Object> s = new LinkedHashMap<>();
+                s.put("y", y);
+                s.put("labels", labels);
+                series.add(s);
+            } else if ("histogram".equals(kind)) {
+                List<Object> values = new ArrayList<>();
+                for (Object item : list) values.add(toNum(item));
+                Map<String, Object> s = new LinkedHashMap<>();
+                s.put("values", values);
+                series.add(s);
+            } else {
+                List<Object> y = new ArrayList<>();
+                for (Object item : list) y.add(toNum(item));
+                Map<String, Object> s = new LinkedHashMap<>();
+                s.put("y", y);
+                series.add(s);
+            }
+        } else if (data instanceof Map<?, ?> map) {
+            boolean isMultiSeries = false;
+            for (Object v : map.values()) {
+                if (v instanceof SeriesData || toList(v) != null) { isMultiSeries = true; break; }
+            }
+            if (isMultiSeries) {
+                for (Map.Entry<?, ?> e : map.entrySet()) {
+                    Object value = e.getValue();
+                    SeriesData styled = value instanceof SeriesData sd ? sd : null;
+                    List<?> yVals = toList(styled != null ? styled.values : value);
+                    List<Object> y = new ArrayList<>();
+                    if (yVals != null) for (Object item : yVals) y.add(toNum(item));
+                    Map<String, Object> s = new LinkedHashMap<>();
+                    s.put("name", String.valueOf(e.getKey()));
+                    s.put("y", y);
+                    if (styled != null) s.putAll(styled.options);
+                    series.add(s);
+                }
+            } else {
+                List<String> labels = new ArrayList<>();
+                List<Object> y = new ArrayList<>();
+                for (Map.Entry<?, ?> e : map.entrySet()) {
+                    labels.add(String.valueOf(e.getKey()));
+                    y.add(toNum(e.getValue()));
+                }
+                Map<String, Object> s = new LinkedHashMap<>();
+                s.put("y", y);
+                s.put("labels", labels);
+                series.add(s);
+            }
+        }
+
+        spec.put("series", series);
+        if (title != null) spec.put("title", title);
+        return spec;
+    }
+
+    // (x, y, size) items, each a list of at least three numbers.
+    private static Map<String, Object> bubbleSeries(List<?> items, String name) {
+        Map<String, Object> series = new LinkedHashMap<>();
+        if (name != null) series.put("name", name);
+        List<Object> x = new ArrayList<>(), y = new ArrayList<>(), sizes = new ArrayList<>();
+        if (items != null) {
+            for (Object item : items) {
+                List<?> p = toList(item);
+                if (p != null && p.size() >= 3) {
+                    x.add(toNum(p.get(0)));
+                    y.add(toNum(p.get(1)));
+                    sizes.add(toNum(p.get(2)));
+                } else {
+                    x.add(null);
+                    y.add(null);
+                    sizes.add(null);
+                }
+            }
+        }
+
+        series.put("x", x);
+        series.put("y", y);
+        series.put("sizes", sizes);
+        return series;
+    }
+
+    private static Map<String, Object> plot3dSpec(String kind, Object data, String title) {
+        Map<String, Object> spec = new LinkedHashMap<>();
+        spec.put("kind", kind);
+        if ("scatter".equals(kind)) {
+            List<Object> x = new ArrayList<>();
+            List<Object> y = new ArrayList<>();
+            List<Object> z = new ArrayList<>();
+            List<?> list = toList(data);
+            if (list != null) {
+                for (Object item : list) {
+                    List<?> p = toList(item);
+                    if (p != null && p.size() >= 3) {
+                        x.add(toNum(p.get(0)));
+                        y.add(toNum(p.get(1)));
+                        z.add(toNum(p.get(2)));
+                    }
+                }
+            }
+            Map<String, Object> s = new LinkedHashMap<>();
+            s.put("x", x);
+            s.put("y", y);
+            s.put("z", z);
+            spec.put("series", List.of(s));
+        } else if ("surface".equals(kind)) {
+            List<?> rows = toList(data);
+            int numRows = rows != null ? rows.size() : 0;
+            int numCols = 0;
+            List<List<Object>> zGrid = new ArrayList<>();
+            if (rows != null) {
+                for (Object r : rows) {
+                    List<?> cols = toList(r);
+                    if (cols != null) {
+                        numCols = Math.max(numCols, cols.size());
+                        List<Object> rowVals = new ArrayList<>();
+                        for (Object cell : cols) rowVals.add(toNum(cell));
+                        zGrid.add(rowVals);
+                    }
+                }
+            }
+            Map<String, Object> surface = new LinkedHashMap<>();
+            surface.put("x", Map.of("min", 0, "max", Math.max(0, numCols - 1)));
+            surface.put("y", Map.of("min", 0, "max", Math.max(0, numRows - 1)));
+            surface.put("z", zGrid);
+            spec.put("surface", surface);
+        } else if ("voxelBar".equals(kind)) {
+            List<List<Object>> rows = to2DList(data);
+            List<Object> x = new ArrayList<>();
+            List<Object> y = new ArrayList<>();
+            List<Object> z = new ArrayList<>();
+            List<String> labels = new ArrayList<>();
+            for (int r = 0; r < rows.size(); r++) {
+                List<Object> cols = rows.get(r);
+                for (int c = 0; c < cols.size(); c++) {
+                    Object cell = cols.get(c);
+                    Object numObj = toNum(cell);
+                    if (numObj instanceof Number n) {
+                        double num = n.doubleValue();
+                        x.add(r);
+                        y.add(c);
+                        z.add(num);
+                        labels.add("[" + r + "," + c + "]=" + num);
+                    }
+                }
+            }
+            Map<String, Object> s = new LinkedHashMap<>();
+            s.put("x", x);
+            s.put("y", y);
+            s.put("z", z);
+            s.put("labels", labels);
+            spec.put("series", List.of(s));
+        } else if ("graph".equals(kind)) {
+            Set<String> nodeSet = new LinkedHashSet<>();
+            List<Map<String, Object>> edges = new ArrayList<>();
+            if (data instanceof Map<?, ?> map) {
+                for (Map.Entry<?, ?> e : map.entrySet()) {
+                    String u = String.valueOf(e.getKey());
+                    nodeSet.add(u);
+                    List<?> targets = toList(e.getValue());
+                    if (targets != null) {
+                        for (Object v : targets) {
+                            String vs = String.valueOf(v);
+                            nodeSet.add(vs);
+                            Map<String, Object> edge = new LinkedHashMap<>();
+                            edge.put("from", u);
+                            edge.put("to", vs);
+                            edges.add(edge);
+                        }
+                    }
+                }
+            }
+            List<Map<String, Object>> nodes = new ArrayList<>();
+            for (String n : nodeSet) {
+                Map<String, Object> node = new LinkedHashMap<>();
+                node.put("id", n);
+                nodes.add(node);
+            }
+            Map<String, Object> graph = new LinkedHashMap<>();
+            graph.put("directed", true);
+            graph.put("nodes", nodes);
+            graph.put("edges", edges);
+            spec.put("graph", graph);
+        }
+        if (title != null) spec.put("title", title);
+        return spec;
+    }
+
+    private static Map<String, Object> matrixSpec(Object grid, String title) {
+        Map<String, Object> spec = new LinkedHashMap<>();
+        spec.put("kind", "matrix");
+        spec.put("state", Map.of("grid", Map.of("values", to2DList(grid))));
+        if (title != null) spec.put("title", title);
+        return spec;
+    }
+
+    private static Map<String, Object> islandsSpec(Object grid, String title) {
+        Map<String, Object> spec = new LinkedHashMap<>();
+        spec.put("kind", "islands");
+        spec.put("state", Map.of("grid", Map.of("values", to2DList(grid))));
+        if (title != null) spec.put("title", title);
+        return spec;
+    }
+
+    private static Map<String, Object> arraySpec(Object values, Object pointers, String title) {
+        Map<String, Object> spec = new LinkedHashMap<>();
+        spec.put("kind", "arrayPointers");
+        List<Object> cleanValues = new ArrayList<>();
+        List<?> list = toList(values);
+        if (list != null) for (Object v : list) cleanValues.add(cleanScalar(v));
+        spec.put("state", Map.of("array", Map.of("values", cleanValues)));
+
+        if (pointers instanceof Map<?, ?> map && !map.isEmpty()) {
+            List<Map<String, Object>> ptrList = new ArrayList<>();
+            for (Map.Entry<?, ?> e : map.entrySet()) {
+                Map<String, Object> p = new LinkedHashMap<>();
+                p.put("name", String.valueOf(e.getKey()));
+                p.put("at", e.getValue() instanceof Number ? ((Number)e.getValue()).intValue() : String.valueOf(e.getValue()));
+                ptrList.add(p);
+            }
+            spec.put("pointers", ptrList);
+        }
+        if (title != null) spec.put("title", title);
+        return spec;
+    }
+
+    private static Map<String, Object> treeSpec(Object root, String title) {
+        Map<String, Object> spec = new LinkedHashMap<>();
+        spec.put("kind", "tree");
+        List<?> list = toList(root);
+        Map<String, Object> treeState = new LinkedHashMap<>();
+        treeState.put("root", "node_1");
+        List<Map<String, Object>> nodes = new ArrayList<>();
+
+        if (list != null) {
+            // Level order array
+            if (!list.isEmpty() && list.get(0) != null) {
+                int count = 1;
+                Map<String, Object> rootNode = new LinkedHashMap<>();
+                rootNode.put("id", "node_1");
+                rootNode.put("value", String.valueOf(list.get(0)));
+                Queue<Map<String, Object>> q = new LinkedList<>();
+                q.add(rootNode);
+                Map<String, List<Map<String, Object>>> childrenMap = new LinkedHashMap<>();
+                int idx = 1;
+                while (!q.isEmpty() && idx < list.size()) {
+                    Map<String, Object> cur = q.poll();
+                    for (String side : new String[]{"left", "right"}) {
+                        if (idx < list.size()) {
+                            Object val = list.get(idx);
+                            if (val != null) {
+                                count++;
+                                Map<String, Object> child = new LinkedHashMap<>();
+                                child.put("id", "node_" + count);
+                                child.put("value", String.valueOf(val));
+                                cur.put(side, child.get("id"));
+                                childrenMap.computeIfAbsent((String) cur.get("id"), k -> new ArrayList<>()).add(child);
+                                q.add(child);
+                            }
+                            idx++;
+                        }
+                    }
+                }
+                walkTree(rootNode, childrenMap, nodes);
+            }
+        } else if (root != null) {
+            int[] counter = new int[]{0};
+            parseTreeNode(root, counter, nodes);
+        }
+
+        treeState.put("nodes", nodes);
+        spec.put("state", Map.of("tree", treeState));
+        if (title != null) spec.put("title", title);
+        return spec;
+    }
+
+    private static void walkTree(Map<String, Object> n, Map<String, List<Map<String, Object>>> childrenMap, List<Map<String, Object>> nodes) {
+        nodes.add(n);
+        List<Map<String, Object>> kids = childrenMap.get(n.get("id"));
+        if (kids != null) {
+            for (Map<String, Object> c : kids) walkTree(c, childrenMap, nodes);
+        }
+    }
+
+    private static String parseTreeNode(Object node, int[] counter, List<Map<String, Object>> nodes) {
+        if (node == null) return null;
+        counter[0]++;
+        String id = "node_" + counter[0];
+        Object val = getField(node, "val", "value", "data", "key");
+        Map<String, Object> n = new LinkedHashMap<>();
+        n.put("id", id);
+        n.put("value", String.valueOf(val != null ? val : node));
+        nodes.add(n);
+
+        Object left = getField(node, "left");
+        Object right = getField(node, "right");
+        if (left != null) n.put("left", parseTreeNode(left, counter, nodes));
+        if (right != null) n.put("right", parseTreeNode(right, counter, nodes));
+        return id;
+    }
+
+    private static Map<String, Object> graphSpec(Object graph, String title) {
+        Map<String, Object> spec = new LinkedHashMap<>();
+        spec.put("kind", "graph");
+        Set<String> nodeSet = new LinkedHashSet<>();
+        List<Map<String, Object>> edges = new ArrayList<>();
+        if (graph instanceof Map<?, ?> map) {
+            for (Map.Entry<?, ?> e : map.entrySet()) {
+                String u = String.valueOf(e.getKey());
+                nodeSet.add(u);
+                List<?> targets = toList(e.getValue());
+                if (targets != null) {
+                    for (Object v : targets) {
+                        String vs = String.valueOf(v);
+                        nodeSet.add(vs);
+                        Map<String, Object> edge = new LinkedHashMap<>();
+                        edge.put("from", u);
+                        edge.put("to", vs);
+                        edges.add(edge);
+                    }
+                }
+            }
+        }
+        List<Map<String, Object>> nodes = new ArrayList<>();
+        for (String n : nodeSet) {
+            Map<String, Object> node = new LinkedHashMap<>();
+            node.put("id", n);
+            nodes.add(node);
+        }
+        Map<String, Object> state = new LinkedHashMap<>();
+        state.put("directed", true);
+        state.put("nodes", nodes);
+        state.put("edges", edges);
+        spec.put("state", Map.of("graph", state));
+        if (title != null) spec.put("title", title);
+        return spec;
+    }
+
+    private static Map<String, Object> linkedListSpec(Object head, String title) {
+        Map<String, Object> spec = new LinkedHashMap<>();
+        spec.put("kind", "linkedList");
+        List<Map<String, Object>> nodes = new ArrayList<>();
+        Object cur = head;
+        int idx = 0;
+        while (cur != null && idx < 500) {
+            String id = "n" + idx;
+            Object val = getField(cur, "val", "value", "data");
+            Map<String, Object> n = new LinkedHashMap<>();
+            n.put("id", id);
+            n.put("value", String.valueOf(val != null ? val : cur));
+            if (!nodes.isEmpty()) {
+                nodes.get(nodes.size() - 1).put("next", id);
+            }
+            nodes.add(n);
+            cur = getField(cur, "next");
+            idx++;
+        }
+        spec.put("state", Map.of("linkedList", Map.of("nodes", nodes)));
+        if (title != null) spec.put("title", title);
+        return spec;
+    }
+
+    private static Map<String, Object> barsSpec(Object values, String title) {
+        Map<String, Object> spec = new LinkedHashMap<>();
+        spec.put("kind", "bars");
+        List<Object> clean = new ArrayList<>();
+        List<?> list = toList(values);
+        if (list != null) for (Object v : list) clean.add(toNum(v));
+        spec.put("state", Map.of("bars", Map.of("values", clean)));
+        if (title != null) spec.put("title", title);
+        return spec;
+    }
+
+    // ------------------------------------------------------------------------------------------------ serialization
+    private static Object getField(Object obj, String... names) {
+        if (obj == null) return null;
+        for (String name : names) {
+            try {
+                Field f = obj.getClass().getField(name);
+                return f.get(obj);
+            } catch (Exception ignored) {}
+            try {
+                Field f = obj.getClass().getDeclaredField(name);
+                f.setAccessible(true);
+                return f.get(obj);
+            } catch (Exception ignored) {}
+            try {
+                Method m = obj.getClass().getMethod("get" + Character.toUpperCase(name.charAt(0)) + name.substring(1));
+                return m.invoke(obj);
+            } catch (Exception ignored) {}
+        }
+        return null;
+    }
+
+    private static String findKey(Map<?, ?> map, String... names) {
+        for (String name : names) {
+            for (Object k : map.keySet()) {
+                if (name.equalsIgnoreCase(String.valueOf(k))) return String.valueOf(k);
+            }
+        }
+        return String.valueOf(map.keySet().iterator().next());
+    }
+
+    private static List<List<Object>> to2DList(Object grid) {
+        List<List<Object>> rows = new ArrayList<>();
+        List<?> list = toList(grid);
+        if (list != null) {
+            for (Object r : list) {
+                List<?> cols = toList(r);
+                if (cols != null) {
+                    List<Object> row = new ArrayList<>();
+                    for (Object c : cols) row.add(cleanScalar(c));
+                    rows.add(row);
+                }
+            }
+        }
+        return rows;
+    }
+
+    private static List<?> toList(Object o) {
+        if (o == null) return null;
+        if (o instanceof List<?>) return (List<?>) o;
+        if (o instanceof Collection<?>) return new ArrayList<>((Collection<?>) o);
+        if (o instanceof Object[]) return Arrays.asList((Object[]) o);
+        if (o instanceof int[] arr) {
+            List<Integer> l = new ArrayList<>(arr.length);
+            for (int v : arr) l.add(v);
+            return l;
+        }
+        if (o instanceof double[] arr) {
+            List<Double> l = new ArrayList<>(arr.length);
+            for (double v : arr) l.add(v);
+            return l;
+        }
+        if (o instanceof long[] arr) {
+            List<Long> l = new ArrayList<>(arr.length);
+            for (long v : arr) l.add(v);
+            return l;
+        }
+        return null;
+    }
+
+    private static Object toNum(Object v) {
+        if (v == null || v instanceof Boolean) return null;
+        if (v instanceof Number n) {
+            double d = n.doubleValue();
+            if (Double.isNaN(d) || Double.isInfinite(d)) return null;
+            if (v instanceof Integer || v instanceof Long) return v;
+            return d;
+        }
+        try {
+            double d = Double.parseDouble(String.valueOf(v));
+            return Double.isNaN(d) || Double.isInfinite(d) ? null : d;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static Object cleanScalar(Object v) {
+        if (v == null) return null;
+        if (v instanceof Number || v instanceof Boolean || v instanceof String) return v;
+        return String.valueOf(v);
+    }
+
+    public static String toJson(Object o) {
+        if (o == null) return "null";
+        if (o instanceof Number n) {
+            double d = n.doubleValue();
+            if (Double.isNaN(d) || Double.isInfinite(d)) return "null";
+            return o.toString();
+        }
+        if (o instanceof Boolean) return o.toString();
+        if (o instanceof CharSequence) return "\"" + escapeJson(o.toString()) + "\"";
+        List<?> list = toList(o);
+        if (list != null) {
+            StringBuilder sb = new StringBuilder("[");
+            for (int i = 0; i < list.size(); i++) {
+                if (i > 0) sb.append(",");
+                sb.append(toJson(list.get(i)));
+            }
+            return sb.append("]").toString();
+        }
+        if (o instanceof Map<?, ?> map) {
+            StringBuilder sb = new StringBuilder("{");
+            int i = 0;
+            for (Map.Entry<?, ?> e : map.entrySet()) {
+                if (i++ > 0) sb.append(",");
+                sb.append("\"").append(escapeJson(String.valueOf(e.getKey()))).append("\":").append(toJson(e.getValue()));
+            }
+            return sb.append("}").toString();
+        }
+        return "\"" + escapeJson(String.valueOf(o)) + "\"";
+    }
+
+    public static String escapeJson(String s) {
+        if (s == null) return "";
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c == '"') sb.append("\\\"");
+            else if (c == '\\') sb.append("\\\\");
+            else if (c == '\b') sb.append("\\b");
+            else if (c == '\f') sb.append("\\f");
+            else if (c == '\n') sb.append("\\n");
+            else if (c == '\r') sb.append("\\r");
+            else if (c == '\t') sb.append("\\t");
+            else if (c < 32) sb.append(String.format("\\u%04x", (int) c));
+            else sb.append(c);
+        }
+        return sb.toString();
+    }
+
+    // A value that is one cell of a table, or one line of text: not an object to open up.
+    public static boolean isScalarValue(Object v) {
+        return v == null || v instanceof CharSequence || v instanceof Character || v instanceof Boolean || v instanceof Number
+            || v instanceof Enum<?> || v instanceof UUID || v instanceof java.util.Date
+            || v instanceof java.time.temporal.TemporalAccessor || v instanceof java.time.temporal.TemporalAmount
+            || v instanceof Class<?> || v instanceof java.nio.file.Path || v instanceof File || v instanceof URI;
+    }
+
+    // What is read from an object for a row of a table: a record's components, else the public fields and the public getters
+    // (getX(), isX()) that no field covers.
+    private static LinkedHashMap<String, java.util.concurrent.Callable<Object>> columnsOf(Object sample) {
+        Class<?> type = sample.getClass();
+        LinkedHashMap<String, java.util.concurrent.Callable<Object>> columns = new LinkedHashMap<>();
+        if (type.isRecord()) {
+            for (RecordComponent component : type.getRecordComponents()) {
+                Method accessor = component.getAccessor();
+                accessor.setAccessible(true);
+                columns.put(component.getName(), () -> accessor.invoke(CURRENT.get()));
+            }
+            return columns;
+        }
+        for (Field field : type.getFields()) {
+            if (Modifier.isStatic(field.getModifiers()) || field.isSynthetic()) continue;
+            columns.put(field.getName(), () -> field.get(CURRENT.get()));
+        }
+        List<Method> getters = new ArrayList<>();
+        for (Method m : type.getMethods()) {
+            String name = m.getName();
+            if (Modifier.isStatic(m.getModifiers()) || m.isSynthetic() || m.isBridge() || m.getParameterCount() != 0 || m.getDeclaringClass() == Object.class) continue;
+            Class<?> returns = m.getReturnType();
+            if (returns == void.class || name.equals("getClass") || name.equals("hashCode") || name.equals("toString")) continue;
+            if ((name.startsWith("get") && name.length() > 3) || (name.startsWith("is") && name.length() > 2 && (returns == boolean.class || returns == Boolean.class))) getters.add(m);
+        }
+        getters.sort(Comparator.comparing(Method::getName));
+        for (Method getter : getters) {
+            String name = getter.getName().startsWith("get") ? getter.getName().substring(3) : getter.getName().substring(2);
+            name = name.length() > 1 && Character.isUpperCase(name.charAt(1)) ? name : Character.toLowerCase(name.charAt(0)) + name.substring(1);
+            if (columns.containsKey(name)) continue;
+            getter.setAccessible(true);
+            columns.put(name, () -> getter.invoke(CURRENT.get()));
+        }
+        return columns;
+    }
+
+    // The object a column reader is reading (the readers are made once for a class and then read each row's object).
+    private static final ThreadLocal<Object> CURRENT = new ThreadLocal<>();
+
+    private static String cellText(Object v) {
+        if (v == null) return "<null>";
+        if (v instanceof Double d && (d.isNaN() || d.isInfinite())) return d.isNaN() ? "NaN" : d > 0 ? "∞" : "-∞";
+        return String.valueOf(v);
+    }
+
+    /**
+     * The studio's table for a collection or array of maps, records and beans (a column for each key, component, field or
+     * getter), or of scalars (a column of values); null when the value is not a collection. Rows beyond 1,000 are left out and
+     * counted.
+     */
+    public static String tableJson(String title, Object obj) {
+        List<?> list = toList(obj);
+        if (list == null) return null;
+        Map<String, Object> table = new LinkedHashMap<>();
+        table.put("title", title != null ? title : "Table");
+        List<String> cols = new ArrayList<>();
+        List<Boolean> numeric = new ArrayList<>();
+        List<List<Object>> rows = new ArrayList<>();
+        int shown = Math.min(list.size(), 1000);
+        Object sample = null;
+        for (Object item : list) { if (item != null) { sample = item; break; } }
+
+        if (sample instanceof Map<?, ?> first) {
+            for (Object k : first.keySet()) {
+                cols.add(String.valueOf(k));
+                numeric.add(first.get(k) instanceof Number);
+            }
+            for (Object item : list.subList(0, shown)) {
+                List<Object> row = new ArrayList<>();
+                for (String c : cols) row.add(item instanceof Map<?, ?> r ? cellText(r.get(c)) : "<null>");
+                rows.add(row);
+            }
+        } else if (sample != null && !isScalarValue(sample) && !(sample instanceof Collection<?>) && !sample.getClass().isArray()
+                && !columnsOf(sample).isEmpty()) {
+            Class<?> type = sample.getClass();
+            LinkedHashMap<String, java.util.concurrent.Callable<Object>> columns = columnsOf(sample);
+            cols.addAll(columns.keySet());
+            boolean[] allNumbers = new boolean[cols.size()];
+            Arrays.fill(allNumbers, true);
+            boolean[] anyValue = new boolean[cols.size()];
+            for (Object item : list.subList(0, shown)) {
+                List<Object> row = new ArrayList<>();
+                int c = 0;
+                for (java.util.concurrent.Callable<Object> reader : columns.values()) {
+                    Object value = null;
+                    if (item != null && item.getClass() == type) {
+                        CURRENT.set(item);
+                        try { value = reader.call(); } catch (Throwable t) { value = "<Error: " + (t.getCause() != null ? t.getCause() : t).getMessage() + ">"; }
+                    }
+                    if (value != null) { anyValue[c] = true; if (!(value instanceof Number)) allNumbers[c] = false; }
+                    row.add(cellText(value));
+                    c++;
+                }
+                rows.add(row);
+            }
+            CURRENT.remove();
+            for (int c = 0; c < cols.size(); c++) numeric.add(allNumbers[c] && anyValue[c]);
+        } else {
+            cols.add("Value");
+            boolean allNumbers = !list.isEmpty();
+            for (Object item : list.subList(0, shown)) {
+                if (item != null && !(item instanceof Number)) allNumbers = false;
+                rows.add(List.of(cellText(item)));
+            }
+            numeric.add(allNumbers);
+        }
+        table.put("columns", cols);
+        table.put("numeric", numeric);
+        table.put("rows", rows);
+        table.put("totalRows", list.size());
+        table.put("totalColumns", cols.size());
+        return toJson(table);
+    }
+
+    private static String formatTable(String title, Object obj) {
+        String json = tableJson(title, obj);
+        if (json != null) return json;
+        // not a collection: one value in a table of one cell
+        Map<String, Object> table = new LinkedHashMap<>();
+        table.put("title", title != null ? title : "Table");
+        table.put("columns", List.of("Value"));
+        table.put("numeric", List.of(obj instanceof Number));
+        table.put("rows", List.of(List.of(cellText(obj))));
+        table.put("totalRows", 1);
+        table.put("totalColumns", 1);
+        return toJson(table);
+    }
+
+    /** Shows a collection of records, beans or maps as a table (what a cell ending in such a list is shown as). False when the value is not one. */
+    public static boolean showTableIfTabular(Object obj) {
+        List<?> list = toList(obj);
+        if (list == null || list.isEmpty()) return false;
+        Object sample = null;
+        for (Object item : list) { if (item != null) { sample = item; break; } }
+        if (sample == null || isScalarValue(sample) || sample instanceof Collection<?> || sample.getClass().isArray()) return false;
+        if (!(sample instanceof Map<?, ?>) && columnsOf(sample).isEmpty()) return false;
+        String title = (sample instanceof Map ? "Map" : sample.getClass().getSimpleName()) + " (" + list.size() + ")";
+        emitRaw("{\"type\":\"display\",\"data\":{\"" + TABLE_MIME + "\":" + tableJson(title, obj) + ",\"text/plain\":" + toJson(title) + "},\"metadata\":{}}");
+        return true;
+    }
+
+    public static class JsonParser {
+        private final String src;
+        private int pos = 0;
+
+        public JsonParser(String src) { this.src = src; }
+
+        public Object parse() {
+            skipWhitespace();
+            if (pos >= src.length()) return null;
+            char c = src.charAt(pos);
+            if (c == 'n') { pos += 4; return null; }
+            if (c == 't') { pos += 4; return Boolean.TRUE; }
+            if (c == 'f') { pos += 5; return Boolean.FALSE; }
+            if (c == '"') return parseString();
+            if (c == '[') return parseArray();
+            if (c == '{') return parseObject();
+            return parseNumber();
+        }
+
+        private void skipWhitespace() {
+            while (pos < src.length() && Character.isWhitespace(src.charAt(pos))) pos++;
+        }
+
+        private String parseString() {
+            pos++;
+            StringBuilder sb = new StringBuilder();
+            while (pos < src.length()) {
+                char c = src.charAt(pos++);
+                if (c == '"') return sb.toString();
+                if (c == '\\' && pos < src.length()) {
+                    char esc = src.charAt(pos++);
+                    if (esc == '"') sb.append('"');
+                    else if (esc == '\\') sb.append('\\');
+                    else if (esc == '/') sb.append('/');
+                    else if (esc == 'b') sb.append('\b');
+                    else if (esc == 'f') sb.append('\f');
+                    else if (esc == 'n') sb.append('\n');
+                    else if (esc == 'r') sb.append('\r');
+                    else if (esc == 't') sb.append('\t');
+                    else if (esc == 'u' && pos + 4 <= src.length()) {
+                        String hex = src.substring(pos, pos + 4);
+                        pos += 4;
+                        try {
+                            sb.append((char) Integer.parseInt(hex, 16));
+                        } catch (NumberFormatException ignored) {
+                            sb.append("\\u").append(hex);
+                        }
+                    } else {
+                        sb.append(esc);
+                    }
+                } else {
+                    sb.append(c);
+                }
+            }
+            return sb.toString();
+        }
+
+        private List<Object> parseArray() {
+            pos++;
+            List<Object> list = new ArrayList<>();
+            skipWhitespace();
+            if (pos < src.length() && src.charAt(pos) == ']') { pos++; return list; }
+            while (pos < src.length()) {
+                list.add(parse());
+                skipWhitespace();
+                if (pos < src.length() && src.charAt(pos) == ',') { pos++; }
+                else if (pos < src.length() && src.charAt(pos) == ']') { pos++; break; }
+            }
+            return list;
+        }
+
+        private Map<String, Object> parseObject() {
+            pos++;
+            Map<String, Object> map = new LinkedHashMap<>();
+            skipWhitespace();
+            if (pos < src.length() && src.charAt(pos) == '}') { pos++; return map; }
+            while (pos < src.length()) {
+                skipWhitespace();
+                String key = parseString();
+                skipWhitespace();
+                if (pos < src.length() && src.charAt(pos) == ':') pos++;
+                Object val = parse();
+                map.put(key, val);
+                skipWhitespace();
+                if (pos < src.length() && src.charAt(pos) == ',') { pos++; }
+                else if (pos < src.length() && src.charAt(pos) == '}') { pos++; break; }
+            }
+            return map;
+        }
+
+        private Number parseNumber() {
+            int start = pos;
+            if (pos < src.length() && (src.charAt(pos) == '-' || src.charAt(pos) == '+')) pos++;
+            boolean isFloat = false;
+            while (pos < src.length() && (Character.isDigit(src.charAt(pos)) || src.charAt(pos) == '.' || src.charAt(pos) == 'e' || src.charAt(pos) == 'E')) {
+                if (src.charAt(pos) == '.' || src.charAt(pos) == 'e' || src.charAt(pos) == 'E') isFloat = true;
+                pos++;
+            }
+            String numStr = src.substring(start, pos);
+            if (isFloat) return Double.parseDouble(numStr);
+            try {
+                long val = Long.parseLong(numStr);
+                if (val >= Integer.MIN_VALUE && val <= Integer.MAX_VALUE) return (int) val;
+                return val;
+            } catch (Exception e) {
+                return 0;
+            }
+        }
+    }
+}

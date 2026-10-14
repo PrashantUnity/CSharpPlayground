@@ -4,6 +4,19 @@ using Xunit;
 
 namespace CSharpEditorPlugin.Tests;
 
+/// <summary>
+/// Tests that apply the real plugin and let go of it. Letting go of the plugin ends every program it started
+/// (<c>ProcessRegistry.KillAll()</c>), and that registry is the test process's own: so while one of these runs, no other test
+/// may be running a program, or its <c>dotnet fsi</c>, <c>python</c> or <c>java</c> is killed under it (exit code 137). A
+/// collection that doesn't run in parallel runs by itself, after the others.
+/// </summary>
+[CollectionDefinition(Name, DisableParallelization = true)]
+public sealed class PluginLifecycleCollection
+{
+    public const string Name = "PluginLifecycle";
+}
+
+[Collection(PluginLifecycleCollection.Name)]
 public class CSharpEditorShortcutRegistrationTests
 {
     [Fact]

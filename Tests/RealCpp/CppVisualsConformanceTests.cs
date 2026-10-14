@@ -143,7 +143,7 @@ public class CppVisualsConformanceTests : IDisposable
         TestCpp.Require();
         var services = TestCpp.Services(Path.Combine(_dir, ".studio"));
         var language = (CppLanguage)services.Registry.Get(LanguageIds.Cpp)!;
-        var kernel = language.NotebookKernels!.Create(new KernelCreationContext(() => _dir));
+        var kernel = language.Engine.NotebookKernels.Create(new KernelCreationContext(() => _dir));
         _kernels.Add(kernel);
         return kernel;
     }

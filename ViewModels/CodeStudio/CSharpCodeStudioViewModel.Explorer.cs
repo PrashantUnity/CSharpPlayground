@@ -29,9 +29,11 @@ public partial class CSharpCodeStudioViewModel
     public string ExplorerTruncationText =>
         $"Showing the first {_storageService.WorkspaceFileLimit:N0} files. This folder has more: press Ctrl+P to open any file by name, or open a subfolder.";
 
-    // The storage's StructureVersion the tree was last built at (-1: never built). The tree is rebuilt from a full
-    // workspace scan only when this has moved, not on every tab switch.
-    private long _explorerStructureVersion = -1;
+    private ExplorerRefresher? _explorerRefresher;
+
+    // When the tree is listed: never while the studio is built, but on the first visit, from the host once the engine
+    // is warm, and when the workspace changed (see ExplorerRefresher).
+    private ExplorerRefresher ExplorerRefresh => _explorerRefresher ??= new ExplorerRefresher(_storageService, _activities, ShowExplorerListing);
 
     private LazyExplorerTree? _lazyExplorer;
 
@@ -60,36 +62,9 @@ public partial class CSharpCodeStudioViewModel
         HighlightExplorerItem(Script?.Id, Script?.Title, Script?.SourceFilePath);
     }
 
-    public void PopulateExplorerTree()
-    {
-        try
-        {
-            var version = _storageService.StructureVersion;
-            ShowExplorerListing(_storageService.LoadExplorerListingAsync().GetAwaiter().GetResult());
-            _explorerStructureVersion = version;
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"[CSharpEditorPlugin] Failed to populate script explorer tree: {ex.Message}");
-            ExplorerRootItems.Clear();
-        }
-    }
-
+    /// <summary>Lists the workspace and redraws the Explorer, whether or not anything changed (the Refresh button).</summary>
     [RelayCommand]
-    public async Task RefreshExplorerAsync()
-    {
-        try
-        {
-            // Taken before the scan: a change that lands while it runs leaves the tree stale, so the next check reloads.
-            var version = _storageService.StructureVersion;
-            ShowExplorerListing(await _storageService.LoadExplorerListingAsync());
-            _explorerStructureVersion = version;
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"[CSharpEditorPlugin] Failed to refresh script explorer tree: {ex.Message}");
-        }
-    }
+    public Task RefreshExplorerAsync() => ExplorerRefresh.RefreshAsync();
 
     /// <summary>
     /// Brings the Explorer up to date without rescanning the workspace when nothing in it has changed: switching a tab
@@ -98,11 +73,7 @@ public partial class CSharpCodeStudioViewModel
     /// </summary>
     public async Task RefreshExplorerIfStaleAsync()
     {
-        if (_explorerStructureVersion != _storageService.StructureVersion)
-        {
-            await RefreshExplorerAsync();
-            return;
-        }
+        if (await ExplorerRefresh.RefreshIfStaleAsync()) return;
 
         HighlightExplorerItem(Script?.Id, Script?.Title, Script?.SourceFilePath);
     }
@@ -115,7 +86,7 @@ public partial class CSharpCodeStudioViewModel
     public void OnActivated()
     {
         _isPageActive = true;
-        _ = RefreshExplorerIfStaleAsync();
+        RefreshExplorerIfStaleAsync().FireAndForget(_activities, "Listing the workspace");
 
         // Reading the file index starts (or refreshes) its background walk, so Go to File is ready when it is used.
         _ = _storageService.FileIndex;

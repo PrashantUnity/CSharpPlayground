@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Text.Json;
 using PdfEditorApp.Plugins.CSharpEditor.Models;
 using PdfEditorApp.Plugins.CSharpEditor.Models.Server;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Activities;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Languages;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Templates;
 using PdfEditorApp.Plugins.CSharpEditor.Services.Workspace;
@@ -476,9 +477,19 @@ public partial class LocalScriptStorageService : IScriptStorageService, IDisposa
     /// </summary>
     public async Task<WorkspaceListing> LoadExplorerListingAsync()
     {
-        Interlocked.Increment(ref _workspaceScanCount);
         await EnsureInitializedAsync();
         var root = EffectiveWorkspaceRoot;
+        return await _explorerListings.RunAsync((root, StructureVersion, ContentVersion), () => ListExplorerAsync(root)).ConfigureAwait(false);
+    }
+
+    // Listings of the same workspace asked for at the same time, at the same versions, share one walk: both studios'
+    // Explorers list it at once in the background, and a visit can come while that runs. A finished listing is not kept,
+    // so the next one (a Refresh, say) reads the disk again.
+    private readonly SingleFlight<(string Root, long Structure, long Content), WorkspaceListing> _explorerListings = new();
+
+    private async Task<WorkspaceListing> ListExplorerAsync(string root)
+    {
+        Interlocked.Increment(ref _workspaceScanCount);
 
         // Names only: cheap enough to ask before deciding how to list (the walk stops as soon as the limit is passed).
         var (files, truncated) = await Task.Run(() =>
@@ -625,7 +636,8 @@ public partial class LocalScriptStorageService : IScriptStorageService, IDisposa
         try
         {
             var json = await File.ReadAllTextAsync(file).ConfigureAwait(false);
-            var nb = await Task.Run(() => JsonSerializer.Deserialize<NotebookDocumentItem>(json)).ConfigureAwait(false);
+            // A .ipynb is read as Jupyter wrote it (its cells, outputs and kernel); a .frynb or .csnb as FrySharp did.
+            var nb = await Task.Run(() => NotebookFileFormat.Read(file, json, _languages)).ConfigureAwait(false);
             if (nb != null)
             {
                 bool migrated = false;
@@ -658,7 +670,7 @@ public partial class LocalScriptStorageService : IScriptStorageService, IDisposa
         try
         {
             notebook.LastModified = DateTime.UtcNow;
-            var json = JsonSerializer.Serialize(notebook, _jsonOptions);
+            var json = NotebookFileFormat.WriteFrynb(notebook);
 
             var existing = await FindExistingFilePathAsync(notebook.Id, ".frynb");
             if (existing != null)

@@ -53,6 +53,7 @@ public class CodeStudioExternalLanguageTests : IDisposable
             backToHubAction: () => { },
             blindProgress: new LocalBlindProgressService(Path.Combine(_baseDir, "progress")),
             languages: _languages);
+        await studio.RefreshExplorerAsync(); // the studio lists its folder in the background: wait for it
         var item = Flatten(studio.ExplorerRootItems).Single(i => i.Name == fileName);
         await studio.SwitchToScriptAsync(item);
         return studio;

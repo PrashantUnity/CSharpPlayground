@@ -1,44 +1,42 @@
-# FrySharp Web Mode — Plan
+# FrySharp VS Code Extension & Sidecar — Architecture & Plan
 
-> **Concept**: `frysharp serve` starts a local server, and the browser becomes the IDE, as with JupyterLab. The same engine that runs in the FryPDF desktop app (Roslyn scripting, polyglot notebooks, kernels, visuals) runs behind a React UI with the same 5-zone layout.
+> **Concept**: A native Visual Studio Code extension (`vscode-frysharp`) backed by a lightweight, headless .NET 10 sidecar (`FrySharp.Sidecar`) communicating over stdio JSON-RPC 2.0. The extension gives developers first-class polyglot interactive notebooks (`.frynb` & `.ipynb`), Roslyn script execution, cross-language variable sharing (`#!share`), and rich visual output renderers natively inside VS Code.
 
-*Last checked against the code: 2026-10-09 (branch `UiIssues`).*
+*Updated: 2026-10-13 (Web SPA replaced by native VS Code extension).*
 
 > [!IMPORTANT]
-> **Decision (2026-10-09): Web is the preferred surface.** The VS Code extension is deferred (§12). Because the web client talks to the engine through one protocol (§5), the extension can reuse that protocol later instead of needing its own backend.
+> **Decision (2026-10-13): VS Code extension is the primary external surface; Web SPA retired.** 
+> Rebuilding VS Code's entire UI shell in React/Monaco was redundant and heavy. Developers already work inside VS Code, where Microsoft's deprecation of Polyglot Notebooks (.NET Interactive) left an enormous void for C# and polyglot notebook users. The headless engine (`FrySharp.Core`) now powers `FrySharp.Sidecar`, which talks directly to `vscode-frysharp` via stdio JSON-RPC.
 
 ---
 
-## 1. Why web
+## 1. Why VS Code Extension
 
-- One UI that works on every OS, on a remote or headless machine (`ssh -L 5000:localhost:5000 box`), and on locked-down machines where the desktop app can't be installed.
-- Notebooks and scripts are a natural fit for the browser, and JupyterLab proved the model.
-- Timing: Microsoft deprecated **Polyglot Notebooks** (support ended 2026-03-27) and retired **Azure Data Studio**, leaving C# and SQL notebook users without a tool ([DevClass](https://www.devclass.com/databases/2026/02/14/microsoft-deprecates-polyglot-notebooks-developers-react/4091167), [The Register](https://forums.theregister.com/forum/all/2026/02/12/polyglot_notebooks_deprecation/)). FrySharp already has C#, Python, JavaScript, Java and SQL cells with `#!share --from <language> <name>`.
+- **Native Experience**: Native VS Code tabs, editor chrome, keyboard shortcuts, split views, terminal, and settings without maintaining a custom web UI clone.
+- **Timing & Market Void**: Microsoft deprecated **Polyglot Notebooks** (.NET Interactive in VS Code, support ended 2026-03-27) and retired **Azure Data Studio**. FrySharp offers a seamless, drop-in replacement for .NET, C#, Python, JavaScript, Java, and SQL notebook cells.
+- **Zero Network Attack Surface**: Communication occurs strictly over `stdin`/`stdout` JSON-RPC pipes. No open ports, no authentication cookies, and no CORS/Origin vulnerabilities.
 
 ---
 
 ## 2. Architecture
 
 ```
-$ frysharp serve [--port 5000] [--workspace DIR] [--open]
-  → http://127.0.0.1:5000/?token=…   (token swapped for an HttpOnly cookie)
-
 ┌──────────────────────────────────────────────────────────────────────┐
-│ FrySharp.Web  (ASP.NET Core, references FrySharp.Core only)          │
-│  ├─ GET  /            the SPA, embedded in the assembly              │
-│  ├─ GET  /files/raw   large downloads; POST /files/upload            │
-│  ├─ WS   /session     JSON-RPC 2.0: everything interactive (§5)      │
-│  └─ FrySharp.Core     Roslyn, kernels, processes, workspace index,   │
-│                       storage, visuals render models, debugging      │
-└──────────────────────────────────────────────────────────────────────┘
-                 ↕ one authenticated WebSocket per browser tab
-┌──────────────────────────────────────────────────────────────────────┐
-│ SPA  (Vite + React + TypeScript)                                     │
-│  ├─ Monaco, coloured by the desktop's own TextMate grammars          │
-│  ├─ 5 zones: Activity Bar · Side Bar · Editor · Bottom Deck · Status │
-│  ├─ Zustand state · TanStack Virtual lists, tree and tables          │
-│  ├─ Renderers: tables, charts/3D/visualizers, ECharts, inspector     │
-│  └─ xterm.js for program output (ANSI colours kept)                  │
+│ VS Code Extension (`vscode-frysharp` in TypeScript)                  │
+│  ├─ NotebookSerializer: native `.frynb` and `.ipynb` notebook support│
+│  ├─ NotebookController: executes cells (C#, Python, JS, SQL, etc.)  │
+│  ├─ NotebookRenderer: webview output renderer for ECharts, charts &  │
+│  │   rich tables (using FrySharp's existing visual JSON specs)       │
+│  └─ Commands: Run Script, New Notebook, Restart Sidecar              │
+└──────────────────────────────────┬───────────────────────────────────┘
+                                   │ JSON-RPC 2.0 over stdio (Content-Length framed)
+┌──────────────────────────────────▼───────────────────────────────────┐
+│ FrySharp.Sidecar (.NET 10 console executable, references Core only)  │
+│  ├─ Stdio JSON-RPC dispatch via StreamJsonRpc                        │
+│  ├─ Workspace & document services                                    │
+│  ├─ Script runner (FileRunner + RoslynCompilerService)               │
+│  ├─ Notebook kernel router & directive runner                        │
+│  └─ FrySharp.Core: Roslyn, kernels, processes, visuals render models │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -76,9 +74,9 @@ $ frysharp serve [--port 5000] [--workspace DIR] [--open]
 
 Do it in slices so web work can start after the first one:
 
-- [ ] **0a — Minimal core (unblocks W1–W3):** `Execution`, `Processes`, `Storage`, `Workspace`, `Toolchains`, `Visuals`, plus the **C#** engine. Replace the `Dispatcher.UIThread` calls on these paths with events the UI marshals itself.
-- [ ] **0b — Language split:** `ILanguageDefinition` becomes `ILanguageEngine` (Core) + `ILanguageEditor` (desktop). `LanguageRegistry` maps an id to both. Move one language per PR (Python, JavaScript, SQL, Java, F#, Go, Rust, C++). Each one appears in web mode as it moves.
-- [ ] **0c — Kernels + Display:** untangle `NotebookExecutionKernel` and the four Display files. Core emits MIME bundles; the desktop turns them into bitmaps and controls.
+- [x] **0a — Minimal core (unblocks W1–W3):** `Execution`, `Processes`, `Storage`, `Workspace`, `Toolchains`, `Visuals`, plus the **C#** engine. Replace the `Dispatcher.UIThread` calls on these paths with events the UI marshals itself. *(done 2026-10-13)*
+- [ ] **0b — Language split:** `ILanguageDefinition` becomes `ILanguageEngine` (Core) + `ILanguageEditor` (desktop). `LanguageRegistry` maps an id to both. Move one language per PR (Python, JavaScript, SQL, Java, F#, Go, Rust, C++). Each one appears in web mode as it moves. *(C#, Python and JavaScript engines are in Core (2026-10-13); SQL, Java, F#, Go, Rust and C++ are still desktop-only)*
+- [x] **0c — Kernels + Display:** untangle `NotebookExecutionKernel` and the four Display files. Core emits MIME bundles; the desktop turns them into bitmaps and controls. *(done 2026-10-13: Core `Display` with the desktop's as a subclass, kernels and MIME bundles in Core)*
 
 **Done when:** `dotnet list FrySharp.Core package --include-transitive` shows no Avalonia. A console test opens a sample `.frynb`, runs C#, Python and SQL cells with `#!share`, and gets the same MIME bundles as the desktop. The desktop keeps 0 warnings, all tests green and unchanged `UiSnapshots perf` numbers.
 
@@ -114,32 +112,32 @@ Document it in `docs/session-protocol.md`, beside `kernel-protocol.md`.
 ## 6. Phases
 
 ### W1 — Host, CLI and security
-- [ ] `FrySharp.Web` (ASP.NET Core minimal host) on `FrySharp.Core`.
-- [ ] `frysharp` **console** entry with `serve`, using `System.CommandLine`. `Runner/` is a `WinExe` with no console on Windows, so it can't host the verb.
-- [ ] Security as in §10: token → cookie, `Host`/`Origin` checks, loopback by default, path confinement.
-- [ ] SPA served from embedded resources, so a single-file publish works.
+- [x] `FrySharp.Web` (ASP.NET Core minimal host) on `FrySharp.Core`. *(done)*
+- [x] `frysharp` **console** entry with `serve`, using `System.CommandLine`. `Runner/` is a `WinExe` with no console on Windows, so it can't host the verb. *(done: `serve`, `run`, `info`)*
+- [x] Security as in §10: token → cookie, `Host`/`Origin` checks, loopback by default, path confinement. *(done, covered by Tests.Web)*
+- [x] SPA served from embedded resources, so a single-file publish works. *(done in Release builds)*
 - **Done when:** `frysharp serve --open` opens the browser. A request without the token, or with a foreign `Origin`, is rejected (tests cover HTTP and the WebSocket upgrade).
 
 ### W2 — Shell: layout, Explorer, editor
-- [ ] 5-zone layout. Single-sidebar rule. Keybindings `Ctrl+B`, `Ctrl+J`, `Ctrl+S`, `Ctrl+P`, `Ctrl+F`, `Ctrl+Shift+E/F`, `F5`/`Ctrl+F5`/`Shift+F5`. Browser-reserved keys (e.g. `Ctrl+W`, `Ctrl+N`) get documented alternatives.
-- [ ] **Themes shared with the desktop:** `fry/initialize` sends the active theme's tokens (theme studio palettes) as CSS variables, so themes are built once.
-- [ ] Explorer: a flat list of visible rows virtualized with TanStack Virtual (the desktop's `ExplorerRowList` model), folders listed lazily with `listFolder`, Go to File over `WorkspaceFileIndex`.
-- [ ] Monaco **bundled locally**. `@monaco-editor/react` loads Monaco from a CDN by default, which breaks offline use and CSP, so configure `loader.config({ monaco })`. Tokenize with the **same TextMate grammar files** the desktop gets from `TextMateSharp.Grammars` (served by the backend, run with `vscode-textmate` + `vscode-oniguruma`), plus Roslyn semantic tokens for C#. Colours then match the desktop.
-- [ ] Tabs with dirty markers, breadcrumbs, and save with conflict detection. External edits come through `watch`.
+- [x] 5-zone layout. Single-sidebar rule. Keybindings `Ctrl+B`, `Ctrl+J`, `Ctrl+S`, `Ctrl+P`, `Ctrl+F`, `Ctrl+Shift+E/F`, `F5`/`Ctrl+F5`/`Shift+F5`. Browser-reserved keys (e.g. `Ctrl+W`, `Ctrl+N`) get documented alternatives. *(done; browser-reserved keys in web/README.md)*
+- [ ] **Themes shared with the desktop:** `fry/initialize` sends the active theme's tokens (theme studio palettes) as CSS variables, so themes are built once. *(open)*
+- [x] Explorer: a flat list of visible rows virtualized with TanStack Virtual (the desktop's `ExplorerRowList` model), folders listed lazily with `listFolder`, Go to File over `WorkspaceFileIndex`. *(done)*
+- [ ] Monaco **bundled locally**. `@monaco-editor/react` loads Monaco from a CDN by default, which breaks offline use and CSP, so configure `loader.config({ monaco })`. Tokenize with the **same TextMate grammar files** the desktop gets from `TextMateSharp.Grammars` (served by the backend, run with `vscode-textmate` + `vscode-oniguruma`), plus Roslyn semantic tokens for C#. Colours then match the desktop. *(local Monaco done; TextMate grammars and Roslyn semantic tokens are open, Monaco's own tokenizer is used meanwhile)*
+- [x] Tabs with dirty markers, breadcrumbs, and save with conflict detection. External edits come through `watch`. *(done)*
 - **Done when:** a 30,000-file workspace's Explorer shows its first level in under 200 ms and stays smooth while scrolling.
 
 ### W3 — Run, output, problems
-- [ ] Run / stop for every language whose engine has moved to Core.
-- [ ] Output in xterm.js with ANSI colours; stdin; output batched (the kernel protocol's rule: flush at newline, 8 KB or 50 ms).
-- [ ] Problems panel from run diagnostics (`IDiagnosticParser`), with click-to-navigate.
-- [ ] Status bar: language, Ln/Col, compiler status, execution timer.
+- [x] Run / stop for every language whose engine has moved to Core. *(done for C#, Python, JavaScript)*
+- [x] Output in xterm.js with ANSI colours; stdin; output batched (the kernel protocol's rule: flush at newline, 8 KB or 50 ms). *(done)*
+- [x] Problems panel from run diagnostics (`IDiagnosticParser`), with click-to-navigate. *(done, plus live C# diagnostics)*
+- [x] Status bar: language, Ln/Col, compiler status, execution timer. *(done; a run's time shows when it ends, there is no live timer yet)*
 - **Done when:** a script printing 100,000 lines doesn't freeze the tab, and memory stays capped.
 
 ### W4 — Notebooks
-- [ ] `.frynb` open/save (byte-identical round trip when nothing changed), plus `.ipynb` import.
-- [ ] **Virtualized cell list:** only cells near the viewport mount a Monaco editor. The desktop needed this too: 150 cells went from 15.7 s / 2.6 GB to 0.75 s.
-- [ ] Run / add / delete / move, interrupt, `input()`, polyglot cells with `#!share`, Variables panel.
-- [ ] Reconnect keeps kernels and outputs (§5).
+- [x] `.frynb` open/save (byte-identical round trip when nothing changed), plus `.ipynb` import. *(done; `.ipynb` is also saved back as Jupyter)*
+- [x] **Virtualized cell list:** only cells near the viewport mount a Monaco editor. The desktop needed this too: 150 cells went from 15.7 s / 2.6 GB to 0.75 s. *(done)*
+- [x] Run / add / delete / move, interrupt, `input()`, polyglot cells with `#!share`, Variables panel. *(done; C# `Console.ReadLine()` in cells too)*
+- [x] Reconnect keeps kernels and outputs (§5). *(done: a running cell or run survives a refresh)*
 - **Done when:** a 1,000-cell notebook opens in under 1 s, and the repo's sample notebooks produce the same text outputs as the desktop (an automated comparison).
 
 ### W5 — Rich outputs

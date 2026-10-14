@@ -1,7 +1,7 @@
 <UserControl xmlns:lt="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Extensibility.Theming.Layout;assembly=CSharpEditorPlugin" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
-             xmlns:models="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Models"
+             xmlns:models="using:PdfEditorApp.Plugins.CSharpEditor.Models"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Editor.DebugHoverDataTipControl">
 
 

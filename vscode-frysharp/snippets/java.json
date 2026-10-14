@@ -1,0 +1,32 @@
+{
+  "FrySharp table": {
+    "prefix": "frytable",
+    "body": ["Display.table(${1:rows});"],
+    "description": "Show a list of records (or maps) as a sortable, filterable table"
+  },
+  "FrySharp line chart": {
+    "prefix": "frylinechart",
+    "body": ["Display.lineChart(${1:values}, \"${2:Title}\");"],
+    "description": "Show numbers as a line chart"
+  },
+  "FrySharp bar chart": {
+    "prefix": "frybarchart",
+    "body": ["Display.barChart(${1:values}, \"${2:Title}\");"],
+    "description": "Show numbers as a bar chart"
+  },
+  "FrySharp markdown": {
+    "prefix": "frymarkdown",
+    "body": ["Display.markdown(\"${1:# Heading}\");"],
+    "description": "Show Markdown"
+  },
+  "FrySharp maven package": {
+    "prefix": "frydeps",
+    "body": ["//DEPS ${1:group}:${2:artifact}:${3:version}"],
+    "description": "Use a library from Maven Central: it is downloaded when the cell runs"
+  },
+  "FrySharp share from another language": {
+    "prefix": "fryshare",
+    "body": ["#!share --from ${1|csharp,python,javascript,fsharp,sql|} ${2:name}"],
+    "description": "Copy a variable of another language's kernel into this cell (a list of objects becomes a List of Maps)"
+  }
+}

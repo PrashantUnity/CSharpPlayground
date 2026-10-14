@@ -32,6 +32,7 @@ public partial class NotebookTabViewModel
     private readonly StudioLanguageServices _languages;
     private readonly Func<string?>? _workspaceRoot;
     private readonly NotebookKernelRouter _router;
+    private readonly NotebookDirectiveRunner _directives;
 
     [ObservableProperty]
     private IReadOnlyList<NotebookKernelStatusItem> _activeKernels = Array.Empty<NotebookKernelStatusItem>();
@@ -130,8 +131,7 @@ public partial class NotebookTabViewModel
             .Select(l => _router.Find(l!.Id)?.DisplayName ?? l!.DisplayName));
     }
 
-    private static bool IsNotebookLanguage(ILanguageDefinition language) =>
-        language.NotebookKernels != null && language.Has(LanguageCapabilities.NotebookCells);
+    private static bool IsNotebookLanguage(ILanguageDefinition language) => NotebookDirectiveRunner.IsNotebookLanguage(language);
 
     // A new cell is written in the language of the cell it's added next to (or the notebook's default).
     private NotebookCellItem NewCellItem(NotebookCellViewModel? nextTo, CellType type)
@@ -175,86 +175,8 @@ public partial class NotebookTabViewModel
     /// Runs a cell's directives before its code: package commands, then <c>#!share</c>s. False when one failed (the
     /// cell's output says why), so the code doesn't run.
     /// </summary>
-    private async Task<bool> RunDirectivesAsync(CellDirectives directives, ILanguageDefinition language, INotebookKernel kernel, CellConsole console, CancellationToken ct)
-    {
-        foreach (var command in directives.PackageCommands)
-        {
-            if (!await RunPackageCommandAsync(language, command, kernel, console, ct)) return false;
-        }
-
-        foreach (var share in directives.Shares)
-        {
-            if (!await ShareAsync(share, language, kernel, console, ct)) return false;
-        }
-
-        return true;
-    }
-
-    private async Task<bool> ShareAsync(ShareDirective share, ILanguageDefinition language, INotebookKernel kernel, CellConsole console, CancellationToken ct)
-    {
-        var from = _languages.Registry.Get(share.FromLanguage);
-        string? problem = null;
-        if (from == null || !IsNotebookLanguage(from))
-        {
-            problem = $"There's no notebook language called \"{share.FromLanguage}\". Use {string.Join(" or ", _languages.Registry.NotebookLanguages.Select(l => l.Id))}.";
-        }
-        else if (!from.Has(LanguageCapabilities.ValueSharing) || !language.Has(LanguageCapabilities.ValueSharing))
-        {
-            problem = $"{(from.Has(LanguageCapabilities.ValueSharing) ? language.DisplayName : from.DisplayName)} cells can't share values.";
-        }
-        else if (ReferenceEquals(from, language))
-        {
-            problem = $"'{share.Name}' is already a {language.DisplayName} value: #!share copies from another language's cells.";
-        }
-        else if (_router.Find(from.Id) is not { IsSessionActive: true } source)
-        {
-            problem = $"No {from.DisplayName} cell has run yet, so there's no '{share.Name}' to copy. Run the {from.DisplayName} cell that sets it first.";
-        }
-        else
-        {
-            try
-            {
-                var json = await source.GetValueJsonAsync(share.Name, ct);
-                await kernel.SetValueFromJsonAsync(share.TargetName, json, ct);
-                return true;
-            }
-            catch (KernelValueException ex)
-            {
-                problem = ex.Message;
-            }
-        }
-
-        console.Write($"❌ #!share (line {share.LineNumber}): {problem}\n");
-        return false;
-    }
-
-    private async Task<bool> RunPackageCommandAsync(ILanguageDefinition language, PackageCommand command, INotebookKernel kernel, CellConsole console, CancellationToken ct)
-    {
-        if (language.Packages is not { } packages || language.Toolchain is not { } toolchains)
-        {
-            console.Write($"❌ {language.DisplayName} cells can't install packages.\n");
-            return false;
-        }
-
-        var resolution = await toolchains.ResolveAsync(ToolchainQuery(), ct);
-        if (resolution.Toolchain is not { } toolchain)
-        {
-            console.Write((resolution.Missing?.ToText() ?? $"{toolchains.ToolName} wasn't found.") + "\n");
-            return false;
-        }
-
-        console.Write($"▶ {command.Text}\n");
-        var result = await packages.RunAsync(command, toolchain, console.Write, ct);
-        if (result.Message is { Length: > 0 } message) console.Write((result.Success ? "" : "❌ ") + message.TrimEnd() + "\n");
-
-        // A new environment only takes over when the kernel next starts; until then the running one looks there too.
-        if (result.Success && result.AddedSearchPath is { } searchPath && kernel is ISearchPathKernel searchable && kernel.IsSessionActive)
-        {
-            await searchable.AddSearchPathAsync(searchPath, ct);
-        }
-
-        return result.Success;
-    }
+    private Task<bool> RunDirectivesAsync(CellDirectives directives, ILanguageDefinition language, INotebookKernel kernel, CellConsole console, CancellationToken ct) =>
+        _directives.RunAsync(directives, language, kernel, ToolchainQuery(), console.Write, ct);
 
     /// <summary>Installs the package a cell's last run was missing, then runs the cell again.</summary>
     public async Task InstallMissingDependencyAsync(NotebookCellViewModel cell)
@@ -275,7 +197,7 @@ public partial class NotebookTabViewModel
         bool installed;
         try
         {
-            installed = await RunPackageCommandAsync(language, packages.InstallCommand(package), kernel, console, _executionCts.Token);
+            installed = await _directives.RunPackageCommandAsync(language, packages.InstallCommand(package), kernel, ToolchainQuery(), console.Write, _executionCts.Token);
         }
         catch (OperationCanceledException)
         {

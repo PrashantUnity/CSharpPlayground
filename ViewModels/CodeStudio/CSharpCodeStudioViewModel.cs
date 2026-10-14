@@ -399,12 +399,12 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
         _languages.Registry.Changed += OnLanguagesRegistryChanged;
 
         TriggerDiagnosticsCheck();
-        PopulateExplorerTree();
+        // The Explorer is listed later, off the engine's start-up path: see ExplorerRefresh.
 
         _storageService.ActiveWorkspaceChanged += () => Dispatcher.UIThread.Post(() =>
         {
             UpdateSideBarTitle();
-            _ = RefreshExplorerAsync();
+            RefreshExplorerAsync().FireAndForget(_activities, "Listing the workspace");
         });
         // What a workspace search listed belongs to the folder that was open: search the new one for the same text.
         _storageService.ActiveWorkspaceChanged += () => _postToUiThread(() =>
@@ -414,7 +414,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
         // Files changed outside the studio: catch up now if this page is on screen, else on the next visit (OnActivated).
         _storageService.ExternalChangeDetected += () => Dispatcher.UIThread.Post(() =>
         {
-            if (_isPageActive) _ = RefreshExplorerIfStaleAsync();
+            if (_isPageActive) RefreshExplorerIfStaleAsync().FireAndForget(_activities, "Listing the workspace");
         });
         OnActiveLanguageChanged();
         InitializeNuGetPackages();

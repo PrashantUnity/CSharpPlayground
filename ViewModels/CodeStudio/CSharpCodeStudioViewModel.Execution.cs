@@ -693,8 +693,10 @@ public partial class CSharpCodeStudioViewModel
                         {
                             Diagnostics.Add(new Common.DiagnosticItemViewModel(d, (l, c) => RequestNavigateToCaret?.Invoke(l, c)));
                         }
-                        ErrorCount = Diagnostics.Count(d => d.Severity == DiagnosticSeverity.Error);
-                        WarningCount = Diagnostics.Count(d => d.Severity == DiagnosticSeverity.Warning);
+                        // Counted from the result, not from the shown list: a live check that finishes now changes that list
+                        // while it is being enumerated.
+                        ErrorCount = kernelResult.Diagnostics.Count(d => d.Severity == DiagnosticSeverity.Error);
+                        WarningCount = kernelResult.Diagnostics.Count(d => d.Severity == DiagnosticSeverity.Warning);
                         SelectedBottomTabIndex = 2;
                     }
                     else

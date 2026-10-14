@@ -9,7 +9,7 @@
              xmlns:vm="using:PdfEditorApp.Plugins.CSharpEditor.ViewModels"
              xmlns:controls="using:PdfEditorApp.Plugins.CSharpEditor.Controls"
              xmlns:common="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Common"
-             xmlns:display="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Services.Display"
+             xmlns:display="using:PdfEditorApp.Plugins.CSharpEditor.Services.Display"
              xmlns:visuals="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.Controls.Visuals"
              xmlns:vm1="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Common"
              mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="300"
@@ -146,7 +146,7 @@
                                     <DataTemplate x:DataType="display:RichCellOutput">
                                         <StackPanel Spacing="0">
                                             <Border IsVisible="{Binding IsImageKind}" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="8" Margin="0,0,0,12" HorizontalAlignment="Left">
-                                                <Image Source="{Binding DecodedImage}" MaxHeight="450" Stretch="Uniform" HorizontalAlignment="Center" />
+                                                <Image Source="{Binding ImageBytes, Converter={x:Static common:ImageBytesToBitmapConverter.Instance}}" MaxHeight="450" Stretch="Uniform" HorizontalAlignment="Center" />
                                             </Border>
                                             <Border IsVisible="{Binding IsControlKind}" Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="12,8" Margin="0,0,0,12">
                                                 <ContentControl Content="{Binding InteractiveControl}" HorizontalAlignment="Stretch" />

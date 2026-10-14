@@ -118,7 +118,7 @@ public class RustVisualsConformanceTests : IClassFixture<RustStudioFixture>, IDi
     {
         var rust = TestRust.Require();
         var language = (RustLanguage)_studio.Services.Registry.Get(LanguageIds.Rust)!;
-        var plan = await language.ScriptRunner.PlanAsync(new ScriptRunContext(path, Path.GetDirectoryName(path)!, rust));
+        var plan = await language.Engine.ScriptRunner.PlanAsync(new ScriptRunContext(path, Path.GetDirectoryName(path)!, rust));
         var console = new List<string>();
         var outputs = new List<RichCellOutput>();
         var processor = new ExternalOutputProcessor(console.Add, outputs.Add, visuals: session?.Visuals);
@@ -135,7 +135,7 @@ public class RustVisualsConformanceTests : IClassFixture<RustStudioFixture>, IDi
     {
         TestRust.Require();
         var language = (RustLanguage)_studio.Services.Registry.Get(LanguageIds.Rust)!;
-        var kernel = language.NotebookKernels.Create(new KernelCreationContext(() => _dir));
+        var kernel = language.Engine.NotebookKernels.Create(new KernelCreationContext(() => _dir));
         _kernels.Add(kernel);
         return kernel;
     }

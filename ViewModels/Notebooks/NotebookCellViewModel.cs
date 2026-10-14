@@ -572,10 +572,13 @@ public partial class NotebookCellViewModel : ObservableObject
         HasInteractiveControl = false;
     }
 
-    public void SetHtmlContent(string html)
+    /// <param name="html">The HTML to show.</param>
+    /// <param name="markdown">For a Markdown output, the Markdown it was rendered from, saved with it.</param>
+    public void SetHtmlContent(string html, string? markdown = null)
     {
         HtmlContent = html;
         Model.HtmlContent = html;
+        Model.MarkdownContent = markdown;
         HasHtmlContent = !string.IsNullOrEmpty(html);
         HasOutput = true;
         SelectedOutputTab = CellOutputTab.Html;
@@ -690,6 +693,7 @@ public partial class NotebookCellViewModel : ObservableObject
         HtmlContent = string.Empty;
         HasHtmlContent = false;
         Model.HtmlContent = null;
+        Model.MarkdownContent = null;
 
         TableResult = null;
         HasTableOutput = false;

@@ -52,7 +52,6 @@ public class ExternalOutputProcessorTests
     [Theory]
     [InlineData("text/plain", "42\\n", "42\n")]
     [InlineData("text/plain", "no newline", "no newline\n")]
-    [InlineData("text/markdown", "**bold**", "**bold**\n")]
     public void ProcessChunk_ATextDisplay_IsShownAsText_NotAsTheProtocolLine(string mime, string value, string expected)
     {
         var consoleLines = new List<string>();
@@ -64,6 +63,21 @@ public class ExternalOutputProcessorTests
 
         Assert.Equal(["before\n", expected, "after\n"], consoleLines);
         Assert.Empty(richOutputs);
+    }
+
+    [Fact]
+    public void ProcessChunk_AMarkdownDisplay_IsAMarkdownOutput_LikeCSharpsDisplayMarkdown()
+    {
+        var consoleLines = new List<string>();
+        var richOutputs = new List<RichCellOutput>();
+        var processor = new ExternalOutputProcessor(consoleLines.Add, richOutputs.Add);
+
+        processor.ProcessChunk("__FRY_DISPLAY__ {\"type\":\"display\",\"data\":{\"text/markdown\":\"**bold**\",\"text/plain\":\"**bold**\"},\"metadata\":{}}\n");
+        processor.Flush();
+
+        Assert.Empty(consoleLines);
+        var markdown = Assert.Single(richOutputs);
+        Assert.Equal((CellOutputKind.Html, "**bold**", "<b>bold</b>"), (markdown.Kind, markdown.MarkdownSource, markdown.HtmlContent));
     }
 
     [Fact]
