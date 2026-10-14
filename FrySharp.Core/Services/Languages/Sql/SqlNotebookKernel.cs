@@ -125,6 +125,16 @@ public sealed partial class SqlNotebookKernel : INotebookKernel
             var exitCode = await managedProcess.WaitForExitOrKillAsync(ct).ConfigureAwait(false);
             ct.ThrowIfCancellationRequested();
 
+            if (ct.IsCancellationRequested)
+            {
+                return new KernelExecutionResult
+                {
+                    WasCancelled = true,
+                    ErrorMessage = "Cell execution was cancelled.",
+                    Elapsed = clock.Elapsed
+                };
+            }
+
             string output;
             List<(int Offset, string Text)> errors;
             lock (gate)
@@ -137,6 +147,16 @@ public sealed partial class SqlNotebookKernel : INotebookKernel
             var parseResult = new SqlCompilerDiagnosticParser().Parse(console, cellScriptPath);
             var diagnostics = parseResult.Diagnostics.Select(d => OnCellLines(d, prefixLines)).ToList();
             var hasErrors = diagnostics.Any(d => d.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Error);
+
+            if (ct.IsCancellationRequested)
+            {
+                return new KernelExecutionResult
+                {
+                    WasCancelled = true,
+                    ErrorMessage = "Cell execution was cancelled.",
+                    Elapsed = clock.Elapsed
+                };
+            }
 
             return new KernelExecutionResult
             {

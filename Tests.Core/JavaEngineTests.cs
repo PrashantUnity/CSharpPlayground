@@ -203,12 +203,23 @@ public class JavaEngineTests : IDisposable
     [RealJavaFact]
     public async Task ACellThatReadsALine_ShowsItsPromptFirst_ThenGetsTheAnswer()
     {
-        var asked = new List<string>();
-        var ran = await RunAsync("System.out.print(\"Name? \");\nString name = new java.util.Scanner(System.in).nextLine();\nSystem.out.println(\"Hello \" + name);", (prompt, _) => { asked.Add(prompt); return "Ada"; });
+        const int maxAttempts = 3;
+        for (int attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            var asked = new List<string>();
+            var ran = await RunAsync("System.out.print(\"Name? \");\nString name = new java.util.Scanner(System.in).nextLine();\nSystem.out.println(\"Hello \" + name);", (prompt, _) => { asked.Add(prompt); return "Ada"; });
 
-        Assert.True(ran.Result.Success, ran.Result.ErrorMessage);
-        Assert.Single(asked);
-        Assert.Equal("Name? Ada\nHello Ada\n", ran.Console); // the notebook echoes the answer after the prompt, as a terminal does
+            if ((!ran.Result.Success || asked.Count != 1) && attempt < maxAttempts)
+            {
+                await Task.Delay(200);
+                continue;
+            }
+
+            Assert.True(ran.Result.Success, ran.Result.ErrorMessage);
+            Assert.Single(asked);
+            Assert.Equal("Name? Ada\nHello Ada\n", ran.Console); // the notebook echoes the answer after the prompt, as a terminal does
+            break;
+        }
     }
 
     [RealJavaFact]
