@@ -79,6 +79,12 @@ public class CSharpEditorPlugin : IFryPlugin
 
         CSharpStudioHostViewModel? activeHost = null;
 
+        if (ctx.TryGetService<FryWorld.Sdk.Theming.IThemeManager>(out var themeManager))
+        {
+            var tokenReg = themeManager.RegisterTokenContributor(new FryWorld.Sdk.Theming.Contributors.DeveloperStudioTokenContributor());
+            ctx.RegisterDisposable(tokenReg);
+        }
+
         // Opens the studio page in whichever shell hosts the plugin: FryWorld, FryPDF or the standalone runner.
         void NavigateToStudio()
         {
