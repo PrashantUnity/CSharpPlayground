@@ -14,6 +14,12 @@
     <PackageId>FryPdf.Plugin.CSharpEditor</PackageId>
     <RootNamespace>PdfEditorApp.Plugins.CSharpEditor</RootNamespace>
     <Version>2.0.5</Version>
+    <!-- FryWorld.Sdk packages the plugin on Release builds; keep the file name the store catalog links to. -->
+    <FryPluginPackageName>CSharpEditor</FryPluginPackageName>
+    <!-- Script hover docs for Display, Dump, Check... ship next to the DLLs. -->
+    <FryPluginIncludeDocumentation>true</FryPluginIncludeDocumentation>
+    <!-- Roslyn's localized compiler messages are not shipped; diagnostics are shown in English. -->
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <Company>Code Fry Dev</Company>
     <Description>Full-featured interactive FrySharp Script Automation and Polyglot Workspace for FryPDF</Description>
     <DefaultItemExcludes>$(DefaultItemExcludes);Runner/**;Tests/**;tools/**;samples/**;FrySharp.Core/**;FrySharp.Sidecar/**;FrySharp.Cli/**;Tests.Core/**;Tests.Sidecar/**;vscode-frysharp/**</DefaultItemExcludes>
@@ -36,7 +42,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="FryWorld.Sdk" Version="0.0.2" PrivateAssets="all" />
+    <PackageReference Include="FryWorld.Sdk" Version="0.1.0" />
     <PackageReference Include="Markdig" Version="1.4.0" />
     <PackageReference Include="Microsoft.Extensions.AI" Version="10.10.0" />
     <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="10.10.1" />
@@ -67,35 +73,4 @@
     <!-- The C++ display and visual runtime header -->
   </ItemGroup>
 
-  <!-- Packaging into .fryplugin distribution archive -->
-  <Target Name="PackageFryPlugin" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
-    <PropertyGroup>
-      <PluginStagingDir>$(TargetDir)staging\</PluginStagingDir>
-      <OutputFryPlugin>$(TargetDir)CSharpEditor.fryplugin</OutputFryPlugin>
-    </PropertyGroup>
-
-    <RemoveDir Directories="$(PluginStagingDir)" />
-    <MakeDir Directories="$(PluginStagingDir)" />
-
-    <ItemGroup>
-      <PluginFiles Include="$(TargetDir)*.dll"
-                   Exclude="$(TargetDir)Avalonia.dll;$(TargetDir)Avalonia.Base.dll;$(TargetDir)Avalonia.Controls.dll;$(TargetDir)Avalonia.Markup.dll;$(TargetDir)Avalonia.Markup.Xaml.dll;$(TargetDir)Avalonia.Metal.dll;$(TargetDir)Avalonia.MicroCom.dll;$(TargetDir)Avalonia.OpenGL.dll;$(TargetDir)Avalonia.Remote.Protocol.dll;$(TargetDir)Avalonia.Skia.dll;$(TargetDir)Avalonia.Vulkan.dll;$(TargetDir)Avalonia.DesignerSupport.dll;$(TargetDir)Avalonia.Dialogs.dll;$(TargetDir)CommunityToolkit.Mvvm.dll;$(TargetDir)Material.Icons.dll;$(TargetDir)Material.Icons.Avalonia.dll;$(TargetDir)FryWorld.Sdk.dll;$(TargetDir)FryPdf.PluginSdk.dll;$(TargetDir)MicroCom.Runtime.dll" />
-      <PluginFiles Include="$(TargetDir)CSharpEditorPlugin.xml" Condition="Exists('$(TargetDir)CSharpEditorPlugin.xml')" />
-      <PluginFiles Include="$(TargetDir)CSharpEditorPlugin.deps.json" Condition="Exists('$(TargetDir)CSharpEditorPlugin.deps.json')" />
-      <PluginFiles Include="$(TargetDir)FrySharp.Core.xml" Condition="Exists('$(TargetDir)FrySharp.Core.xml')" />
-      <PluginFiles Include="$(ProjectDir)plugin.json" />
-    </ItemGroup>
-
-    <Copy SourceFiles="@(PluginFiles)" DestinationFolder="$(PluginStagingDir)" />
-    <!-- The TextMate grammars' regex engine (Oniguruma) is native: one library per platform, kept in its runtimes folder. -->
-    <ItemGroup>
-      <PluginNativeFiles Include="$(TargetDir)runtimes/*/native/*onigwrap*" />
-    </ItemGroup>
-    <Copy SourceFiles="@(PluginNativeFiles)" DestinationFiles="@(PluginNativeFiles->'$(PluginStagingDir)runtimes/%(RecursiveDir)%(Filename)%(Extension)')" />
-    <Delete Files="$(OutputFryPlugin)" Condition="Exists('$(OutputFryPlugin)')" />
-    <ZipDirectory SourceDirectory="$(PluginStagingDir)" DestinationFile="$(OutputFryPlugin)" />
-    <RemoveDir Directories="$(PluginStagingDir)" />
-
-    <Message Importance="High" Text="Successfully packaged FryPDF plugin: $(OutputFryPlugin)" />
-  </Target>
 </Project>

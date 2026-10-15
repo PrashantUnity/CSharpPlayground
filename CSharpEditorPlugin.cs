@@ -79,20 +79,10 @@ public class CSharpEditorPlugin : IFryPlugin
 
         CSharpStudioHostViewModel? activeHost = null;
 
+        // Opens the studio page in whichever shell hosts the plugin: FryWorld, FryPDF or the standalone runner.
         void NavigateToStudio()
         {
-            var homeType = Type.GetType("PdfEditorApp.ViewModels.HomeViewModel, PdfEditorApp");
-            if (homeType != null)
-            {
-                var home = ctx.GetService(homeType);
-                homeType.GetMethod("SelectNavSection")?.Invoke(home, ["CSharpStudio"]);
-            }
-            var fryWorldVmType = Type.GetType("FryWorld.ViewModels.MainViewModel, FryWorld");
-            if (fryWorldVmType != null)
-            {
-                var mainVm = ctx.GetService(fryWorldVmType);
-                fryWorldVmType.GetMethod("NavigateToPlugin")?.Invoke(mainVm, ["com.fryworld.csharpstudio"]);
-            }
+            if (ctx.TryGetService<IShellService>(out var shell)) shell.NavigateTo("com.fryworld.csharpstudio");
         }
 
         var navReg = ctx.RegisterNavigationItem(new NavigationItemDescriptor
