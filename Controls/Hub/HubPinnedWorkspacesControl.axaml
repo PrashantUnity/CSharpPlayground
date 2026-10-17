@@ -8,7 +8,8 @@
              xmlns:hub="clr-namespace:PdfEditorApp.Plugins.CSharpEditor.ViewModels.Hub"
              mc:Ignorable="d"
              x:Class="PdfEditorApp.Plugins.CSharpEditor.Controls.Hub.HubPinnedWorkspacesControl"
-             x:DataType="hub:CSharpManagerViewModel">
+             x:DataType="hub:CSharpManagerViewModel"
+             ClipToBounds="False">
 
                             <StackPanel lt:Tokens.Spacing="DsSpace14">
                                 <Grid ColumnDefinitions="*,Auto">
@@ -23,14 +24,14 @@
                                     <TextBlock Grid.Column="1" Text="Quick access shortcuts" lt:Tokens.FontSize="DsFontSize200" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                 </Grid>
 
-                                <Grid ColumnDefinitions="*,*,*">
+                                <Grid ColumnDefinitions="*,*,*" ClipToBounds="False">
 
                                     <!-- ============================================================ -->
                                     <!-- CARD 1: PINNED WORKSPACE 1 / EMPTY SLOT 1                   -->
                                     <!-- ============================================================ -->
-                                    <Panel Grid.Column="0" Margin="0,0,8,0">
+                                    <Panel Grid.Column="0" Margin="0,0,8,0" ClipToBounds="False">
                                         <!-- 1A. Pinned Item 1 Active Card -->
-                                        <Border Classes="nexus-glass-card" Height="175" IsVisible="{Binding HasPinnedItem1}">
+                                        <Border Classes="nexus-glass-card interactive" Height="175" IsVisible="{Binding HasPinnedItem1}">
                                             <Panel>
                                                 <!-- Main Click Target (Opens Document) -->
                                                 <Button Command="{Binding OpenPinnedItem1Command}"
@@ -186,7 +187,7 @@
                                             </Button.Flyout>
                                             <Border Classes="nexus-glass-card" Height="175">
                                                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
-                                                    <Border Width="40" Height="40" lt:Tokens.CornerRadius="DsRadius3XL"
+                                                    <Border Width="40" Height="40" Classes="nexus-placeholder-icon-badge" lt:Tokens.CornerRadius="DsRadius3XL"
                                                             Background="{DynamicResource DsSurfaceBrush}"
                                                             BorderBrush="{DynamicResource DsBorderBrush}"
                                                             lt:Tokens.BorderThickness="DsBorderThin"
@@ -204,9 +205,9 @@
                                     <!-- ============================================================ -->
                                     <!-- CARD 2: PINNED WORKSPACE 2 / EMPTY SLOT 2                   -->
                                     <!-- ============================================================ -->
-                                    <Panel Grid.Column="1" Margin="4,0,4,0">
+                                    <Panel Grid.Column="1" Margin="4,0,4,0" ClipToBounds="False">
                                         <!-- 2A. Pinned Item 2 Active Card -->
-                                        <Border Classes="nexus-glass-card" Height="175" IsVisible="{Binding HasPinnedItem2}">
+                                        <Border Classes="nexus-glass-card interactive" Height="175" IsVisible="{Binding HasPinnedItem2}">
                                             <Panel>
                                                 <!-- Main Click Target (Opens Document) -->
                                                 <Button Command="{Binding OpenPinnedItem2Command}"
@@ -362,7 +363,7 @@
                                             </Button.Flyout>
                                             <Border Classes="nexus-glass-card" Height="175">
                                                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
-                                                    <Border Width="40" Height="40" lt:Tokens.CornerRadius="DsRadius3XL"
+                                                    <Border Width="40" Height="40" Classes="nexus-placeholder-icon-badge" lt:Tokens.CornerRadius="DsRadius3XL"
                                                             Background="{DynamicResource DsSurfaceBrush}"
                                                             BorderBrush="{DynamicResource DsBorderBrush}"
                                                             lt:Tokens.BorderThickness="DsBorderThin"
@@ -380,9 +381,9 @@
                                     <!-- ============================================================ -->
                                     <!-- CARD 3: PINNED WORKSPACE 3 / EMPTY SLOT 3                   -->
                                     <!-- ============================================================ -->
-                                    <Panel Grid.Column="2" Margin="8,0,0,0">
+                                    <Panel Grid.Column="2" Margin="8,0,0,0" ClipToBounds="False">
                                         <!-- 3A. Pinned Item 3 Active Card -->
-                                        <Border Classes="nexus-glass-card" Height="175" IsVisible="{Binding HasPinnedItem3}">
+                                        <Border Classes="nexus-glass-card interactive" Height="175" IsVisible="{Binding HasPinnedItem3}">
                                             <Panel>
                                                 <!-- Main Click Target (Opens Document) -->
                                                 <Button Command="{Binding OpenPinnedItem3Command}"
@@ -557,7 +558,7 @@
                                             </Button.Flyout>
                                             <Border Classes="nexus-glass-card" Height="175">
                                                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
-                                                    <Border Width="40" Height="40" lt:Tokens.CornerRadius="DsRadius3XL"
+                                                    <Border Width="40" Height="40" Classes="nexus-placeholder-icon-badge" lt:Tokens.CornerRadius="DsRadius3XL"
                                                             Background="{DynamicResource DsSurfaceBrush}"
                                                             BorderBrush="{DynamicResource DsBorderBrush}"
                                                             lt:Tokens.BorderThickness="DsBorderThin"

@@ -31,7 +31,7 @@
                     <StackPanel Spacing="10" HorizontalAlignment="Center">
                         <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="32" Height="32"
                                                     Foreground="{DynamicResource DsWarningBrush}" HorizontalAlignment="Center" />
-                        <TextBlock Text="Git Not Installed" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightBold"
+                        <TextBlock Text="Git Not Installed" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightStrong"
                                    Foreground="{DynamicResource DsTextWhiteBrush}" TextAlignment="Center" />
                         <TextBlock Text="Git was not found in your system PATH. Install Git to enable version control features."
                                    lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" TextAlignment="Center" />
@@ -46,7 +46,7 @@
                     <StackPanel Spacing="12" HorizontalAlignment="Center">
                         <materialIcons:MaterialIcon Kind="SourceBranch" Width="36" Height="36"
                                                     Foreground="{DynamicResource DsPrimaryBrush}" HorizontalAlignment="Center" />
-                        <TextBlock Text="No Repository Initialized" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightBold"
+                        <TextBlock Text="No Repository Initialized" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightStrong"
                                    Foreground="{DynamicResource DsTextWhiteBrush}" TextAlignment="Center" />
                         <TextBlock Text="Initialize a Git repository to track file changes and collaborate in this workspace."
                                    lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" TextAlignment="Center" />
@@ -170,7 +170,7 @@
                                                             Kind="{Binding StagedSectionChevronKind}"
                                                             Width="12" Height="12" Margin="0,0,4,0"
                                                             Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                                <TextBlock Grid.Column="1" Text="STAGED CHANGES" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightBold"
+                                <TextBlock Grid.Column="1" Text="STAGED CHANGES" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightStrong"
                                            Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                 
                                 <!-- Count Badge Pill -->
@@ -228,7 +228,7 @@
 
                                             <!-- Status Letter Badge -->
                                             <Border Grid.Column="2" Margin="4,0,0,0" Width="16" Height="16" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding StatusLetter}" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightBold"
+                                                <TextBlock Text="{Binding StatusLetter}" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightStrong"
                                                            Foreground="{Binding StatusColorHex}" TextAlignment="Center" VerticalAlignment="Center"
                                                            ToolTip.Tip="{Binding TooltipText}" />
                                             </Border>
@@ -248,7 +248,7 @@
                                                             Kind="{Binding WorkingSectionChevronKind}"
                                                             Width="12" Height="12" Margin="0,0,4,0"
                                                             Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                                <TextBlock Grid.Column="1" Text="CHANGES" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightBold"
+                                <TextBlock Grid.Column="1" Text="CHANGES" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightStrong"
                                            Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                 
                                 <!-- Count Badge Pill -->
@@ -317,7 +317,7 @@
 
                                             <!-- Status Letter Badge -->
                                             <Border Grid.Column="2" Margin="4,0,0,0" Width="16" Height="16" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding StatusLetter}" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightBold"
+                                                <TextBlock Text="{Binding StatusLetter}" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightStrong"
                                                            Foreground="{Binding StatusColorHex}" TextAlignment="Center" VerticalAlignment="Center"
                                                            ToolTip.Tip="{Binding TooltipText}" />
                                             </Border>
