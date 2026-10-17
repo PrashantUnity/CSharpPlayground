@@ -1,9 +1,8 @@
 using System.Collections.ObjectModel;
-using System.Net.Http.Json;
-using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using PdfEditorApp.Plugins.CSharpEditor.Services.Packages;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio;
 
@@ -17,10 +16,6 @@ public sealed record NuGetPackageItem(
 
 public partial class CSharpCodeStudioViewModel
 {
-    private static readonly HttpClient NuGetHttpClient = new()
-    {
-        Timeout = TimeSpan.FromSeconds(8)
-    };
 
     private static readonly NuGetPackageItem[] PopularNuGetPackages =
     [
@@ -288,28 +283,25 @@ public partial class CSharpCodeStudioViewModel
 
         try
         {
-            var url = $"https://azuresearch-usnc.nuget.org/query?q={Uri.EscapeDataString((string)query)}&take=12&prerelease=false";
-            var response = await NuGetHttpClient.GetFromJsonAsync<NuGetSearchResponse>(url);
-
+            var results = await OnlinePackageSearchService.Instance.SearchNuGetAsync(query);
             NuGetSearchResults.Clear();
-            if (response?.Data != null && response.Data.Count > 0)
+            if (results.Count > 0)
             {
-                foreach (var item in response.Data)
+                foreach (var item in results)
                 {
-                    var authors = item.Authors != null && item.Authors.Count > 0 ? string.Join(", ", item.Authors) : (item.Id ?? string.Empty);
                     NuGetSearchResults.Add(new NuGetPackageItem(
-                        item.Id ?? "Unknown",
-                        item.Version ?? "1.0.0",
-                        item.Description ?? "No description provided.",
-                        authors,
+                        item.Id,
+                        item.Version,
+                        item.Description,
+                        item.Authors,
                         item.TotalDownloads,
-                        item.IconUrl ?? string.Empty));
+                        item.IconUrl));
                 }
-                NuGetStatusMessage = $"Found {response.Data.Count} packages";
+                NuGetStatusMessage = $"Found {results.Count} packages";
             }
             else
             {
-                var filtered = Array.FindAll(PopularNuGetPackages, p => p.Id.Contains((string)query, StringComparison.OrdinalIgnoreCase));
+                var filtered = Array.FindAll(PopularNuGetPackages, p => p.Id.Contains(query, StringComparison.OrdinalIgnoreCase));
                 foreach (var p in filtered) NuGetSearchResults.Add(p);
                 NuGetStatusMessage = filtered.Length > 0 ? $"Found {filtered.Length} matching packages" : "No packages found on NuGet";
             }
@@ -317,7 +309,7 @@ public partial class CSharpCodeStudioViewModel
         catch
         {
             NuGetSearchResults.Clear();
-            var filtered = Array.FindAll(PopularNuGetPackages, p => p.Id.Contains((string)query, StringComparison.OrdinalIgnoreCase));
+            var filtered = Array.FindAll(PopularNuGetPackages, p => p.Id.Contains(query, StringComparison.OrdinalIgnoreCase));
             foreach (var p in filtered) NuGetSearchResults.Add(p);
             NuGetStatusMessage = "Network unavailable: showing offline packages";
         }
@@ -325,6 +317,24 @@ public partial class CSharpCodeStudioViewModel
         {
             IsSearchingNuGet = false;
         }
+    }
+
+    [RelayCommand]
+    public void AddCustomPackage(string? customName = null)
+    {
+        var name = (customName ?? NuGetSearchQuery)?.Trim();
+        if (string.IsNullOrWhiteSpace(name)) return;
+        var defaultVersion = ActiveLanguage?.Id?.ToLowerInvariant() switch
+        {
+            "rust" or "rs" => "1",
+            _ => "latest"
+        };
+        AddNuGetPackage(new NuGetPackageItem(
+            name,
+            defaultVersion,
+            $"Custom package '{name}'",
+            ActiveLanguage?.DisplayName ?? ActivePackageManagerName,
+            0));
     }
 
     [RelayCommand]
@@ -343,7 +353,9 @@ public partial class CSharpCodeStudioViewModel
             Services.Languages.LanguageIds.Python => $"%pip install {package.Id}",
             _ => ActiveLanguage?.Packages is { } customPm
                 ? customPm.InstallCommand(package.Id).Text
-                : $"#r \"nuget: {package.Id}, {package.Version}\""
+                : (package.Version is "latest" or ""
+                    ? $"#r \"nuget: {package.Id}\""
+                    : $"#r \"nuget: {package.Id}, {package.Version}\"")
         };
 
         if (Code.Contains(directive, StringComparison.OrdinalIgnoreCase))
@@ -372,7 +384,7 @@ public partial class CSharpCodeStudioViewModel
 
     // Built once, at compile time. This scan runs every time the code changes (every keystroke) and on every tab switch,
     // and it used to construct and interpret a fresh Regex each time.
-    [GeneratedRegex(@"^\s*(?:#r\s+""nuget:[^""]+""|//\s*DEPS\s+[^\r\n]+|//\s*#(?:vcpkg|pkg|go|golang|crate):[^\r\n]+|[%#!](?:pip3?|npm|vcpkg|maven|cargo\s+add|crate)\s+[^\r\n]+)\s*;?", RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"^\s*(?:#r\s+""nuget:[^""]+""|//\s*DEPS\s+[^\r\n]+|//\s*#(?:vcpkg|pkg|go|golang|crate|dart):[^\r\n]+|[%#!](?:pip3?|npm|vcpkg|maven|cargo\s+add|crate)\s+[^\r\n]+)\s*;?", RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex DocumentDirectiveRegex();
 
     // Characters. Up to this size the scan is instant and runs on the spot; a bigger document (a megabyte of source takes
@@ -439,35 +451,5 @@ public partial class CSharpCodeStudioViewModel
         {
             DocumentNuGetPackages.Add(line);
         }
-    }
-
-    private sealed class NuGetSearchResponse
-    {
-        [JsonPropertyName("totalHits")]
-        public int TotalHits { get; set; }
-
-        [JsonPropertyName("data")]
-        public System.Collections.Generic.List<NuGetSearchData>? Data { get; set; }
-    }
-
-    private sealed class NuGetSearchData
-    {
-        [JsonPropertyName("id")]
-        public string? Id { get; set; }
-
-        [JsonPropertyName("version")]
-        public string? Version { get; set; }
-
-        [JsonPropertyName("description")]
-        public string? Description { get; set; }
-
-        [JsonPropertyName("authors")]
-        public System.Collections.Generic.List<string>? Authors { get; set; }
-
-        [JsonPropertyName("totalDownloads")]
-        public long TotalDownloads { get; set; }
-
-        [JsonPropertyName("iconUrl")]
-        public string? IconUrl { get; set; }
     }
 }

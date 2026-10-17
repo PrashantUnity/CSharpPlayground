@@ -46,21 +46,26 @@ public sealed class NotebookDirectiveRunner(ILanguageCatalog languages, Notebook
         Action<string> write,
         CancellationToken ct)
     {
-        if (language.Packages is not { } packages || language.Toolchain is not { } toolchains)
+        if (language.Packages is not { } packages)
         {
             write($"❌ {language.DisplayName} cells can't install packages.\n");
             return false;
         }
 
-        var resolution = await toolchains.ResolveAsync(query, ct);
-        if (resolution.Toolchain is not { } toolchain)
+        ToolchainInfo? toolchain = null;
+        if (language.Toolchain is { } toolchains)
         {
-            write((resolution.Missing?.ToText() ?? $"{toolchains.ToolName} wasn't found.") + "\n");
-            return false;
+            var resolution = await toolchains.ResolveAsync(query, ct);
+            if (resolution.Toolchain is not { } resolved)
+            {
+                write((resolution.Missing?.ToText() ?? $"{toolchains.ToolName} wasn't found.") + "\n");
+                return false;
+            }
+            toolchain = resolved;
         }
 
         write($"▶ {command.Text}\n");
-        var result = await packages.RunAsync(command, toolchain, write, ct);
+        var result = await packages.RunAsync(command, toolchain!, write, ct);
         if (result.Message is { Length: > 0 } message) write((result.Success ? "" : "❌ ") + message.TrimEnd() + "\n");
 
         // A new environment only takes over when the kernel next starts; until then the running one looks there too. A kernel

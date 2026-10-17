@@ -179,7 +179,14 @@ public sealed partial class NuGetPackageManager : IPackageManager
                 return new PackageCommandResult(false, $"Failed to restore NuGet package '{packageId}'.");
             }
 
-            return new PackageCommandResult(true, $"Successfully restored {packageId}.");
+            string? searchPath = null;
+            var firstRef = result.References.FirstOrDefault();
+            if (firstRef is Microsoft.CodeAnalysis.PortableExecutableReference per && !string.IsNullOrEmpty(per.FilePath) && File.Exists(per.FilePath))
+            {
+                searchPath = Path.GetDirectoryName(per.FilePath);
+            }
+
+            return new PackageCommandResult(true, $"Successfully restored {packageId}.", AddedSearchPath: searchPath, DirectiveToInsert: directive);
         }
         catch (OperationCanceledException)
         {

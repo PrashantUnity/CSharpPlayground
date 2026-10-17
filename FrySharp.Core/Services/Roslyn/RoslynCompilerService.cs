@@ -402,12 +402,30 @@ public partial class RoslynCompilerService
             return (false, null, [new DiagnosticItem { Id = "CS0001", Message = "Source code is empty.", Severity = DiagnosticSeverity.Error }]);
         }
 
+        var references = new List<MetadataReference>(_defaultReferences);
+        if (sourceCode.Contains("#r ") && sourceCode.Contains("nuget:"))
+        {
+            try
+            {
+                var resolver = new NuGetReferenceResolver();
+                var nugetResult = resolver.ProcessDirectives(sourceCode);
+                if (nugetResult.References.Count > 0)
+                {
+                    references.AddRange(nugetResult.References);
+                }
+            }
+            catch
+            {
+                // Non-fatal if NuGet resolution encounters an issue
+            }
+        }
+
         var wrappedCode = WrapSourceCode(sourceCode, mode);
         var syntaxTree = CSharpSyntaxTree.ParseText(wrappedCode);
         var compilation = CSharpCompilation.Create(
             $"ScriptExec_{Guid.NewGuid():N}",
             syntaxTrees: [syntaxTree],
-            references: _defaultReferences,
+            references: references,
             options: new CSharpCompilationOptions(
                 OutputKind.ConsoleApplication,
                 optimizationLevel: OptimizationLevel.Release,

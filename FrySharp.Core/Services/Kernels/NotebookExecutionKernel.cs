@@ -39,7 +39,7 @@ public class KernelExecutionResult
     public int? ErrorLine { get; set; }
 }
 
-public class NotebookExecutionKernel : INotebookKernel
+public class NotebookExecutionKernel : INotebookKernel, ISearchPathKernel
 {
     private ScriptState<object>? _currentState;
     private ScriptOptions _scriptOptions;
@@ -198,21 +198,7 @@ public class NotebookExecutionKernel : INotebookKernel
 
         if (nugetResult.References.Count > 0)
         {
-            _additionalReferences.AddRange(nugetResult.References);
-            _scriptOptions = _scriptOptions.AddReferences(nugetResult.References);
-            foreach (var r in nugetResult.References)
-            {
-                if (r is PortableExecutableReference per && !string.IsNullOrEmpty(per.FilePath) && File.Exists(per.FilePath))
-                {
-                    try
-                    {
-                        var asm = Assembly.LoadFrom(per.FilePath);
-                        _assemblyLoader.RegisterDependency(asm);
-                        _nuGetResolver.EnsureNativeAssetsResolved(asm, nugetResult);
-                    }
-                    catch { }
-                }
-            }
+            RegisterMetadataReferences(nugetResult.References, nugetResult);
         }
 
         var cleanCode = CellUsingDeclarations.Rewrite(nugetResult.SanitizedCode);
@@ -577,6 +563,67 @@ public class NotebookExecutionKernel : INotebookKernel
     {
         ResetSession();
         _executionLock = new SemaphoreSlim(1, 1);
+    }
+
+    public Task AddSearchPathAsync(string path, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return Task.CompletedTask;
+
+        var dllFiles = new List<string>();
+        if (File.Exists(path) && path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+        {
+            dllFiles.Add(path);
+        }
+        else if (Directory.Exists(path))
+        {
+            var topDlls = Directory.GetFiles(path, "*.dll", SearchOption.TopDirectoryOnly)
+                .Where(f => !f.EndsWith(".resources.dll", StringComparison.OrdinalIgnoreCase));
+            dllFiles.AddRange(topDlls);
+            if (dllFiles.Count == 0)
+            {
+                dllFiles.AddRange(Directory.GetFiles(path, "*.dll", SearchOption.AllDirectories)
+                    .Where(f => !f.EndsWith(".resources.dll", StringComparison.OrdinalIgnoreCase)));
+            }
+        }
+
+        var newRefs = new List<MetadataReference>();
+        foreach (var dll in dllFiles)
+        {
+            try
+            {
+                newRefs.Add(MetadataReference.CreateFromFile(dll));
+            }
+            catch { }
+        }
+
+        if (newRefs.Count > 0)
+        {
+            RegisterMetadataReferences(newRefs);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private void RegisterMetadataReferences(IEnumerable<MetadataReference> references, NuGetResolutionResult? nugetResult = null)
+    {
+        var list = references.ToList();
+        if (list.Count == 0) return;
+
+        _additionalReferences.AddRange(list);
+        _scriptOptions = _scriptOptions.AddReferences(list);
+        foreach (var r in list)
+        {
+            if (r is PortableExecutableReference per && !string.IsNullOrEmpty(per.FilePath) && File.Exists(per.FilePath))
+            {
+                try
+                {
+                    var asm = Assembly.LoadFrom(per.FilePath);
+                    _assemblyLoader.RegisterDependency(asm);
+                    _nuGetResolver.EnsureNativeAssetsResolved(asm, nugetResult);
+                }
+                catch { }
+            }
+        }
     }
 
     string INotebookKernel.LanguageId => LanguageIds.CSharp;

@@ -37,12 +37,23 @@ public sealed class NuGetSemanticVersion : IComparable<NuGetSemanticVersion>, IE
         OriginalString = original;
     }
 
+    public static string CleanVersion(string versionStr)
+    {
+        var cleaned = versionStr.Trim().Trim('[', ']', '(', ')', '>', '<', '=', ' ');
+        if (cleaned.Contains(','))
+        {
+            var segments = cleaned.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (segments.Length > 0) cleaned = segments[0];
+        }
+        return cleaned;
+    }
+
     public static bool TryParse(string? versionStr, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out NuGetSemanticVersion? version)
     {
         version = null;
         if (string.IsNullOrWhiteSpace(versionStr)) return false;
 
-        var vStr = versionStr.Trim();
+        var vStr = CleanVersion(versionStr);
         var plusIdx = vStr.IndexOf('+');
         if (plusIdx >= 0) vStr = vStr.Substring(0, plusIdx);
 
@@ -64,7 +75,7 @@ public sealed class NuGetSemanticVersion : IComparable<NuGetSemanticVersion>, IE
         if (parts.Length > 2 && int.TryParse(parts[2], out var p2)) patch = p2;
         if (parts.Length > 3 && int.TryParse(parts[3], out var p3)) build = p3;
 
-        version = new NuGetSemanticVersion(major, minor, patch, build, prerelease, versionStr);
+        version = new NuGetSemanticVersion(major, minor, patch, build, prerelease, vStr);
         return true;
     }
 
@@ -294,21 +305,22 @@ public class NuGetReferenceResolver
     {
         if (!string.IsNullOrWhiteSpace(requestedVersion))
         {
-            var exactPath = Path.Combine(packageDir, requestedVersion);
+            var cleanedVersion = NuGetSemanticVersion.CleanVersion(requestedVersion);
+            var exactPath = Path.Combine(packageDir, cleanedVersion);
             if (Directory.Exists(exactPath)) return exactPath;
 
             var availableVersions = Directory.GetDirectories(packageDir);
             var matched = availableVersions.FirstOrDefault(d =>
-                string.Equals(Path.GetFileName(d), requestedVersion, StringComparison.OrdinalIgnoreCase));
+                string.Equals(Path.GetFileName(d), cleanedVersion, StringComparison.OrdinalIgnoreCase));
 
             if (matched != null) return matched;
 
             if (availableVersions.Length > 0)
             {
-                var fallback = PickBestCompatibleVersion(availableVersions, requestedVersion);
+                var fallback = PickBestCompatibleVersion(availableVersions, cleanedVersion);
                 if (fallback != null)
                 {
-                    result.Messages.Add($"ℹ️ Requested '{requestedVersion}' for '{Path.GetFileName(packageDir)}' not cached; using '{Path.GetFileName(fallback)}'.");
+                    result.Messages.Add($"ℹ️ Requested '{cleanedVersion}' for '{Path.GetFileName(packageDir)}' not cached; using '{Path.GetFileName(fallback)}'.");
                     return fallback;
                 }
             }
@@ -568,7 +580,7 @@ public class NuGetReferenceResolver
 
         try
         {
-            string? targetVersion = requestedVersion;
+            string? targetVersion = !string.IsNullOrWhiteSpace(requestedVersion) ? NuGetSemanticVersion.CleanVersion(requestedVersion) : null;
 
             if (string.IsNullOrWhiteSpace(targetVersion))
             {
