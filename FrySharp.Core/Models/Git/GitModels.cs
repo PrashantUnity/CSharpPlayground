@@ -138,6 +138,14 @@ public sealed record GitDiffSideBySideRow(
 
     public bool HasOldContent => OldLineNumber.HasValue || OldKind == GitDiffLineKind.Header;
     public bool HasNewContent => NewLineNumber.HasValue || NewKind == GitDiffLineKind.Header;
+
+    public bool IsOldDeletion => OldKind == GitDiffLineKind.Deletion;
+    public bool IsOldHeader => OldKind == GitDiffLineKind.Header;
+    public bool IsNewAddition => NewKind == GitDiffLineKind.Addition;
+    public bool IsNewHeader => NewKind == GitDiffLineKind.Header;
+
+    public bool IsOldEmpty => !HasOldContent;
+    public bool IsNewEmpty => !HasNewContent;
 }
 
 public sealed class GitDiffDocument
@@ -152,4 +160,6 @@ public sealed class GitDiffDocument
     public int AdditionsCount { get; init; }
     public int DeletionsCount { get; init; }
     public bool HasChanges => AdditionsCount > 0 || DeletionsCount > 0 || InlineLines.Count > 0;
+    public string ComparisonModeLabel => IsStaged ? "Index (Staged)" : "Working Tree";
+    public string ComparisonModeColorHex => IsStaged ? "#06B6D4" : "#22C55E";
 }

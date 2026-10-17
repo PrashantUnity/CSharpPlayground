@@ -288,6 +288,20 @@
     <Style Selector="Border.diff-header">
         <Setter Property="Background" Value="#162738" />
     </Style>
+    <Style Selector="Border.diff-empty">
+        <Setter Property="Opacity" Value="0.3" />
+        <Setter Property="Background" Value="#05FFFFFF" />
+    </Style>
+
+    <Style Selector="Border.diff-addition TextBlock.diff-marker">
+        <Setter Property="Foreground" Value="{DynamicResource DsGreenBrush}" />
+    </Style>
+    <Style Selector="Border.diff-deletion TextBlock.diff-marker">
+        <Setter Property="Foreground" Value="{DynamicResource DsErrorBrush}" />
+    </Style>
+    <Style Selector="Border.diff-header TextBlock.diff-marker">
+        <Setter Property="Foreground" Value="{DynamicResource DsPrimaryBrush}" />
+    </Style>
     <Style Selector="Button.diff-action-btn">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />

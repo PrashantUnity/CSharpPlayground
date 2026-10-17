@@ -10,7 +10,6 @@
              x:DataType="vm:CSharpCodeStudioViewModel"
              Background="{DynamicResource DsBgBrush}">
 
-
     <Grid RowDefinitions="Auto,*" Background="{DynamicResource DsBgBrush}">
         <!-- Toolbar Strip -->
         <Border Grid.Row="0" Background="{DynamicResource DsSurfaceBrush}"
@@ -30,13 +29,10 @@
                     <!-- Comparison Mode Pill -->
                     <Border Background="{DynamicResource DsSurfaceHighBrush}" lt:Tokens.CornerRadius="DsRadiusXS" Padding="6,2" Margin="6,0,0,0">
                         <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                            <TextBlock Text="HEAD" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" />
-                            <TextBlock Text="↔" lt:Tokens.FontSize="DsFontSize075" Foreground="{DynamicResource DsMutedBrush}" />
-                            <TextBlock Text="{Binding ActiveDiffDocument.IsStaged, Converter={x:Static ObjectConverters.IsNull}}"
-                                       lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsPrimaryBrush}"
-                                       IsVisible="False" />
-                            <TextBlock Text="Working Tree" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong"
-                                       Foreground="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="HEAD" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="↔" lt:Tokens.FontSize="DsFontSize075" Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding ActiveDiffDocument.ComparisonModeLabel}" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong"
+                                       Foreground="{Binding ActiveDiffDocument.ComparisonModeColorHex}" VerticalAlignment="Center" />
                         </StackPanel>
                     </Border>
 
@@ -57,8 +53,6 @@
                         <StackPanel Orientation="Horizontal" Spacing="4">
                             <materialIcons:MaterialIcon Kind="ViewSplitVertical" Width="13" Height="13"
                                                         Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding IsSideBySideDiff, Converter={x:Static ObjectConverters.IsNull}}"
-                                       IsVisible="False" />
                             <TextBlock Text="Toggle View" lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
@@ -120,14 +114,14 @@
                         <TextBlock Text="HEAD (Previous / Original)" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightStrong"
                                    Foreground="{DynamicResource DsMutedBrush}" />
                     </Border>
-                    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer x:Name="LeftScrollViewer" Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                         <ItemsControl ItemsSource="{Binding ActiveDiffDocument.SideBySideRows}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="git:GitDiffSideBySideRow">
-                                    <Border Padding="6,1"
-                                            Classes.diff-deletion="{Binding OldKind, Converter={x:Static ObjectConverters.IsNull}}"
-                                            Background="{Binding OldKind, Converter={x:Static ObjectConverters.IsNull}}"
-                                            IsVisible="{Binding HasOldContent}">
+                                    <Border Padding="6,1" MinHeight="19"
+                                            Classes.diff-deletion="{Binding IsOldDeletion}"
+                                            Classes.diff-header="{Binding IsOldHeader}"
+                                            Classes.diff-empty="{Binding IsOldEmpty}">
                                         <Grid ColumnDefinitions="Auto,*">
                                             <TextBlock Grid.Column="0" Text="{Binding OldLineDisplay}" Classes="diff-line-num" />
                                             <TextBlock Grid.Column="1" Text="{Binding OldText}" Classes="diff-code"
@@ -150,12 +144,14 @@
                         <TextBlock Text="Working Tree (Modified)" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightStrong"
                                    Foreground="{DynamicResource DsPrimaryBrush}" />
                     </Border>
-                    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer x:Name="RightScrollViewer" Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                         <ItemsControl ItemsSource="{Binding ActiveDiffDocument.SideBySideRows}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="git:GitDiffSideBySideRow">
-                                    <Border Padding="6,1"
-                                            IsVisible="{Binding HasNewContent}">
+                                    <Border Padding="6,1" MinHeight="19"
+                                            Classes.diff-addition="{Binding IsNewAddition}"
+                                            Classes.diff-header="{Binding IsNewHeader}"
+                                            Classes.diff-empty="{Binding IsNewEmpty}">
                                         <Grid ColumnDefinitions="Auto,*">
                                             <TextBlock Grid.Column="0" Text="{Binding NewLineDisplay}" Classes="diff-line-num" />
                                             <TextBlock Grid.Column="1" Text="{Binding NewText}" Classes="diff-code"
@@ -175,16 +171,15 @@
                 <ItemsControl ItemsSource="{Binding ActiveDiffDocument.InlineLines}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="git:GitDiffLine">
-                            <Border Padding="8,1"
+                            <Border Padding="8,1" MinHeight="19"
                                     Classes.diff-addition="{Binding IsAddition}"
                                     Classes.diff-deletion="{Binding IsDeletion}"
                                     Classes.diff-header="{Binding IsHeader}">
                                 <Grid ColumnDefinitions="Auto,Auto,Auto,*">
                                     <TextBlock Grid.Column="0" Text="{Binding OldLineDisplay}" Classes="diff-line-num" />
                                     <TextBlock Grid.Column="1" Text="{Binding NewLineDisplay}" Classes="diff-line-num" />
-                                    <TextBlock Grid.Column="2" Text="{Binding Marker}" Classes="diff-code"
-                                               Width="18" TextAlignment="Center" Margin="0,0,6,0"
-                                               Foreground="{Binding IsAddition, Converter={x:Static ObjectConverters.IsNull}}" />
+                                    <TextBlock Grid.Column="2" Text="{Binding Marker}" Classes="diff-code diff-marker"
+                                               Width="18" TextAlignment="Center" Margin="0,0,6,0" />
                                     <TextBlock Grid.Column="3" Text="{Binding Text}" Classes="diff-code"
                                                Foreground="{DynamicResource DsTextWhiteBrush}" />
                                 </Grid>
