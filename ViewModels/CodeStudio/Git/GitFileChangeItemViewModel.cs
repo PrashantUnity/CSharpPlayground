@@ -1,5 +1,7 @@
+using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using PdfEditorApp.Plugins.CSharpEditor.Models.Git;
+using PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Explorer;
 
 namespace PdfEditorApp.Plugins.CSharpEditor.ViewModels.CodeStudio.Git;
 
@@ -16,6 +18,15 @@ public partial class GitFileChangeItemViewModel : ObservableObject
 
     public string StatusLetter => Model.StatusLetter;
     public string TooltipText => Model.StatusTooltip;
+
+    public bool IsDeleted => StatusKind == GitFileStatusKind.Deleted;
+    public bool HasDirectory => !string.IsNullOrWhiteSpace(DirectoryDisplay);
+
+    private (string Kind, string Color)? _iconInfo;
+    private (string Kind, string Color) IconInfo => _iconInfo ??= ExplorerItemViewModel.IconForExtension(Path.GetExtension(FileName));
+
+    public string FileIconKind => IconInfo.Kind;
+    public string FileIconColor => IconInfo.Color;
 
     public string StatusColorHex => StatusKind switch
     {

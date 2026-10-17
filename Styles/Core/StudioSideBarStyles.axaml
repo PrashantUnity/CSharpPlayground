@@ -122,31 +122,52 @@
         <Setter Property="Padding" Value="0" />
         <Setter Property="Width" Value="22" />
         <Setter Property="Height" Value="22" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
         <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusSM" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="HorizontalContentAlignment" Value="Center" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Foreground" Value="{DynamicResource DsMutedBrush}" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.1" />
+                <BrushTransition Property="Foreground" Duration="0:0:0.1" />
+            </Transitions>
+        </Setter>
     </Style>
     <Style Selector="Button.git-tool-btn:pointerover">
         <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DsTextWhiteBrush}" />
     </Style>
 
     <Style Selector="Button.git-row-btn">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="lt:Tokens.BorderThickness" Value="=0" />
+        <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusSM" />
         <Setter Property="Padding" Value="6,4" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="MinHeight" Value="26" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="HorizontalAlignment" Value="Stretch" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.1" />
+            </Transitions>
+        </Setter>
     </Style>
     <Style Selector="Button.git-row-btn:pointerover">
         <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
     </Style>
     <Style Selector="Button.git-row-btn StackPanel.git-row-actions">
         <Setter Property="Opacity" Value="0" />
+        <Setter Property="IsHitTestVisible" Value="False" />
     </Style>
     <Style Selector="Button.git-row-btn:pointerover StackPanel.git-row-actions">
         <Setter Property="Opacity" Value="1" />
+        <Setter Property="IsHitTestVisible" Value="True" />
     </Style>
 
     <!-- Branch Picker Items -->
@@ -154,12 +175,40 @@
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="lt:Tokens.BorderThickness" Value="=0" />
         <Setter Property="Padding" Value="8,5" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
         <Setter Property="HorizontalAlignment" Value="Stretch" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusSM" />
     </Style>
     <Style Selector="Button.branch-item-btn:pointerover">
         <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+    </Style>
+
+    <!-- Git File Status Text & Badges -->
+    <Style Selector="TextBlock.deleted">
+        <Setter Property="TextDecorations" Value="Strikethrough" />
+        <Setter Property="Opacity" Value="0.75" />
+    </Style>
+
+    <Style Selector="Border.git-branch-card">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsBorderBrush}" />
+        <Setter Property="lt:Tokens.BorderThickness" Value="DsBorderThin" />
+        <Setter Property="lt:Tokens.CornerRadius" Value="DsRadiusSM" />
+        <Setter Property="Padding" Value="8,5" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.1" />
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.1" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Border.git-branch-card:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DsSurfaceHighBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DsPrimaryBrush}" />
     </Style>
 
 </Styles>

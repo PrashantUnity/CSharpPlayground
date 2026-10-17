@@ -221,6 +221,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
     public bool IsScratchpadActive => SelectedActivityBarIndex == 4;
     public bool IsProblemsActive => SelectedActivityBarIndex == 5;
     public bool IsSourceControlActive => SelectedActivityBarIndex == 6;
+    public bool IsDefaultSidebarCloseVisible => SelectedActivityBarIndex is not (0 or 1 or 2 or 6);
 
     private void UpdateSideBarTitle()
     {
@@ -257,6 +258,7 @@ public partial class CSharpCodeStudioViewModel : ObservableObject, IExplorerNewF
         OnPropertyChanged(nameof(IsScratchpadActive));
         OnPropertyChanged(nameof(IsProblemsActive));
         OnPropertyChanged(nameof(IsSourceControlActive));
+        OnPropertyChanged(nameof(IsDefaultSidebarCloseVisible));
 
         if (value == 6)
         {

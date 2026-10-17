@@ -11,123 +11,89 @@
              x:DataType="vm:CSharpCodeStudioViewModel"
              x:CompileBindings="False">
 
-
     <Grid RowDefinitions="Auto,*">
-        <!-- Section Header Bar (VS Code SCM Header) -->
-        <Border Grid.Row="0" Background="{DynamicResource DsSurfaceBrush}"
-                BorderBrush="{DynamicResource DsBorderBrush}" lt:Tokens.BorderThickness="DsBorderBottom"
-                Padding="12,6,8,6">
-            <Grid ColumnDefinitions="*,Auto">
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                    <materialIcons:MaterialIcon Kind="SourceBranch" Width="14" Height="14"
-                                                Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding SideBarTitle}" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightStrong"
-                               Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center"
-                               TextTrimming="CharacterEllipsis" />
-                </StackPanel>
-
-                <!-- Header Actions -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2">
-                    <Button Command="{Binding RefreshGitStatusCommand}" Classes="git-tool-btn"
-                            ToolTip.Tip="Refresh (Check for changes)">
-                        <materialIcons:MaterialIcon Kind="Refresh" Width="14" Height="14"
-                                                    Foreground="{DynamicResource DsMutedBrush}" />
-                    </Button>
-
-                    <!-- More Actions Menu -->
-                    <Button Classes="git-tool-btn" ToolTip.Tip="More Actions...">
-                        <Button.Flyout>
-                            <MenuFlyout Placement="BottomEdgeAlignedRight">
-                                <MenuItem Header="Sync Changes" Command="{Binding SyncChangesCommand}">
-                                    <MenuItem.Icon>
-                                        <materialIcons:MaterialIcon Kind="Sync" Width="14" Height="14" />
-                                    </MenuItem.Icon>
-                                </MenuItem>
-                                <MenuItem Header="Commit All Changes" Command="{Binding CommitCommand}">
-                                    <MenuItem.Icon>
-                                        <materialIcons:MaterialIcon Kind="Check" Width="14" Height="14" />
-                                    </MenuItem.Icon>
-                                </MenuItem>
-                                <MenuItem Header="Stage All Changes" Command="{Binding StageAllCommand}">
-                                    <MenuItem.Icon>
-                                        <materialIcons:MaterialIcon Kind="Plus" Width="14" Height="14" />
-                                    </MenuItem.Icon>
-                                </MenuItem>
-                                <MenuItem Header="Unstage All Changes" Command="{Binding UnstageAllCommand}">
-                                    <MenuItem.Icon>
-                                        <materialIcons:MaterialIcon Kind="Minus" Width="14" Height="14" />
-                                    </MenuItem.Icon>
-                                </MenuItem>
-                                <Separator />
-                                <MenuItem Header="Discard All Changes" Command="{Binding DiscardAllChangesCommand}">
-                                    <MenuItem.Icon>
-                                        <materialIcons:MaterialIcon Kind="Undo" Width="14" Height="14" Foreground="{DynamicResource DsErrorBrush}" />
-                                    </MenuItem.Icon>
-                                </MenuItem>
-                                <Separator />
-                                <MenuItem Header="Initialize Repository" Command="{Binding InitGitRepositoryCommand}">
-                                    <MenuItem.Icon>
-                                        <materialIcons:MaterialIcon Kind="SourceBranchPlus" Width="14" Height="14" />
-                                    </MenuItem.Icon>
-                                </MenuItem>
-                            </MenuFlyout>
-                        </Button.Flyout>
-                        <materialIcons:MaterialIcon Kind="DotsHorizontal" Width="14" Height="14"
-                                                    Foreground="{DynamicResource DsMutedBrush}" />
-                    </Button>
-                </StackPanel>
-            </Grid>
-        </Border>
+        <!-- Progress Bar when Git operation is active -->
+        <ProgressBar Grid.Row="0" IsIndeterminate="True"
+                     Height="2" MinHeight="2"
+                     Foreground="{DynamicResource DsPrimaryBrush}"
+                     Background="Transparent"
+                     BorderThickness="0"
+                     IsVisible="{Binding IsGitBusy}" />
 
         <!-- Main Body Content -->
         <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-            <Panel Margin="8,8">
+            <Panel Margin="8,6">
                 <!-- State 1: Git Not Installed -->
-                <StackPanel lt:Tokens.Spacing="DsSpace10" Margin="10,24" HorizontalAlignment="Center"
-                            IsVisible="{Binding !IsGitInstalled}">
-                    <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="36" Height="36"
-                                                Foreground="{DynamicResource DsWarningBrush}" HorizontalAlignment="Center" />
-                    <TextBlock Text="Git is not installed or not in PATH." lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightEmphasis"
-                               Foreground="{DynamicResource DsTextWhiteBrush}" TextAlignment="Center" />
-                    <TextBlock Text="Install Git or ensure the git executable is accessible to enable version control."
-                               lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" TextAlignment="Center" />
-                </StackPanel>
+                <Border Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}"
+                        lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD"
+                        Padding="14,16" Margin="4,16"
+                        IsVisible="{Binding !IsGitInstalled}">
+                    <StackPanel Spacing="10" HorizontalAlignment="Center">
+                        <materialIcons:MaterialIcon Kind="AlertCircleOutline" Width="32" Height="32"
+                                                    Foreground="{DynamicResource DsWarningBrush}" HorizontalAlignment="Center" />
+                        <TextBlock Text="Git Not Installed" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightBold"
+                                   Foreground="{DynamicResource DsTextWhiteBrush}" TextAlignment="Center" />
+                        <TextBlock Text="Git was not found in your system PATH. Install Git to enable version control features."
+                                   lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" TextAlignment="Center" />
+                    </StackPanel>
+                </Border>
 
                 <!-- State 2: Not a Git Repository -->
-                <StackPanel lt:Tokens.Spacing="DsSpace12" Margin="10,24" HorizontalAlignment="Center"
-                            IsVisible="{Binding !IsGitRepository}">
-                    <materialIcons:MaterialIcon Kind="SourceBranch" Width="40" Height="40"
-                                                Foreground="{DynamicResource DsMutedBrush}" HorizontalAlignment="Center" />
-                    <TextBlock Text="No Git repository found." lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightEmphasis"
-                               Foreground="{DynamicResource DsTextWhiteBrush}" TextAlignment="Center" />
-                    <TextBlock Text="Initialize a repository to enable version control and track workspace changes."
-                               lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" TextAlignment="Center" />
-                    <Button Command="{Binding InitGitRepositoryCommand}" Classes="cs-toolbar-filled"
-                            Background="{DynamicResource DsPrimaryBrush}" Foreground="{DynamicResource DsTextWhiteBrush}"
-                            HorizontalAlignment="Center" Padding="14,6">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <materialIcons:MaterialIcon Kind="SourceBranchPlus" Width="14" Height="14" Foreground="{DynamicResource DsTextWhiteBrush}" />
-                            <TextBlock Text="Initialize Repository" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong" />
-                        </StackPanel>
-                    </Button>
-                </StackPanel>
+                <Border Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}"
+                        lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD"
+                        Padding="16,20" Margin="4,16"
+                        IsVisible="{Binding !IsGitRepository}">
+                    <StackPanel Spacing="12" HorizontalAlignment="Center">
+                        <materialIcons:MaterialIcon Kind="SourceBranch" Width="36" Height="36"
+                                                    Foreground="{DynamicResource DsPrimaryBrush}" HorizontalAlignment="Center" />
+                        <TextBlock Text="No Repository Initialized" lt:Tokens.FontSize="DsFontSize250" lt:Tokens.FontWeight="DsWeightBold"
+                                   Foreground="{DynamicResource DsTextWhiteBrush}" TextAlignment="Center" />
+                        <TextBlock Text="Initialize a Git repository to track file changes and collaborate in this workspace."
+                                   lt:Tokens.FontSize="DsFontSize150" Foreground="{DynamicResource DsMutedBrush}" TextWrapping="Wrap" TextAlignment="Center" />
+                        <Button Command="{Binding InitGitRepositoryCommand}" Classes="cs-toolbar-filled"
+                                Background="{DynamicResource DsPrimaryBrush}" Foreground="{DynamicResource DsTextWhiteBrush}"
+                                HorizontalAlignment="Center" Padding="14,6" lt:Tokens.CornerRadius="DsRadiusSM">
+                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <materialIcons:MaterialIcon Kind="SourceBranchPlus" Width="14" Height="14" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="Initialize Repository" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Border>
 
                 <!-- State 3: Active Git Repository -->
                 <StackPanel Spacing="8" IsVisible="{Binding IsGitRepository}">
-                    <!-- Branch Info Strip (Clickable Branch Switcher) -->
-                    <Button Command="{Binding OpenBranchPickerCommand}" Classes="git-row-btn" Padding="6,4">
-                        <Grid ColumnDefinitions="Auto,*,Auto">
-                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                <materialIcons:MaterialIcon Kind="SourceBranch" Width="12" Height="12"
-                                                            Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
-                                <TextBlock Text="{Binding CurrentGitBranch}" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightStrong"
-                                           Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
-                                <materialIcons:MaterialIcon Kind="ChevronDown" Width="10" Height="10"
-                                                            Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                            </StackPanel>
-                            <TextBlock Grid.Column="2" Text="{Binding SyncStatusText}" lt:Tokens.FontSize="DsFontSize100"
-                                       Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                        </Grid>
+                    
+                    <!-- Sleek Branch Selector Card -->
+                    <Button Command="{Binding OpenBranchPickerCommand}" Classes="git-row-btn" Padding="0">
+                        <Border Classes="git-branch-card" HorizontalAlignment="Stretch">
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <materialIcons:MaterialIcon Kind="SourceBranch" Width="13" Height="13"
+                                                                Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding CurrentGitBranch}" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong"
+                                               Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis" MaxWidth="160" />
+                                    <materialIcons:MaterialIcon Kind="ChevronDown" Width="11" Height="11"
+                                                                Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                </StackPanel>
+
+                                <!-- Sync Badge (Ahead/Behind counts) -->
+                                <Border Grid.Column="2"
+                                        Background="{DynamicResource DsPrimarySubtleBrush}"
+                                        lt:Tokens.CornerRadius="DsRadiusXS" Padding="5,1"
+                                        VerticalAlignment="Center"
+                                        IsVisible="{Binding SyncStatusText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                        ToolTip.Tip="{Binding SyncButtonText}">
+                                    <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                                        <materialIcons:MaterialIcon Kind="CloudSyncOutline" Width="11" Height="11"
+                                                                    Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding SyncStatusText}" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong"
+                                                   Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </Border>
                         <Button.Flyout>
                             <Flyout Placement="BottomEdgeAlignedLeft">
                                 <studio:StudioBranchPickerControl />
@@ -135,57 +101,61 @@
                         </Button.Flyout>
                     </Button>
 
-                    <!-- Commit Message Card (VS Code Authentic Input) -->
-                    <Border Background="{DynamicResource DsSurfaceHighBrush}" BorderBrush="{DynamicResource DsBorderBrush}"
-                            lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="6">
+                    <!-- Commit Area Card -->
+                    <Border Background="{DynamicResource DsSurfaceBrush}" BorderBrush="{DynamicResource DsBorderBrush}"
+                            lt:Tokens.BorderThickness="DsBorderThin" lt:Tokens.CornerRadius="DsRadiusMD" Padding="8">
                         <StackPanel Spacing="6">
-                            <TextBox Text="{Binding GitCommitMessage, Mode=TwoWay}"
-                                     KeyDown="OnCommitBoxKeyDown"
-                                     AcceptsReturn="True"
-                                     MinHeight="56" MaxHeight="120"
-                                     lt:Tokens.FontSize="DsFontSize200"
-                                     Background="Transparent" BorderThickness="0"
-                                     TextWrapping="Wrap"
-                                     PlaceholderText="Message (⌘Enter to commit)" />
+                            <!-- Text Input Container -->
+                            <Grid RowDefinitions="Auto,Auto">
+                                <TextBox Grid.Row="0"
+                                         Text="{Binding GitCommitMessage, Mode=TwoWay}"
+                                         KeyDown="OnCommitBoxKeyDown"
+                                         AcceptsReturn="True"
+                                         MinHeight="62" MaxHeight="130"
+                                         lt:Tokens.FontSize="DsFontSize200"
+                                         TextWrapping="Wrap"
+                                         Padding="8,6"
+                                         PlaceholderText="{Binding CommitPlaceholderText}"
+                                         Classes="sidebar-search-box" />
 
-                            <!-- Commit & Sync Action Buttons -->
-                            <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,2,0,0">
-                                <Button Grid.Column="0" Command="{Binding CommitCommand}"
-                                        Classes="cs-toolbar-filled"
-                                        Background="{DynamicResource DsPrimaryBrush}" Foreground="{DynamicResource DsTextWhiteBrush}"
-                                        lt:Tokens.Height="DsControlHeight100" lt:Tokens.CornerRadius="DsRadiusSM" HorizontalAlignment="Stretch"
-                                        ToolTip.Tip="Commit Changes (⌘Enter / Ctrl+Enter)">
-                                    <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                                        <materialIcons:MaterialIcon Kind="Check" Width="13" Height="13" Foreground="{DynamicResource DsTextWhiteBrush}" />
-                                        <TextBlock Text="Commit" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightStrong" VerticalAlignment="Center" />
-                                    </StackPanel>
-                                </Button>
-
-                                <Button Grid.Column="1" Command="{Binding GenerateSmartCommitMessageCommand}"
-                                        Classes="git-tool-btn" Width="26" lt:Tokens.Height="DsControlHeight100" Margin="4,0,0,0"
-                                        ToolTip.Tip="Generate Commit Message ✨">
+                                <!-- Floating AI Smart Commit Button -->
+                                <Button Grid.Row="0"
+                                        Command="{Binding GenerateSmartCommitMessageCommand}"
+                                        Classes="git-tool-btn" Width="22" Height="22"
+                                        HorizontalAlignment="Right" VerticalAlignment="Top"
+                                        Margin="0,4,4,0"
+                                        ToolTip.Tip="Generate Smart Commit Message ✨">
                                     <materialIcons:MaterialIcon Kind="Creation" Width="13" Height="13"
-                                                                Foreground="{DynamicResource DsWarningBrush}" />
-                                </Button>
-
-                                <Button Grid.Column="2" Command="{Binding RefreshGitStatusCommand}"
-                                        Classes="git-tool-btn" Width="26" lt:Tokens.Height="DsControlHeight100" Margin="4,0,0,0"
-                                        ToolTip.Tip="Refresh Changes">
-                                    <materialIcons:MaterialIcon Kind="Refresh" Width="13" Height="13"
-                                                                Foreground="{DynamicResource DsMutedBrush}" />
+                                                                Foreground="{DynamicResource DsWarningBrush}" VerticalAlignment="Center" />
                                 </Button>
                             </Grid>
 
-                            <!-- Primary Sync Changes Button (Matches User Screenshot) -->
-                            <Button Command="{Binding SyncChangesCommand}"
+                            <!-- Primary Full-Width Commit Button -->
+                            <Button Command="{Binding CommitCommand}"
                                     Classes="cs-toolbar-filled"
                                     Background="{DynamicResource DsPrimaryBrush}" Foreground="{DynamicResource DsTextWhiteBrush}"
-                                    lt:Tokens.Height="DsControlHeight150" lt:Tokens.CornerRadius="DsRadiusSM" HorizontalAlignment="Stretch"
+                                    lt:Tokens.Height="DsControlHeight100" lt:Tokens.CornerRadius="DsRadiusSM"
+                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                    ToolTip.Tip="Commit Changes (⌘Enter / Ctrl+Enter)">
+                                <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <materialIcons:MaterialIcon Kind="Check" Width="13" Height="13" Foreground="{DynamicResource DsTextWhiteBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="Commit" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+
+                            <!-- Sync Changes Button (Visible when commits are ahead/behind remote) -->
+                            <Button Command="{Binding SyncChangesCommand}"
+                                    Classes="cs-toolbar-tonal"
+                                    Foreground="{DynamicResource DsPrimaryBrush}"
+                                    BorderBrush="{DynamicResource DsPrimaryBrush}"
+                                    lt:Tokens.BorderThickness="DsBorderThin"
+                                    lt:Tokens.Height="DsControlHeight100" lt:Tokens.CornerRadius="DsRadiusSM"
+                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                                     IsVisible="{Binding IsSyncButtonVisible}"
-                                    ToolTip.Tip="Pull from and push to remote repository">
-                                <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                                    <materialIcons:MaterialIcon Kind="Sync" Width="14" Height="14" Foreground="{DynamicResource DsTextWhiteBrush}" />
-                                    <TextBlock Text="{Binding SyncButtonText}" lt:Tokens.FontSize="DsFontSize200" lt:Tokens.FontWeight="DsWeightStrong" VerticalAlignment="Center" />
+                                    ToolTip.Tip="Pull and push commits with remote">
+                                <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <materialIcons:MaterialIcon Kind="Sync" Width="13" Height="13" Foreground="{DynamicResource DsPrimaryBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding SyncButtonText}" lt:Tokens.FontSize="DsFontSize150" lt:Tokens.FontWeight="DsWeightStrong" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
                         </StackPanel>
@@ -194,21 +164,26 @@
                     <!-- Section: Staged Changes -->
                     <StackPanel Spacing="2" IsVisible="{Binding HasStagedChanges}">
                         <!-- Header -->
-                        <Button Command="{Binding ToggleStagedSectionCommand}" Classes="git-row-btn" Padding="4,3">
+                        <Button Command="{Binding ToggleStagedSectionCommand}" Classes="git-row-btn" Padding="4,4" Height="26" MinHeight="26">
                             <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                                 <materialIcons:MaterialIcon Grid.Column="0"
-                                                            Kind="{Binding IsStagedSectionExpanded, Converter={x:Static ObjectConverters.IsNull}}"
+                                                            Kind="{Binding StagedSectionChevronKind}"
                                                             Width="12" Height="12" Margin="0,0,4,0"
                                                             Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                                <TextBlock Grid.Column="1" Text="STAGED CHANGES" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightStrong"
+                                <TextBlock Grid.Column="1" Text="STAGED CHANGES" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightBold"
                                            Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                                <TextBlock Grid.Column="2" Text="{Binding StagedChanges.Count, StringFormat='({0})'}"
-                                           lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsMutedBrush}"
-                                           Margin="4,0" VerticalAlignment="Center" />
+                                
+                                <!-- Count Badge Pill -->
+                                <Border Grid.Column="2" Background="{DynamicResource DsSurfaceHighBrush}"
+                                        lt:Tokens.CornerRadius="DsRadiusXS" Padding="5,1" Margin="4,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding StagedChanges.Count}" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong"
+                                               Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                </Border>
+
                                 <Button Grid.Column="3" Command="{Binding UnstageAllCommand}"
-                                        Classes="git-tool-btn" ToolTip.Tip="Unstage All Changes">
+                                        Classes="git-tool-btn" Width="20" Height="20" ToolTip.Tip="Unstage All Changes">
                                     <materialIcons:MaterialIcon Kind="Minus" Width="12" Height="12"
-                                                                Foreground="{DynamicResource DsMutedBrush}" />
+                                                                Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                 </Button>
                             </Grid>
                         </Button>
@@ -218,38 +193,43 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="git:GitFileChangeItemViewModel">
                                     <Button Command="{Binding $parent[UserControl].((vm:CSharpCodeStudioViewModel)DataContext).OpenChangedFileCommand}"
-                                            CommandParameter="{Binding}" Classes="git-row-btn">
+                                            CommandParameter="{Binding}" Classes="git-row-btn" Padding="6,2" Height="26" MinHeight="26">
                                         <Grid ColumnDefinitions="*,Auto,Auto">
-                                            <!-- File details -->
-                                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding FileName}" lt:Tokens.FontSize="DsFontSize200"
+                                            <!-- File Icon & Name & Dir -->
+                                            <Grid Grid.Column="0" ColumnDefinitions="Auto,Auto,*" VerticalAlignment="Center" Margin="0,0,4,0">
+                                                <materialIcons:MaterialIcon Grid.Column="0" Kind="{Binding FileIconKind}" Foreground="{Binding FileIconColor}"
+                                                                            Width="13" Height="13" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                                <TextBlock Grid.Column="1" Text="{Binding FileName}" Classes.deleted="{Binding IsDeleted}"
+                                                           lt:Tokens.FontSize="DsFontSize200"
                                                            Foreground="{DynamicResource DsTextWhiteBrush}"
                                                            TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                                                <TextBlock Text="{Binding DirectoryDisplay}" lt:Tokens.FontSize="DsFontSize075"
+                                                <TextBlock Grid.Column="2" Text="{Binding DirectoryDisplay}"
+                                                           IsVisible="{Binding HasDirectory}"
+                                                           lt:Tokens.FontSize="DsFontSize075"
                                                            Foreground="{DynamicResource DsMutedBrush}"
-                                                           TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                                            </StackPanel>
+                                                           TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="6,0,0,0" />
+                                            </Grid>
 
                                             <!-- Row Hover Actions -->
-                                            <StackPanel Grid.Column="1" Classes="git-row-actions" Orientation="Horizontal" Spacing="2">
+                                            <StackPanel Grid.Column="1" Classes="git-row-actions" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
                                                 <Button Command="{Binding $parent[UserControl].((vm:CSharpCodeStudioViewModel)DataContext).OpenSourceFileCommand}"
-                                                        CommandParameter="{Binding}" Classes="git-tool-btn"
+                                                        CommandParameter="{Binding}" Classes="git-tool-btn" Width="19" Height="19"
                                                         ToolTip.Tip="Open File">
-                                                    <materialIcons:MaterialIcon Kind="OpenInApp" Width="12" Height="12"
-                                                                                Foreground="{DynamicResource DsMutedBrush}" />
+                                                    <materialIcons:MaterialIcon Kind="OpenInApp" Width="11" Height="11"
+                                                                                Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                                 </Button>
                                                 <Button Command="{Binding $parent[UserControl].((vm:CSharpCodeStudioViewModel)DataContext).UnstageFileCommand}"
-                                                        CommandParameter="{Binding}" Classes="git-tool-btn"
+                                                        CommandParameter="{Binding}" Classes="git-tool-btn" Width="19" Height="19"
                                                         ToolTip.Tip="Unstage Changes">
-                                                    <materialIcons:MaterialIcon Kind="Minus" Width="12" Height="12"
-                                                                                Foreground="{DynamicResource DsMutedBrush}" />
+                                                    <materialIcons:MaterialIcon Kind="Minus" Width="11" Height="11"
+                                                                                Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                                 </Button>
                                             </StackPanel>
 
-                                            <!-- Status letter badge -->
-                                            <Border Grid.Column="2" Margin="4,0,0,0" Width="14" Height="14" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding StatusLetter}" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightStrong"
-                                                           Foreground="{Binding StatusColorHex}" TextAlignment="Center"
+                                            <!-- Status Letter Badge -->
+                                            <Border Grid.Column="2" Margin="4,0,0,0" Width="16" Height="16" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding StatusLetter}" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightBold"
+                                                           Foreground="{Binding StatusColorHex}" TextAlignment="Center" VerticalAlignment="Center"
                                                            ToolTip.Tip="{Binding TooltipText}" />
                                             </Border>
                                         </Grid>
@@ -262,27 +242,31 @@
                     <!-- Section: Changes (Working Tree) -->
                     <StackPanel Spacing="2">
                         <!-- Header -->
-                        <Button Command="{Binding ToggleWorkingSectionCommand}" Classes="git-row-btn" Padding="4,3">
+                        <Button Command="{Binding ToggleWorkingSectionCommand}" Classes="git-row-btn" Padding="4,4" Height="26" MinHeight="26">
                             <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
                                 <materialIcons:MaterialIcon Grid.Column="0"
-                                                            Kind="{Binding IsWorkingSectionExpanded, Converter={x:Static ObjectConverters.IsNull}}"
+                                                            Kind="{Binding WorkingSectionChevronKind}"
                                                             Width="12" Height="12" Margin="0,0,4,0"
                                                             Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                                <TextBlock Grid.Column="1" Text="CHANGES" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightStrong"
+                                <TextBlock Grid.Column="1" Text="CHANGES" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightBold"
                                            Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                                <TextBlock Grid.Column="2" Text="{Binding WorkingChanges.Count, StringFormat='({0})'}"
-                                           lt:Tokens.FontSize="DsFontSize100" Foreground="{DynamicResource DsMutedBrush}"
-                                           Margin="4,0" VerticalAlignment="Center" />
+                                
+                                <!-- Count Badge Pill -->
+                                <Border Grid.Column="2" Background="{DynamicResource DsSurfaceHighBrush}"
+                                        lt:Tokens.CornerRadius="DsRadiusXS" Padding="5,1" Margin="4,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding WorkingChanges.Count}" lt:Tokens.FontSize="DsFontSize075" lt:Tokens.FontWeight="DsWeightStrong"
+                                               Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                                </Border>
 
                                 <Button Grid.Column="3" Command="{Binding DiscardAllChangesCommand}"
-                                        Classes="git-tool-btn" Margin="0,0,2,0" ToolTip.Tip="Discard All Changes">
+                                        Classes="git-tool-btn" Width="20" Height="20" Margin="0,0,2,0" ToolTip.Tip="Discard All Changes">
                                     <materialIcons:MaterialIcon Kind="Undo" Width="12" Height="12"
-                                                                Foreground="{DynamicResource DsMutedBrush}" />
+                                                                Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                 </Button>
                                 <Button Grid.Column="4" Command="{Binding StageAllCommand}"
-                                        Classes="git-tool-btn" ToolTip.Tip="Stage All Changes">
+                                        Classes="git-tool-btn" Width="20" Height="20" ToolTip.Tip="Stage All Changes">
                                     <materialIcons:MaterialIcon Kind="Plus" Width="12" Height="12"
-                                                                Foreground="{DynamicResource DsMutedBrush}" />
+                                                                Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                 </Button>
                             </Grid>
                         </Button>
@@ -292,44 +276,49 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="git:GitFileChangeItemViewModel">
                                     <Button Command="{Binding $parent[UserControl].((vm:CSharpCodeStudioViewModel)DataContext).OpenChangedFileCommand}"
-                                            CommandParameter="{Binding}" Classes="git-row-btn">
+                                            CommandParameter="{Binding}" Classes="git-row-btn" Padding="6,2" Height="26" MinHeight="26">
                                         <Grid ColumnDefinitions="*,Auto,Auto">
-                                            <!-- File details -->
-                                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding FileName}" lt:Tokens.FontSize="DsFontSize200"
+                                            <!-- File Icon & Name & Dir -->
+                                            <Grid Grid.Column="0" ColumnDefinitions="Auto,Auto,*" VerticalAlignment="Center" Margin="0,0,4,0">
+                                                <materialIcons:MaterialIcon Grid.Column="0" Kind="{Binding FileIconKind}" Foreground="{Binding FileIconColor}"
+                                                                            Width="13" Height="13" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                                <TextBlock Grid.Column="1" Text="{Binding FileName}" Classes.deleted="{Binding IsDeleted}"
+                                                           lt:Tokens.FontSize="DsFontSize200"
                                                            Foreground="{DynamicResource DsTextWhiteBrush}"
                                                            TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                                                <TextBlock Text="{Binding DirectoryDisplay}" lt:Tokens.FontSize="DsFontSize075"
+                                                <TextBlock Grid.Column="2" Text="{Binding DirectoryDisplay}"
+                                                           IsVisible="{Binding HasDirectory}"
+                                                           lt:Tokens.FontSize="DsFontSize075"
                                                            Foreground="{DynamicResource DsMutedBrush}"
-                                                           TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                                            </StackPanel>
+                                                           TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="6,0,0,0" />
+                                            </Grid>
 
                                             <!-- Row Hover Actions -->
-                                            <StackPanel Grid.Column="1" Classes="git-row-actions" Orientation="Horizontal" Spacing="2">
+                                            <StackPanel Grid.Column="1" Classes="git-row-actions" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
                                                 <Button Command="{Binding $parent[UserControl].((vm:CSharpCodeStudioViewModel)DataContext).OpenSourceFileCommand}"
-                                                        CommandParameter="{Binding}" Classes="git-tool-btn"
+                                                        CommandParameter="{Binding}" Classes="git-tool-btn" Width="19" Height="19"
                                                         ToolTip.Tip="Open File">
-                                                    <materialIcons:MaterialIcon Kind="OpenInApp" Width="12" Height="12"
-                                                                                Foreground="{DynamicResource DsMutedBrush}" />
+                                                    <materialIcons:MaterialIcon Kind="OpenInApp" Width="11" Height="11"
+                                                                                Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                                 </Button>
                                                 <Button Command="{Binding $parent[UserControl].((vm:CSharpCodeStudioViewModel)DataContext).DiscardFileChangesCommand}"
-                                                        CommandParameter="{Binding}" Classes="git-tool-btn"
+                                                        CommandParameter="{Binding}" Classes="git-tool-btn" Width="19" Height="19"
                                                         ToolTip.Tip="Discard Changes">
-                                                    <materialIcons:MaterialIcon Kind="Undo" Width="12" Height="12"
-                                                                                Foreground="{DynamicResource DsMutedBrush}" />
+                                                    <materialIcons:MaterialIcon Kind="Undo" Width="11" Height="11"
+                                                                                Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                                 </Button>
                                                 <Button Command="{Binding $parent[UserControl].((vm:CSharpCodeStudioViewModel)DataContext).StageFileCommand}"
-                                                        CommandParameter="{Binding}" Classes="git-tool-btn"
+                                                        CommandParameter="{Binding}" Classes="git-tool-btn" Width="19" Height="19"
                                                         ToolTip.Tip="Stage Changes">
                                                     <materialIcons:MaterialIcon Kind="Plus" Width="12" Height="12"
-                                                                                Foreground="{DynamicResource DsMutedBrush}" />
+                                                                                Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
                                                 </Button>
                                             </StackPanel>
 
-                                            <!-- Status letter badge -->
-                                            <Border Grid.Column="2" Margin="4,0,0,0" Width="14" Height="14" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding StatusLetter}" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightStrong"
-                                                           Foreground="{Binding StatusColorHex}" TextAlignment="Center"
+                                            <!-- Status Letter Badge -->
+                                            <Border Grid.Column="2" Margin="4,0,0,0" Width="16" Height="16" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding StatusLetter}" lt:Tokens.FontSize="DsFontSize100" lt:Tokens.FontWeight="DsWeightBold"
+                                                           Foreground="{Binding StatusColorHex}" TextAlignment="Center" VerticalAlignment="Center"
                                                            ToolTip.Tip="{Binding TooltipText}" />
                                             </Border>
                                         </Grid>
@@ -339,14 +328,35 @@
                         </ItemsControl>
 
                         <!-- Clean State Message -->
-                        <StackPanel Orientation="Horizontal" Spacing="6" Margin="10,12"
-                                    IsVisible="{Binding !HasAnyGitChanges}">
-                            <materialIcons:MaterialIcon Kind="CheckCircleOutline" Width="14" Height="14"
-                                                        Foreground="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
-                            <TextBlock Text="No uncommitted changes." lt:Tokens.FontSize="DsFontSize150"
-                                       Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
-                        </StackPanel>
+                        <Border Background="{DynamicResource DsSurfaceBrush}"
+                                lt:Tokens.CornerRadius="DsRadiusSM" Padding="12,14" Margin="0,8"
+                                IsVisible="{Binding !HasAnyGitChanges}">
+                            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                                <materialIcons:MaterialIcon Kind="CheckCircleOutline" Width="16" Height="16"
+                                                            Foreground="{DynamicResource DsGreenBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="Working tree clean. No uncommitted changes." lt:Tokens.FontSize="DsFontSize150"
+                                           Foreground="{DynamicResource DsMutedBrush}" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
+
+                    <!-- Git Status Notice / Error Banner -->
+                    <Border Background="{DynamicResource DsSurfaceHighBrush}"
+                            BorderBrush="{DynamicResource DsBorderBrush}"
+                            lt:Tokens.BorderThickness="DsBorderThin"
+                            lt:Tokens.CornerRadius="DsRadiusSM"
+                            Padding="8,5" Margin="0,4"
+                            IsVisible="{Binding GitStatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0" Text="{Binding GitStatusMessage}" lt:Tokens.FontSize="DsFontSize100"
+                                       Foreground="{DynamicResource DsTextWhiteBrush}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                            <Button Grid.Column="1" Command="{Binding RefreshGitStatusCommand}" Classes="git-tool-btn" Width="16" Height="16"
+                                    Margin="4,0,0,0" ToolTip.Tip="Dismiss">
+                                <materialIcons:MaterialIcon Kind="Close" Width="10" Height="10" Foreground="{DynamicResource DsMutedBrush}" />
+                            </Button>
+                        </Grid>
+                    </Border>
+
                 </StackPanel>
             </Panel>
         </ScrollViewer>

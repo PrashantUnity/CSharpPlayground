@@ -131,11 +131,60 @@
                                 </Button>
                             </StackPanel>
 
+                            <!-- Source Control Tools (View 6) -->
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center"
+                                        IsVisible="{Binding IsSourceControlActive}">
+                                <Button Command="{Binding RefreshGitStatusCommand}" Classes="explorer-tool-btn" ToolTip.Tip="Refresh (Check for changes)">
+                                    <materialIcons:MaterialIcon Kind="Refresh" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" />
+                                </Button>
+                                <Button Classes="explorer-tool-btn" ToolTip.Tip="More Actions...">
+                                    <Button.Flyout>
+                                        <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                            <MenuItem Header="Sync Changes" Command="{Binding SyncChangesCommand}">
+                                                <MenuItem.Icon>
+                                                    <materialIcons:MaterialIcon Kind="Sync" Width="14" Height="14" />
+                                                </MenuItem.Icon>
+                                            </MenuItem>
+                                            <MenuItem Header="Commit All Changes" Command="{Binding CommitCommand}">
+                                                <MenuItem.Icon>
+                                                    <materialIcons:MaterialIcon Kind="Check" Width="14" Height="14" />
+                                                </MenuItem.Icon>
+                                            </MenuItem>
+                                            <MenuItem Header="Stage All Changes" Command="{Binding StageAllCommand}">
+                                                <MenuItem.Icon>
+                                                    <materialIcons:MaterialIcon Kind="Plus" Width="14" Height="14" />
+                                                </MenuItem.Icon>
+                                            </MenuItem>
+                                            <MenuItem Header="Unstage All Changes" Command="{Binding UnstageAllCommand}">
+                                                <MenuItem.Icon>
+                                                    <materialIcons:MaterialIcon Kind="Minus" Width="14" Height="14" />
+                                                </MenuItem.Icon>
+                                            </MenuItem>
+                                            <Separator />
+                                            <MenuItem Header="Discard All Changes" Command="{Binding DiscardAllChangesCommand}">
+                                                <MenuItem.Icon>
+                                                    <materialIcons:MaterialIcon Kind="Undo" Width="14" Height="14" Foreground="{DynamicResource DsErrorBrush}" />
+                                                </MenuItem.Icon>
+                                            </MenuItem>
+                                            <Separator />
+                                            <MenuItem Header="Initialize Repository" Command="{Binding InitGitRepositoryCommand}">
+                                                <MenuItem.Icon>
+                                                    <materialIcons:MaterialIcon Kind="SourceBranchPlus" Width="14" Height="14" />
+                                                </MenuItem.Icon>
+                                            </MenuItem>
+                                        </MenuFlyout>
+                                    </Button.Flyout>
+                                    <materialIcons:MaterialIcon Kind="DotsHorizontal" Width="13" Height="13" Foreground="{DynamicResource DsMutedBrush}" />
+                                </Button>
+                                <Button Command="{Binding ToggleSideBarCommand}" Classes="explorer-tool-btn" ToolTip.Tip="Hide Primary Side Bar (Ctrl+B)">
+                                    <materialIcons:MaterialIcon Kind="ChevronLeft" Width="14" Height="14" Foreground="{DynamicResource DsMutedBrush}" />
+                                </Button>
+                            </StackPanel>
+
                             <!-- Default Close Button for Views 3-5 -->
                             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center"
-                                        IsVisible="{Binding !IsExplorerActive}">
-                                <Button Command="{Binding ToggleSideBarCommand}" Classes="explorer-tool-btn" ToolTip.Tip="Hide Primary Side Bar (Ctrl+B)"
-                                        IsVisible="{Binding !IsSearchActive}">
+                                        IsVisible="{Binding IsDefaultSidebarCloseVisible}">
+                                <Button Command="{Binding ToggleSideBarCommand}" Classes="explorer-tool-btn" ToolTip.Tip="Hide Primary Side Bar (Ctrl+B)">
                                     <materialIcons:MaterialIcon Kind="ChevronLeft" Width="14" Height="14" Foreground="{DynamicResource DsMutedBrush}" />
                                 </Button>
                             </StackPanel>

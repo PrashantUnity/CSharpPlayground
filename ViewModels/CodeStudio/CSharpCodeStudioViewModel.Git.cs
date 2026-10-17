@@ -58,10 +58,16 @@ public partial class CSharpCodeStudioViewModel
     private int _uncommittedChangesCount = 0;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(StagedSectionChevronKind))]
     private bool _isStagedSectionExpanded = true;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(WorkingSectionChevronKind))]
     private bool _isWorkingSectionExpanded = true;
+
+    public string StagedSectionChevronKind => IsStagedSectionExpanded ? "ChevronDown" : "ChevronRight";
+    public string WorkingSectionChevronKind => IsWorkingSectionExpanded ? "ChevronDown" : "ChevronRight";
+    public string CommitPlaceholderText => OperatingSystem.IsMacOS() ? "Message (⌘Enter to commit)" : "Message (Ctrl+Enter to commit)";
 
     [ObservableProperty]
     private GitFileChangeItemViewModel? _selectedGitFile;
